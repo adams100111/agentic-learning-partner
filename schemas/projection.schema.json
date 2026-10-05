@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/projection.schema.json",
+  "title": "ALP Competency Projection",
+  "type": "object",
+  "required": ["schemaVersion", "competencies"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "competencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "domain", "level", "confidence", "assessmentId", "lastVerified"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "domain": {"type": "string", "minLength": 1},
+          "level": {"enum": ["unknown", "rusty", "functional", "strong", "production-ready"]},
+          "confidence": {"enum": ["low", "medium", "high"]},
+          "assessmentId": {"type": "string", "pattern": "^asmt_"},
+          "lastVerified": {"type": "string", "format": "date-time"},
+          "needsReassessment": {"type": "boolean"},
+          "gaps": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
