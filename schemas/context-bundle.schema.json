@@ -1,0 +1,22 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://agentic-learning-partner.dev/schemas/context-bundle.schema.json",
+  "title":"ALP Agent Context Bundle",
+  "type":"object",
+  "required":["schemaVersion","task","learner","focus","includedSources"],
+  "properties":{
+    "schemaVersion":{"type":"integer","const":1},
+    "task":{"type":"string","minLength":1},
+    "domain":{"type":["string","null"]},
+    "learner":{"type":"object","additionalProperties":true},
+    "focus":{"type":"object","additionalProperties":true},
+    "persona":{"type":"object","additionalProperties":true},
+    "competencies":{"type":"object","additionalProperties":true},
+    "reinforcement":{"type":"array","items":{"type":"string"}},
+    "project":{"type":["object","null"],"additionalProperties":true},
+    "includedSources":{"type":"array","items":{"type":"object","required":["ref","reason"],"properties":{"ref":{"type":"string"},"reason":{"type":"string"}},"additionalProperties":false}},
+    "omittedSources":{"type":"array","items":{"type":"object","required":["ref","reason"],"properties":{"ref":{"type":"string"},"reason":{"type":"string"}},"additionalProperties":false}},
+    "estimatedTokens":{"type":["integer","null"],"minimum":0}
+  },
+  "additionalProperties":false
+}
