@@ -59,3 +59,10 @@ HTML is for humans, not agents. Generate it from canonical state for dashboards/
 ## Context diagnostics
 
 The CLI should eventually provide an inspection command that shows which sources were included in a generated context, why, and an estimated token cost.
+
+
+## Workspace separation
+
+Canonical personal YAML belongs in the configured learner workspace. The ALP engine repository contains schemas, domain packs, skills, and synthetic fixtures only.
+
+The context builder may read across the engine repository, learner workspace, and an integration repository such as PyLearn, but its output remains a compact derived bundle.
