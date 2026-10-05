@@ -24,4 +24,5 @@ type Request struct {
 	Task       string
 	Domain     string
 	Competency string
+	Inspect    bool
 }
