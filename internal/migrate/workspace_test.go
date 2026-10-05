@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -71,7 +72,7 @@ func migrationWorkspace(t *testing.T, version int) (string, string) {
 	runMigrationGit(t, root, "init")
 	runMigrationGit(t, root, "config", "user.email", "alp@example.invalid")
 	runMigrationGit(t, root, "config", "user.name", "ALP Test")
-	content := []byte("schemaVersion: " + string(rune('0'+version)) + "\nlearnerId: test\n")
+	content := []byte("schemaVersion: " + strconv.Itoa(version) + "\nlearnerId: test\n")
 	if err := os.WriteFile(filepath.Join(root, "workspace.yaml"), content, 0o644); err != nil {
 		t.Fatal(err)
 	}
