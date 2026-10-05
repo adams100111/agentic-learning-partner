@@ -76,7 +76,7 @@ func (a App) runContext(args []string) int {
 		return 1
 	}
 	bundle, err := (contextbundle.Builder{Root: info.Path, Validator: validator}).Build(contextbundle.Request{
-		Task: *task, Domain: *domainName, Competency: *competency,
+		Task: *task, Domain: *domainName, Competency: *competency, Inspect: command == "inspect",
 	})
 	if err != nil {
 		fmt.Fprintln(a.ErrOut, err)
