@@ -44,6 +44,10 @@ For the initial Go learner, reference priority should reflect actual strength:
 
 A specific lesson may choose a lower-priority stack when its semantic mapping is materially better.
 
+### Domain persona overlay
+
+A domain pack defines which persona fields/overrides are meaningful for the domain, including analogy selection, likely transfer anti-patterns, target project style, and teaching emphasis. It does not own or duplicate the global learner persona.
+
 ### Diagnostic rubric
 
 Activities and scoring guidance capable of distinguishing:
@@ -79,7 +83,8 @@ Criteria for `production-ready` competencies.
 - Git synchronization;
 - generic state update mechanics;
 - platform database schemas;
-- harness-specific memory.
+- harness-specific memory;
+- global learner persona.
 
 ## Shared competency links
 
