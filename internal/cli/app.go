@@ -56,6 +56,10 @@ func (a App) Run(args []string) int {
 		return a.runCompetency(args[1:])
 	case "evidence":
 		return a.runEvidence(args[1:])
+	case "assessment":
+		return a.runAssessment(args[1:])
+	case "state":
+		return a.runState(args[1:])
 	default:
 		fmt.Fprintf(a.ErrOut, "unknown command %q\n", args[0])
 		a.usage()
@@ -152,22 +156,78 @@ func (a App) runCompetency(args []string) int {
 }
 
 func (a App) runEvidence(args []string) int {
-	if len(args) == 0 || args[0] != "show" || len(args) < 2 {
-		fmt.Fprintln(a.ErrOut, "usage: alp evidence show <id> [--format text|markdown] [--workspace PATH]")
+	if len(args) == 0 {
+		fmt.Fprintln(a.ErrOut, "usage: alp evidence <show|add> ...")
 		return 2
 	}
-	id := args[1]
-	root, format, ok := a.viewArgs("evidence show", args[2:])
-	if !ok {
-		return 1
+	switch args[0] {
+	case "show":
+		if len(args) < 2 {
+			fmt.Fprintln(a.ErrOut, "usage: alp evidence show <id> [--format text|markdown] [--workspace PATH]")
+			return 2
+		}
+		id := args[1]
+		root, format, ok := a.viewArgs("evidence show", args[2:])
+		if !ok {
+			return 1
+		}
+		output, err := (view.Renderer{Root: root}).Evidence(id, format)
+		if err != nil {
+			fmt.Fprintln(a.ErrOut, err)
+			return 1
+		}
+		fmt.Fprint(a.Out, output)
+		return 0
+	case "add":
+		flags := flag.NewFlagSet("evidence add", flag.ContinueOnError)
+		flags.SetOutput(a.ErrOut)
+		explicit := flags.String("workspace", "", "learner workspace path")
+		file := flags.String("file", "", "evidence YAML or JSON file")
+		if err := flags.Parse(args[1:]); err != nil {
+			return 2
+		}
+		if *file == "" {
+			fmt.Fprintln(a.ErrOut, "--file is required")
+			return 2
+		}
+		return a.appendEvidence(*explicit, *file)
+	default:
+		fmt.Fprintf(a.ErrOut, "unknown evidence command %q\n", args[0])
+		return 2
 	}
-	output, err := (view.Renderer{Root: root}).Evidence(id, format)
-	if err != nil {
-		fmt.Fprintln(a.ErrOut, err)
-		return 1
+}
+
+func (a App) runAssessment(args []string) int {
+	if len(args) == 0 || args[0] != "add" {
+		fmt.Fprintln(a.ErrOut, "usage: alp assessment add --file FILE [--workspace PATH]")
+		return 2
 	}
-	fmt.Fprint(a.Out, output)
-	return 0
+	flags := flag.NewFlagSet("assessment add", flag.ContinueOnError)
+	flags.SetOutput(a.ErrOut)
+	explicit := flags.String("workspace", "", "learner workspace path")
+	file := flags.String("file", "", "assessment YAML or JSON file")
+	if err := flags.Parse(args[1:]); err != nil {
+		return 2
+	}
+	if *file == "" {
+		fmt.Fprintln(a.ErrOut, "--file is required")
+		return 2
+	}
+	return a.appendAssessment(*explicit, *file)
+}
+
+func (a App) runState(args []string) int {
+	if len(args) == 0 || args[0] != "rebuild" {
+		fmt.Fprintln(a.ErrOut, "usage: alp state rebuild [--workspace PATH]")
+		return 2
+	}
+	flags := flag.NewFlagSet("state rebuild", flag.ContinueOnError)
+	flags.SetOutput(a.ErrOut)
+	explicit := flags.String("workspace", "", "learner workspace path")
+	if err := flags.Parse(args[1:]); err != nil {
+		return 2
+	}
+	return a.rebuildState(*explicit)
 }
 
 func parseViewFormat(value string) (view.Format, bool) {
@@ -413,5 +473,5 @@ func (a App) resolveAndInspect(explicit string) (workspace.Resolution, workspace
 
 func (a App) usage() {
 	fmt.Fprintln(a.ErrOut, "usage: alp <command>")
-	fmt.Fprintln(a.ErrOut, "commands: validate, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show")
+	fmt.Fprintln(a.ErrOut, "commands: validate, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild")
 }

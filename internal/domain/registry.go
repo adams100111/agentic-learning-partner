@@ -68,3 +68,11 @@ func (r Registry) CheckCompatibility(name, versionRange string) error {
 	}
 	return nil
 }
+
+func (r Registry) HasCompetency(domainName, id string) bool {
+	pack, err := r.Load(domainName)
+	if err != nil {
+		return false
+	}
+	return pack.HasCompetency(id)
+}
