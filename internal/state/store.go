@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 	"go.yaml.in/yaml/v3"
@@ -46,6 +47,9 @@ func (s Store) AppendEvidence(expectedRevision string, evidence Evidence) (Evide
 			return Evidence{}, fmt.Errorf("unknown competency %q for domain %q", competency, evidence.Domain)
 		}
 	}
+	if (evidence.Result == "fail" || evidence.Result == "contradictory") && evidence.FailureClass == "" {
+		return Evidence{}, fmt.Errorf("negative evidence %s requires failureClassification", evidence.ID)
+	}
 	data, err := yaml.Marshal(evidence)
 	if err != nil {
 		return Evidence{}, fmt.Errorf("marshal evidence %s: %w", evidence.ID, err)
@@ -84,24 +88,24 @@ func (s Store) AppendAssessment(expectedRevision string, assessment Assessment) 
 		if record.Domain != assessment.Domain {
 			return Assessment{}, fmt.Errorf("assessment %s references evidence %s from domain %q", assessment.ID, record.ID, record.Domain)
 		}
+		if !contains(record.Competencies, assessment.Competency) {
+			return Assessment{}, fmt.Errorf("assessment %s references evidence %s that does not cover competency %q", assessment.ID, record.ID, assessment.Competency)
+		}
 	}
 
-	if assessment.Status == "" || assessment.Status == "proposed" {
-		if assessment.Judgment.Level == "production-ready" {
-			if s.ProductionGate == nil {
-				return Assessment{}, fmt.Errorf("production-ready assessment %s requires a production gate", assessment.ID)
-			}
-			if err := s.ProductionGate.ApproveProductionReady(assessment, evidence); err != nil {
-				return Assessment{}, fmt.Errorf("production-ready assessment %s rejected: %w", assessment.ID, err)
-			}
+	if assessment.Judgment.Level == "production-ready" {
+		if s.ProductionGate == nil {
+			return Assessment{}, fmt.Errorf("production-ready assessment %s requires a production gate", assessment.ID)
 		}
+		if err := s.ProductionGate.ApproveProductionReady(assessment, evidence); err != nil {
+			return Assessment{}, fmt.Errorf("production-ready assessment %s rejected: %w", assessment.ID, err)
+		}
+	}
+	if assessment.Status == "" || assessment.Status == "proposed" {
 		assessment.Status = "accepted"
 	}
-	if assessment.Status == "accepted" && assessment.Judgment.Level == "production-ready" && s.ProductionGate == nil {
-		return Assessment{}, fmt.Errorf("production-ready assessment %s requires a production gate", assessment.ID)
-	}
 
-	if err := s.ensureAssessmentReferences(assessment.Supersedes); err != nil {
+	if err := s.ensureAssessmentReferences(assessment.Domain, assessment.Competency, assessment.Supersedes); err != nil {
 		return Assessment{}, err
 	}
 	assessment.WorkspaceRevision = expectedRevision
@@ -150,6 +154,11 @@ func (s Store) RebuildProjection() (Projection, error) {
 	projection := Projection{SchemaVersion: 1}
 	for _, group := range active {
 		sort.Slice(group, func(i, j int) bool {
+			left, leftErr := time.Parse(time.RFC3339, group[i].RecordedAt)
+			right, rightErr := time.Parse(time.RFC3339, group[j].RecordedAt)
+			if leftErr == nil && rightErr == nil && !left.Equal(right) {
+				return left.Before(right)
+			}
 			if group[i].RecordedAt == group[j].RecordedAt {
 				return group[i].ID < group[j].ID
 			}
@@ -238,15 +247,23 @@ func (s Store) loadEvidence(ids []string) ([]Evidence, error) {
 	return result, nil
 }
 
-func (s Store) ensureAssessmentReferences(ids []string) error {
+func (s Store) ensureAssessmentReferences(domain, competency string, ids []string) error {
 	seen := map[string]struct{}{}
 	for _, id := range ids {
 		if _, duplicate := seen[id]; duplicate {
 			return fmt.Errorf("duplicate superseded assessment %q", id)
 		}
 		seen[id] = struct{}{}
-		if _, err := os.Stat(filepath.Join(s.Root, "assessments", id+".yaml")); err != nil {
+		data, err := os.ReadFile(filepath.Join(s.Root, "assessments", id+".yaml"))
+		if err != nil {
 			return fmt.Errorf("superseded assessment %s: %w", id, err)
+		}
+		var previous Assessment
+		if err := yaml.Unmarshal(data, &previous); err != nil {
+			return fmt.Errorf("parse superseded assessment %s: %w", id, err)
+		}
+		if previous.Domain != domain || previous.Competency != competency {
+			return fmt.Errorf("cannot supersede assessment %s for %s/%s from %s/%s", id, previous.Domain, previous.Competency, domain, competency)
 		}
 	}
 	return nil
@@ -263,6 +280,9 @@ func (s Store) loadAssessments() ([]Assessment, error) {
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return nil, fmt.Errorf("read %s: %w", path, err)
+		}
+		if err := s.validate("assessment.schema.json", filepath.Base(path), data); err != nil {
+			return nil, err
 		}
 		var assessment Assessment
 		if err := yaml.Unmarshal(data, &assessment); err != nil {
@@ -314,4 +334,13 @@ func lowerConfidence(value string) string {
 	default:
 		return "low"
 	}
+}
+
+func contains(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
 }
