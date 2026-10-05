@@ -1,15 +1,139 @@
 {
-  "$schema":"https://json-schema.org/draft/2020-12/schema",
-  "$id":"https://agentic-learning-partner.dev/schemas/competency-taxonomy.schema.json",
-  "title":"ALP Domain Competency Taxonomy",
-  "type":"object",
-  "required":["schemaVersion","domain","version","competencies"],
-  "properties":{
-    "schemaVersion":{"type":"integer","const":1},
-    "domain":{"type":"string","minLength":1},
-    "version":{"type":"string","minLength":1},
-    "verifiedAgainst":{"type":"object","additionalProperties":{"type":"string"}},
-    "competencies":{"type":"array","items":{"type":"object","required":["id","name","dimension","description"],"properties":{"id":{"type":"string","minLength":1},"name":{"type":"string","minLength":1},"dimension":{"enum":["recall","mental-model","idiomatic","runtime","backend","database","testing","production","architecture","tooling","performance"]},"description":{"type":"string","minLength":1},"prerequisites":{"type":"array","items":{"type":"string"},"uniqueItems":true},"sharedScaffolds":{"type":"array","items":{"type":"string"},"uniqueItems":true},"productionReadyRequires":{"type":"array","items":{"type":"string"},"uniqueItems":true},"freshnessClass":{"enum":["stable-concept","version-sensitive-language-runtime","ecosystem-choice","operational-platform","security-sensitive"]}},"additionalProperties":false}}
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/competency-taxonomy.schema.json",
+  "title": "ALP Domain Competency Taxonomy",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "domain",
+    "version",
+    "competencies"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "domain": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verifiedAgainst": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "competencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "dimension",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "dimension": {
+            "enum": [
+              "recall",
+              "mental-model",
+              "idiomatic",
+              "runtime",
+              "backend",
+              "database",
+              "testing",
+              "production",
+              "architecture",
+              "tooling",
+              "performance"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "prerequisites": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "sharedScaffolds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "productionReadyRequires": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "freshnessClass": {
+            "enum": [
+              "stable-concept",
+              "version-sensitive-language-runtime",
+              "ecosystem-choice",
+              "operational-platform",
+              "security-sensitive"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "migrations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "from",
+          "strategy"
+        ],
+        "properties": {
+          "from": {
+            "type": "string",
+            "minLength": 1
+          },
+          "to": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "uniqueItems": true
+          },
+          "strategy": {
+            "enum": [
+              "rename",
+              "split",
+              "merge",
+              "reassess",
+              "remove"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
   },
-  "additionalProperties":false
+  "additionalProperties": false
 }

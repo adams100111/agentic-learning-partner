@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/adams100111/agentic-learning-partner/internal/domain"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 )
 
@@ -34,9 +35,42 @@ func (a App) Run(args []string) int {
 		}
 		fmt.Fprintln(a.ErrOut, "usage: alp workspace check [--workspace PATH]")
 		return 2
+	case "domain":
+		return a.runDomain(args[1:])
 	default:
 		fmt.Fprintf(a.ErrOut, "unknown command %q\n", args[0])
 		a.usage()
+		return 2
+	}
+}
+
+func (a App) runDomain(args []string) int {
+	if len(args) == 0 {
+		fmt.Fprintln(a.ErrOut, "usage: alp domain <list|info>")
+		return 2
+	}
+
+	registry := domain.NewRegistry()
+	switch args[0] {
+	case "list":
+		for _, name := range registry.List() {
+			fmt.Fprintln(a.Out, name)
+		}
+		return 0
+	case "info":
+		if len(args) != 2 {
+			fmt.Fprintln(a.ErrOut, "usage: alp domain info <name>")
+			return 2
+		}
+		pack, err := registry.Load(args[1])
+		if err != nil {
+			fmt.Fprintln(a.ErrOut, err)
+			return 1
+		}
+		fmt.Fprintf(a.Out, "domain: %s\nversion: %s\ncompetencies: %d\n", pack.Domain, pack.Version, len(pack.Competencies))
+		return 0
+	default:
+		fmt.Fprintf(a.ErrOut, "unknown domain command %q\n", args[0])
 		return 2
 	}
 }
@@ -118,5 +152,5 @@ func (a App) resolveAndInspect(explicit string) (workspace.Resolution, workspace
 
 func (a App) usage() {
 	fmt.Fprintln(a.ErrOut, "usage: alp <command>")
-	fmt.Fprintln(a.ErrOut, "commands: validate, workspace check")
+	fmt.Fprintln(a.ErrOut, "commands: validate, workspace check, domain list, domain info")
 }
