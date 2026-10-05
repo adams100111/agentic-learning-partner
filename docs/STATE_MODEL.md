@@ -4,7 +4,7 @@
 
 A learner-state system becomes unreliable when an agent can simply write "channels: strong". ALP therefore persists observations before conclusions.
 
-## Three categories
+## Four categories
 
 ### Profile
 
@@ -19,6 +19,12 @@ Slow-changing context about the learner:
 - learning preferences.
 
 Profile assertions should include origin where useful: learner-stated, platform-derived, or evaluated.
+
+### Persona
+
+Structured learning configuration derived from the profile plus explicit teaching preferences. Persona has a global layer and optional domain layers. It does not contain competency conclusions.
+
+The effective session persona is a derived projection and is not canonical state.
 
 ### Evidence
 
@@ -119,10 +125,14 @@ This matters for Adams: weak Go syntax recall must not erase strong architecture
 ```
 learner/
 ├── profile/
-│   ├── learner.yaml
+│   ├── identity.yaml
 │   ├── experience.yaml
 │   ├── goals.yaml
 │   └── preferences.yaml
+├── personas/
+│   ├── global.yaml
+│   └── domains/
+│       └── go.yaml
 └── state/
     ├── current.yaml
     ├── competencies.yaml
@@ -180,3 +190,12 @@ This gives us an auditable chain:
 ```
 learner behavior -> evidence -> competency/gap -> content proposal -> merged revision
 ```
+
+
+## Conversational profile/persona updates
+
+Natural-language learner corrections and persona-wizard outcomes may update multiple profile/persona files as one logical transaction. Durable changes retain provenance. Competency evidence remains separate.
+
+## Representation
+
+Canonical editable profile/persona/state uses YAML validated by schemas. JSON is used for interchange where useful. Markdown/HTML are derived human views. Agent tasks normally consume compact context projections rather than full canonical state; see `REPRESENTATION.md`.
