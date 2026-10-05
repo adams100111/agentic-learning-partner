@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/adams100111/agentic-learning-partner/internal/domain"
+	"github.com/adams100111/agentic-learning-partner/internal/migrate"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 )
 
@@ -33,7 +34,10 @@ func (a App) Run(args []string) int {
 		if len(args) > 1 && args[1] == "check" {
 			return a.runWorkspaceCheck(args[2:])
 		}
-		fmt.Fprintln(a.ErrOut, "usage: alp workspace check [--workspace PATH]")
+		if len(args) > 1 && args[1] == "migrate" {
+			return a.runWorkspaceMigrate(args[2:])
+		}
+		fmt.Fprintln(a.ErrOut, "usage: alp workspace <check|migrate> [options]")
 		return 2
 	case "domain":
 		return a.runDomain(args[1:])
@@ -89,6 +93,55 @@ func (a App) runValidate(args []string) int {
 	}
 
 	fmt.Fprintf(a.Out, "valid workspace: %s\nsource: %s\nrevision: %s\n", info.Path, resolution.Source, info.Revision)
+	return 0
+}
+
+func (a App) runWorkspaceMigrate(args []string) int {
+	flags := flag.NewFlagSet("workspace migrate", flag.ContinueOnError)
+	flags.SetOutput(a.ErrOut)
+	explicit := flags.String("workspace", "", "learner workspace path")
+	dryRun := flags.Bool("dry-run", false, "show migration plan without writing")
+	if err := flags.Parse(args); err != nil {
+		return 2
+	}
+
+	resolution, info, ok := a.resolveAndInspect(*explicit)
+	if !ok {
+		return 1
+	}
+	validator, err := workspace.NewValidator()
+	if err != nil {
+		fmt.Fprintf(a.ErrOut, "initialize validation: %v\n", err)
+		return 1
+	}
+	migrator := migrate.NewWorkspaceMigrator(validator)
+
+	if *dryRun {
+		plan, err := migrator.Plan(info.Path)
+		if err != nil {
+			fmt.Fprintln(a.ErrOut, err)
+			return 1
+		}
+		fmt.Fprintf(a.Out, "workspace: %s\nsource: %s\ncurrent schema: %d\ntarget schema: %d\n", info.Path, resolution.Source, plan.Current, plan.Target)
+		for _, step := range plan.Steps {
+			fmt.Fprintf(a.Out, "%d -> %d: %s\n", step.From, step.To, step.Description)
+		}
+		if plan.Empty() {
+			fmt.Fprintln(a.Out, "migration: none")
+		}
+		return 0
+	}
+
+	plan, err := migrator.Apply(info.Path, info.Revision)
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return 1
+	}
+	if plan.Empty() {
+		fmt.Fprintln(a.Out, "workspace already uses the current schema")
+		return 0
+	}
+	fmt.Fprintf(a.Out, "migrated workspace from schema %d to %d\n", plan.Current, plan.Target)
 	return 0
 }
 
@@ -152,5 +205,5 @@ func (a App) resolveAndInspect(explicit string) (workspace.Resolution, workspace
 
 func (a App) usage() {
 	fmt.Fprintln(a.ErrOut, "usage: alp <command>")
-	fmt.Fprintln(a.ErrOut, "commands: validate, workspace check, domain list, domain info")
+	fmt.Fprintln(a.ErrOut, "commands: validate, workspace check, workspace migrate, domain list, domain info")
 }
