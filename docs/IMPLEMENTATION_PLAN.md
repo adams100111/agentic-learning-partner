@@ -2,6 +2,18 @@
 
 This document turns the product roadmap into buildable increments. Each increment should become a feature spec before code is written.
 
+## Contract status
+
+Documentation/specification now exists for:
+
+- I1 foundation contracts: `docs/specs/001-foundation-contracts.md`;
+- persona wizard: `docs/specs/002-persona-wizard.md`;
+- Go domain v0: `docs/specs/003-go-domain-v0.md`;
+- human views: `docs/specs/004-human-views.md`;
+- PyLearn read adapter: `docs/specs/005-pylearn-read-adapter.md`.
+
+The next implementation step after review is I1: schema validation + CLI skeleton, not more free-form architecture expansion.
+
 ## I1 — Repository and schema foundation
 
 Deliver:
