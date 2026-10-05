@@ -35,7 +35,19 @@ Deliver before implementation:
 - initial Go domain requirements;
 - test strategy and acceptance criteria.
 
-**Exit:** implementation can begin without unresolved foundational ownership questions.
+### Foundation artifacts now defined
+
+- product/architecture/state/source policies;
+- structured global + domain personas;
+- adaptive persona wizard;
+- canonical YAML / schema / derived-view strategy;
+- JSON Schema contracts for profile, persona, evidence, context, taxonomy, and adaptation proposals;
+- initial learner seed;
+- independent Go competency taxonomy and diagnostic contract;
+- PyLearn export/evidence mapping contract;
+- implementation specs 001-005.
+
+**Exit:** implementation can begin once the foundation PR is reviewed/merged and any material contract objections are resolved.
 
 ## Phase 1 — Portable core
 
