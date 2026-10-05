@@ -1,0 +1,22 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://agentic-learning-partner.dev/schemas/adaptation-proposal.schema.json",
+  "title":"ALP Learning Content Adaptation Proposal",
+  "type":"object",
+  "required":["schemaVersion","id","platform","contentRef","competencies","evidence","type","reason","reviewRequired"],
+  "properties":{
+    "schemaVersion":{"type":"integer","const":1},
+    "id":{"type":"string","pattern":"^adapt_[A-Za-z0-9_-]+$"},
+    "platform":{"type":"string"},
+    "contentRef":{"type":"string"},
+    "competencies":{"type":"array","items":{"type":"string"},"minItems":1},
+    "evidence":{"type":"array","items":{"type":"string","pattern":"^ev_"},"minItems":1},
+    "type":{"enum":["review-only","analogy-change","trip-wire","micro-exercise","worked-example","section-revision","lesson-restructure","new-lesson","freshness-update"]},
+    "reason":{"type":"string","minLength":1},
+    "confidence":{"enum":["low","medium","high"]},
+    "sourceVerificationRequired":{"type":"boolean"},
+    "reviewRequired":{"type":"boolean"},
+    "status":{"enum":["proposed","approved","applied","rejected"]}
+  },
+  "additionalProperties":false
+}
