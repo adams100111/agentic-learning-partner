@@ -191,3 +191,14 @@ ALP should extract/generalize:
 - authoring/review workflows.
 
 It should reference/import domain-specific material into the Go pack where appropriate, keeping PyLearn free to remain a presentation/application surface.
+
+
+## Observed profile/curriculum drift (October 2026)
+
+The first repository inspection already found useful examples of drift that ALP should detect:
+
+- PyLearn's canonical Python learner framing still describes Adams primarily as someone who repeatedly failed to get productive with Python. His current state is materially later: Python/FastAPI is now a strong but newest backend skill, though not yet expert.
+- `docs/learner/PROFILE.md` was last evaluated on 2026-06-05, so its competency snapshot should be treated as historical evidence, not current truth.
+- The Go constitution currently hard-codes .NET as the primary comparison stack. The current learner profile says PHP/Laravel is strongest, then TypeScript/NestJS, then C#/.NET, then Python/FastAPI. ALP should therefore choose analogies per concept from current learner evidence rather than rely on one permanent global ordering.
+
+These are not merely documentation cleanup issues. They demonstrate why learner identity, historical evaluation, and course-authoring policy must be separate state layers with freshness/provenance.
