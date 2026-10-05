@@ -69,7 +69,7 @@ func (a Adapter) Normalize(export Export, mapping Mapping, currentProfile map[st
 		if !ok {
 			return nil
 		}
-		stable := stableID(kind, sourceID)
+		stable := stableID(kind, sourceID, contentID)
 		if _, duplicate := seen[stable]; duplicate {
 			return nil
 		}
@@ -166,8 +166,8 @@ func DetectProfileConflicts(platform, current map[string]any) []ProfileConflict 
 	return conflicts
 }
 
-func stableID(kind, sourceID string) string {
-	sum := sha256.Sum256([]byte("pylearn|" + kind + "|" + sourceID))
+func stableID(kind, sourceID, contentID string) string {
+	sum := sha256.Sum256([]byte("pylearn|" + kind + "|" + sourceID + "|" + contentID))
 	return hex.EncodeToString(sum[:12])
 }
 
