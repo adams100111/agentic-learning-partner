@@ -131,7 +131,7 @@ func (v *Validator) validateFile(root, path, schemaName string) *ValidationIssue
 			return &ValidationIssue{
 				File:   relative(root, path),
 				Path:   pointer(validationErr.InstanceLocation),
-				Reason: validationErr.ErrorKind.LocalizedString(nil),
+				Reason: validationErr.Error(),
 			}
 		}
 		return &ValidationIssue{File: relative(root, path), Reason: err.Error()}
