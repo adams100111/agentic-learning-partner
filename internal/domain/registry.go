@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	"sort"
 
 	godomain "github.com/adams100111/agentic-learning-partner/domains/go"
 	"go.yaml.in/yaml/v3"
@@ -26,17 +27,7 @@ func (r Registry) List() []string {
 	for name := range r.loaders {
 		result = append(result, name)
 	}
-	if len(result) == 1 {
-		return result
-	}
-	// Keep output deterministic without introducing another public abstraction.
-	for i := 0; i < len(result); i++ {
-		for j := i + 1; j < len(result); j++ {
-			if result[j] < result[i] {
-				result[i], result[j] = result[j], result[i]
-			}
-		}
-	}
+	sort.Strings(result)
 	return result
 }
 
@@ -61,4 +52,19 @@ func (r Registry) Load(name string) (Pack, error) {
 		return Pack{}, fmt.Errorf("domain pack %q declares domain %q", name, pack.Domain)
 	}
 	return pack, nil
+}
+
+func (r Registry) CheckCompatibility(name, versionRange string) error {
+	pack, err := r.Load(name)
+	if err != nil {
+		return err
+	}
+	ok, err := pack.Supports(versionRange)
+	if err != nil {
+		return fmt.Errorf("domain pack %q compatibility: %w", name, err)
+	}
+	if !ok {
+		return fmt.Errorf("domain pack %q version %s does not satisfy %q", name, pack.Version, versionRange)
+	}
+	return nil
 }
