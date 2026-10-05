@@ -1,0 +1,24 @@
+schemaVersion: 1
+domain: go
+status: needs-diagnostic
+
+priorExposure:
+  - net/http
+  - chi
+  - postgres
+  - pgx
+  - sqlx-style-tooling
+  - token-authentication
+  - handlers-and-middleware
+  - structs-and-interfaces
+  - basic-goroutines
+  - early-concurrency
+
+selfReport:
+  recall: very-rusty
+  productionExperience: false
+
+rules:
+  - Treat prior exposure as historical evidence, not current competence.
+  - Do not promote competencies until diagnostic or project evidence exists.
+  - Do not restart with generic beginner programming instruction.
