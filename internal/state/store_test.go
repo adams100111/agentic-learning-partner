@@ -227,6 +227,102 @@ func TestProductionReadyRequiresGate(t *testing.T) {
 	}
 }
 
+
+func TestNegativeEvidenceRequiresClassification(t *testing.T) {
+	root, revision := makeStateWorkspace(t)
+	validator, err := workspace.NewValidator()
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := Store{
+		Root:      root,
+		Catalog:   fakeCatalog{"go|go.runtime.context": true},
+		Validator: validator,
+	}
+	_, err = store.AppendEvidence(revision, Evidence{
+		SchemaVersion: 1,
+		ID:            "ev_negative",
+		RecordedAt:    "2026-10-06T00:00:00Z",
+		Domain:        "go",
+		Competencies:  []string{"go.runtime.context"},
+		Type:          "exercise",
+		Source:        EvidenceSource{Kind: "diagnostic"},
+		Observation:   "Failed cancellation exercise.",
+		Result:        "fail",
+		Strength:      "moderate",
+	})
+	if err == nil || !strings.Contains(err.Error(), "failureClassification") {
+		t.Fatalf("error = %v", err)
+	}
+}
+
+func TestAssessmentCannotSupersedeDifferentCompetency(t *testing.T) {
+	root, revision := makeStateWorkspace(t)
+	validator, err := workspace.NewValidator()
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := Store{
+		Root: root,
+		Catalog: fakeCatalog{
+			"go|go.runtime.context":      true,
+			"go|go.concurrency.channels": true,
+		},
+		Validator: validator,
+	}
+
+	if _, err := store.AppendEvidence(revision, Evidence{
+		SchemaVersion: 1,
+		ID:            "ev_multi",
+		RecordedAt:    "2026-10-06T00:00:00Z",
+		Domain:        "go",
+		Competencies:  []string{"go.runtime.context", "go.concurrency.channels"},
+		Type:          "exercise",
+		Source:        EvidenceSource{Kind: "diagnostic"},
+		Observation:   "Multi-competency exercise.",
+		Result:        "pass",
+		Strength:      "strong",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := store.AppendAssessment(revision, Assessment{
+		SchemaVersion: 1,
+		ID:            "asmt_channels",
+		RecordedAt:    "2026-10-06T00:01:00Z",
+		Domain:        "go",
+		Competency:    "go.concurrency.channels",
+		Evidence:      []string{"ev_multi"},
+		Rubric:        RubricRef{ID: "go.concurrency.channels", Version: "1"},
+		Assessor:      Assessor{Type: "agent", ID: "test"},
+		Judgment:      Judgment{Level: "functional"},
+		Confidence:    "high",
+		Rationale:     "Channel reasoning.",
+		Status:        "proposed",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = store.AppendAssessment(revision, Assessment{
+		SchemaVersion: 1,
+		ID:            "asmt_context_bad_supersession",
+		RecordedAt:    "2026-10-06T00:02:00Z",
+		Domain:        "go",
+		Competency:    "go.runtime.context",
+		Evidence:      []string{"ev_multi"},
+		Rubric:        RubricRef{ID: "go.runtime.context", Version: "1"},
+		Assessor:      Assessor{Type: "agent", ID: "test"},
+		Judgment:      Judgment{Level: "functional"},
+		Confidence:    "high",
+		Rationale:     "Context reasoning.",
+		Status:        "proposed",
+		Supersedes:    []string{"asmt_channels"},
+	})
+	if err == nil || !strings.Contains(err.Error(), "cannot supersede") {
+		t.Fatalf("error = %v", err)
+	}
+}
+
 func makeStateWorkspace(t *testing.T) (string, string) {
 	t.Helper()
 	root := t.TempDir()
