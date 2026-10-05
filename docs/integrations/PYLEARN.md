@@ -126,7 +126,7 @@ From PyLearn's database:
 - reflections;
 - optionally bookmarks.
 
-The initial implementation can use an explicit export command/file rather than direct database coupling. This keeps ALP portable and makes the adapter testable.
+The initial implementation uses an explicit versioned export command/file rather than direct database coupling. This keeps ALP portable and makes the adapter testable. See [`PYLEARN_EXPORT.md`](PYLEARN_EXPORT.md) for signal/evidence semantics.
 
 ## Write-side integration
 
