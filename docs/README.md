@@ -4,12 +4,15 @@ Read in this order:
 
 1. [Product](PRODUCT.md) — what ALP is and is not.
 2. [Architecture](ARCHITECTURE.md) — component boundaries.
-3. [State Model](STATE_MODEL.md) — profile, evidence, projections, mutation rules.
-4. [Roadmap](ROADMAP.md) — delivery sequence.
-5. [Source Policy](SOURCE_POLICY.md) — authority, provenance, and freshness rules.
-6. [PyLearn Integration](integrations/PYLEARN.md) — first real use case.
-7. [Domain Packs](DOMAIN_PACKS.md) — Go now, Rust later.
-8. [ADRs](adr/README.md) — decisions and rationale.
+3. [Personas](PERSONAS.md) — global/domain persona model and conversational updates.
+4. [Persona Wizard](PERSONA_WIZARD.md) — adaptive discovery / grill-with-docs workflow.
+5. [State Model](STATE_MODEL.md) — profile, evidence, projections, mutation rules.
+6. [Representation](REPRESENTATION.md) — YAML/JSON/Markdown/HTML and token-efficiency rules.
+7. [Roadmap](ROADMAP.md) — delivery sequence.
+8. [Source Policy](SOURCE_POLICY.md) — authority, provenance, and freshness rules.
+9. [PyLearn Integration](integrations/PYLEARN.md) — first real use case.
+10. [Domain Packs](DOMAIN_PACKS.md) — Go now, Rust later.
+11. [ADRs](adr/README.md) — decisions and rationale.
 
 Implementation-specific specifications should be added under `docs/specs/` before substantial features are built.
 
