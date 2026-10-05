@@ -22,14 +22,15 @@ ALP must be able to:
 Deliver before implementation:
 
 - architecture and terminology;
-- learner/evidence/state model;
+- learner/evidence/assessment/state model;
 - global/domain persona model;
 - persona discovery/refinement workflow;
 - canonical/derived representation and token-context policy;
 - domain-pack contract;
 - platform-integration contract;
 - state mutation rules;
-- Git ownership and synchronization model;
+- separate engine/workspace Git ownership and synchronization model;
+- multi-agent optimistic concurrency model;
 - initial ADR set;
 - PyLearn integration analysis;
 - initial Go domain requirements;
@@ -58,7 +59,7 @@ Implement the harness-neutral core:
 - learner profile/persona schemas;
 - persona wizard/refinement skill;
 - context projection builder;
-- evidence schema;
+- evidence and assessment schemas;
 - competency schema;
 - projection/state schema;
 - deterministic state validation/rebuild CLI;
