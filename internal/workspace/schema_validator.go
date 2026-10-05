@@ -40,23 +40,29 @@ func NewValidator() (*Validator, error) {
 		return nil, fmt.Errorf("list embedded schemas: %w", err)
 	}
 
+	resourceIDs := make(map[string]string, len(entries))
 	for _, name := range entries {
 		data, err := alpschemas.Files.ReadFile(name)
 		if err != nil {
 			return nil, fmt.Errorf("read embedded schema %s: %w", name, err)
 		}
-		var document any
+		var document map[string]any
 		if err := json.Unmarshal(data, &document); err != nil {
 			return nil, fmt.Errorf("parse embedded schema %s: %w", name, err)
 		}
-		if err := compiler.AddResource(name, document); err != nil {
+		id, ok := document["$id"].(string)
+		if !ok || id == "" {
+			return nil, fmt.Errorf("embedded schema %s: $id is required", name)
+		}
+		if err := compiler.AddResource(id, document); err != nil {
 			return nil, fmt.Errorf("register embedded schema %s: %w", name, err)
 		}
+		resourceIDs[name] = id
 	}
 
 	compiled := make(map[string]*jsonschema.Schema, len(entries))
 	for _, name := range entries {
-		schema, err := compiler.Compile(name)
+		schema, err := compiler.Compile(resourceIDs[name])
 		if err != nil {
 			return nil, fmt.Errorf("compile embedded schema %s: %w", name, err)
 		}
