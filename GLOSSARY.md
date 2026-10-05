@@ -61,3 +61,16 @@ An evidence-linked proposal to alter learning content or sequencing. It is not a
 ## Canonical State
 
 Git-synchronized learner/profile/persona/evidence data from which derived views can be rebuilt. Generated Markdown/HTML views are not canonical state.
+
+
+## Learner Workspace
+
+A separate private workspace/repository containing one learner's profile, personas, evidence, assessments, projections, review state, and sessions. It has an independent lifecycle from the reusable ALP engine.
+
+## Assessment
+
+A durable semantic judgment about what one or more evidence records demonstrate for a competency under a specific rubric version. Assessments sit between evidence and deterministic competency projections.
+
+## Workspace Revision
+
+The canonical Git revision/commit that an ALP state mutation was computed against. It supports optimistic concurrency across multiple agents.
