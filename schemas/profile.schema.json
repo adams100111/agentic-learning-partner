@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/profile.schema.json",
+  "title": "ALP Learner Profile",
+  "type": "object",
+  "required": ["schemaVersion","learner","experience","goals","preferences"],
+  "properties": {
+    "schemaVersion": {"type":"integer","const":1},
+    "learner": {"type":"object","required":["id"],"properties":{"id":{"type":"string","minLength":1},"displayName":{"type":"string"},"professionalLevel":{"type":"string"},"roles":{"type":"array","items":{"type":"string"},"uniqueItems":true}},"additionalProperties":false},
+    "experience": {"type":"object","additionalProperties":{"type":"object","required":["level"],"properties":{"level":{"enum":["novice","functional","strong","expert"]},"relativeRank":{"type":"integer","minimum":1},"frameworks":{"type":"object","additionalProperties":{"enum":["novice","functional","strong","expert"]}},"notes":{"type":"string"},"newest":{"type":"boolean"},"provenance":{"$ref":"#/$defs/provenance"}},"additionalProperties":false}},
+    "goals": {"type":"array","items":{"type":"object","required":["id","statement"],"properties":{"id":{"type":"string"},"statement":{"type":"string"},"priority":{"enum":["low","medium","high","critical"]},"provenance":{"$ref":"#/$defs/provenance"}},"additionalProperties":false}},
+    "preferences": {"type":"object","additionalProperties":true}
+  },
+  "$defs": {"provenance":{"type":"object","required":["sourceType"],"properties":{"sourceType":{"enum":["learner-stated","observed","evaluated","imported","agent-inferred","agent-proposed"]},"sourceRef":{"type":"string"},"observedAt":{"type":"string","format":"date-time"},"confidence":{"enum":["low","medium","high"]}},"additionalProperties":false}},
+  "additionalProperties": false
+}

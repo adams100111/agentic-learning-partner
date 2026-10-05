@@ -1,0 +1,24 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://agentic-learning-partner.dev/schemas/assessment.schema.json",
+  "title":"ALP Assessment Record",
+  "type":"object",
+  "required":["schemaVersion","id","recordedAt","domain","competency","evidence","rubric","assessor","judgment","confidence","rationale","status"],
+  "properties":{
+    "schemaVersion":{"type":"integer","const":1},
+    "id":{"type":"string","pattern":"^asmt_[A-Za-z0-9_-]+$"},
+    "recordedAt":{"type":"string","format":"date-time"},
+    "domain":{"type":"string","minLength":1},
+    "competency":{"type":"string","minLength":1},
+    "evidence":{"type":"array","items":{"type":"string","pattern":"^ev_"},"minItems":1,"uniqueItems":true},
+    "rubric":{"type":"object","required":["id","version"],"properties":{"id":{"type":"string","minLength":1},"version":{"type":"string","minLength":1},"domainPackVersion":{"type":"string"}},"additionalProperties":false},
+    "assessor":{"type":"object","required":["type","id"],"properties":{"type":{"enum":["agent","human","deterministic"]},"id":{"type":"string","minLength":1},"model":{"type":"string"},"harness":{"type":"string"}},"additionalProperties":false},
+    "judgment":{"type":"object","required":["level"],"properties":{"level":{"enum":["unknown","rusty","functional","strong","production-ready"]},"direction":{"enum":["support","contradict","maintain","downgrade","promote"]},"gaps":{"type":"array","items":{"type":"string"},"uniqueItems":true}},"additionalProperties":false},
+    "confidence":{"enum":["low","medium","high"]},
+    "rationale":{"type":"string","minLength":1},
+    "status":{"enum":["proposed","accepted","rejected","superseded"]},
+    "supersedes":{"type":"array","items":{"type":"string","pattern":"^asmt_"},"uniqueItems":true},
+    "workspaceRevision":{"type":"string"}
+  },
+  "additionalProperties":false
+}

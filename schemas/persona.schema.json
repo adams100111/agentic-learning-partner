@@ -1,0 +1,17 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://agentic-learning-partner.dev/schemas/persona.schema.json",
+  "title":"ALP Persona Layer",
+  "type":"object",
+  "required":["schemaVersion","scope","teaching"],
+  "properties":{
+    "schemaVersion":{"type":"integer","const":1},
+    "scope":{"enum":["global","domain"]},
+    "domain":{"type":["string","null"]},
+    "teaching":{"type":"object","properties":{"pace":{"enum":["gentle","standard","senior-dense"]},"preferredActivityTypes":{"type":"array","items":{"type":"string"},"uniqueItems":true},"avoid":{"type":"array","items":{"type":"string"},"uniqueItems":true},"emphasis":{"type":"array","items":{"type":"string"},"uniqueItems":true},"feedback":{"type":"array","items":{"type":"string"},"uniqueItems":true}},"additionalProperties":false},
+    "analogyPolicy":{"type":"object","properties":{"defaultPriority":{"type":"array","items":{"type":"string"},"uniqueItems":true},"semanticOverrides":{"type":"object","additionalProperties":{"type":"object","required":["prefer"],"properties":{"prefer":{"type":"array","items":{"type":"string"},"minItems":1},"reason":{"type":"string"}},"additionalProperties":false}}},"additionalProperties":false},
+    "risks":{"type":"array","items":{"type":"string"},"uniqueItems":true},
+    "provenance":{"type":"array","items":{"$ref":"profile.schema.json#/$defs/provenance"}}
+  },
+  "additionalProperties":false
+}

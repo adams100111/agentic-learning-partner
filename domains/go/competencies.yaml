@@ -1,0 +1,373 @@
+schemaVersion: 1
+domain: go
+version: "0.1.0"
+verifiedAgainst:
+  goMajor: "1.27"
+  goReleaseDate: "2026-08-19"
+  verifiedAt: "2026-10-05"
+  officialReleaseNotes: "https://go.dev/doc/go1.27"
+  releaseHistory: "https://go.dev/doc/devel/release"
+
+competencies:
+  # Language recall and semantics
+  - id: go.language.syntax
+    name: Core syntax recall
+    dimension: recall
+    description: Read and write ordinary Go syntax without the syntax itself blocking engineering reasoning.
+    freshnessClass: stable-concept
+
+  - id: go.language.types
+    name: Values, types, zero values, conversions
+    dimension: mental-model
+    description: Reason correctly about Go values, zero values, conversions, named types, and assignment.
+    prerequisites: [go.language.syntax]
+    freshnessClass: stable-concept
+
+  - id: go.language.pointers
+    name: Pointers and receiver semantics
+    dimension: mental-model
+    description: Choose pointer/value semantics and receiver forms intentionally, including mutation, method sets, and copying.
+    prerequisites: [go.language.types]
+    freshnessClass: stable-concept
+
+  - id: go.language.slices
+    name: Slices and backing arrays
+    dimension: mental-model
+    description: Reason about len/cap, append, aliasing, nil/empty slices, copying, and mutation through shared backing arrays.
+    prerequisites: [go.language.types]
+    freshnessClass: stable-concept
+
+  - id: go.language.maps
+    name: Maps
+    dimension: mental-model
+    description: Use maps safely and understand zero values, membership, iteration properties, and concurrency limitations.
+    prerequisites: [go.language.types]
+    freshnessClass: stable-concept
+
+  - id: go.language.structs-methods
+    name: Structs, embedding, and methods
+    dimension: idiomatic
+    description: Model data/behavior idiomatically with structs, embedding when justified, and methods without class-oriented translation.
+    prerequisites: [go.language.types, go.language.pointers]
+    freshnessClass: version-sensitive-language-runtime
+
+  - id: go.language.interfaces
+    name: Interfaces and implicit satisfaction
+    dimension: idiomatic
+    description: Design small consumer-owned interfaces, reason about method sets/type assertions, and avoid speculative abstractions.
+    prerequisites: [go.language.structs-methods]
+    sharedScaffolds: [shared.architecture.dependency-direction]
+    freshnessClass: stable-concept
+
+  - id: go.language.errors
+    name: Errors as values
+    dimension: idiomatic
+    description: Return, wrap, classify, join, inspect, translate, and log errors at appropriate boundaries.
+    prerequisites: [go.language.syntax]
+    freshnessClass: version-sensitive-language-runtime
+
+  - id: go.language.defer-resource-lifetime
+    name: defer and resource lifetime
+    dimension: idiomatic
+    description: Use defer correctly for cleanup and understand evaluation/order/resource lifetime implications.
+    prerequisites: [go.language.syntax]
+    freshnessClass: stable-concept
+
+  - id: go.language.generics
+    name: Generics and constraints
+    dimension: idiomatic
+    description: Use generics where they reduce duplication without replacing simpler concrete code or interfaces.
+    prerequisites: [go.language.interfaces]
+    freshnessClass: version-sensitive-language-runtime
+
+  - id: go.language.iteration-modern
+    name: Modern iteration features
+    dimension: idiomatic
+    description: Understand current range/iterator capabilities without forcing them where ordinary loops are clearer.
+    prerequisites: [go.language.syntax]
+    freshnessClass: version-sensitive-language-runtime
+
+  - id: go.language.packages-modules
+    name: Packages and modules
+    dimension: tooling
+    description: Organize packages for cohesion and dependency direction; use modules/workspaces/tools without framework-style module ceremony.
+    prerequisites: [go.language.syntax]
+    sharedScaffolds: [shared.architecture.modularity]
+    freshnessClass: version-sensitive-language-runtime
+
+  # Runtime / concurrency
+  - id: go.runtime.memory-allocation
+    name: Allocation, escape, GC fundamentals
+    dimension: runtime
+    description: Reason about stack/heap escape, allocation costs, garbage collection, and when memory details matter.
+    prerequisites: [go.language.types, go.language.pointers]
+    freshnessClass: version-sensitive-language-runtime
+
+  - id: go.runtime.scheduler
+    name: Goroutines and scheduler mental model
+    dimension: runtime
+    description: Understand goroutine scheduling sufficiently to reason about concurrency without treating goroutines as threads or promises.
+    prerequisites: [go.language.syntax]
+    freshnessClass: version-sensitive-language-runtime
+
+  - id: go.concurrency.goroutines
+    name: Goroutine lifecycle and ownership
+    dimension: runtime
+    description: Start goroutines with explicit ownership, termination, error handling, and resource lifetime.
+    prerequisites: [go.runtime.scheduler]
+    sharedScaffolds: [shared.concurrency.lifecycle]
+    freshnessClass: stable-concept
+
+  - id: go.concurrency.channels
+    name: Channels and ownership
+    dimension: runtime
+    description: Use buffered/unbuffered channels, close semantics, directions, and ownership intentionally.
+    prerequisites: [go.concurrency.goroutines]
+    sharedScaffolds: [shared.concurrency.communication]
+    freshnessClass: stable-concept
+
+  - id: go.concurrency.select
+    name: select and coordination
+    dimension: runtime
+    description: Coordinate channel operations, cancellation, timers, and multiplexed work with select.
+    prerequisites: [go.concurrency.channels]
+    freshnessClass: stable-concept
+
+  - id: go.runtime.context
+    name: Context propagation and cancellation
+    dimension: runtime
+    description: Propagate request lifetimes, deadlines, cancellation, and scoped values correctly across APIs and goroutines.
+    prerequisites: [go.concurrency.goroutines]
+    sharedScaffolds: [shared.concurrency.cancellation]
+    freshnessClass: stable-concept
+
+  - id: go.concurrency.sync
+    name: Mutexes, WaitGroups, Once, atomics
+    dimension: runtime
+    description: Select synchronization primitives based on ownership/invariants instead of defaulting to channels.
+    prerequisites: [go.concurrency.goroutines]
+    freshnessClass: version-sensitive-language-runtime
+
+  - id: go.concurrency.bounded
+    name: Bounded concurrency and backpressure
+    dimension: runtime
+    description: Build worker/semaphore/errgroup patterns that bound concurrency and propagate cancellation/errors.
+    prerequisites: [go.concurrency.goroutines, go.runtime.context, go.concurrency.sync]
+    sharedScaffolds: [shared.concurrency.backpressure]
+    freshnessClass: ecosystem-choice
+
+  - id: go.concurrency.races-deadlocks-leaks
+    name: Race, deadlock, and leak diagnosis
+    dimension: runtime
+    description: Detect and fix data races, deadlocks, goroutine leaks, and shutdown failures using current Go tooling.
+    prerequisites: [go.concurrency.channels, go.concurrency.sync, go.runtime.context]
+    sharedScaffolds: [shared.concurrency.race-conditions, shared.concurrency.deadlocks]
+    productionReadyRequires:
+      - independent race-detector debugging evidence
+      - independent goroutine-leak diagnosis evidence
+    freshnessClass: version-sensitive-language-runtime
+
+  - id: go.concurrency.structured
+    name: Structured concurrency and error propagation
+    dimension: idiomatic
+    description: Structure concurrent work so child lifetimes, cancellation, boundedness, and errors are owned by a clear scope.
+    prerequisites: [go.runtime.context, go.concurrency.bounded]
+    freshnessClass: ecosystem-choice
+
+  # Backend
+  - id: go.backend.http-stdlib
+    name: net/http server/client fundamentals
+    dimension: backend
+    description: Build correct HTTP servers/clients with explicit timeouts, request lifetimes, body handling, and stdlib contracts.
+    prerequisites: [go.runtime.context, go.language.errors]
+    sharedScaffolds: [shared.http]
+    freshnessClass: version-sensitive-language-runtime
+
+  - id: go.backend.routing-middleware
+    name: Routing and middleware
+    dimension: backend
+    description: Compose routers/middleware while preserving net/http semantics and avoiding framework-driven architecture.
+    prerequisites: [go.backend.http-stdlib]
+    freshnessClass: ecosystem-choice
+
+  - id: go.backend.validation-contracts
+    name: Request validation and API contracts
+    dimension: backend
+    description: Validate boundaries, model request/response contracts, and separate wire types from domain behavior where useful.
+    prerequisites: [go.backend.http-stdlib]
+    sharedScaffolds: [shared.api-design]
+    freshnessClass: ecosystem-choice
+
+  - id: go.backend.auth-security
+    name: Authentication and authorization
+    dimension: backend
+    description: Implement current secure auth/session/token/OIDC patterns with explicit authorization boundaries.
+    prerequisites: [go.backend.http-stdlib, go.language.errors]
+    sharedScaffolds: [shared.security.authentication, shared.security.authorization]
+    productionReadyRequires:
+      - current-source security verification
+      - tested failure-path evidence
+    freshnessClass: security-sensitive
+
+  # Data
+  - id: go.database.sql
+    name: SQL-first persistence
+    dimension: database
+    description: Work comfortably with SQL, scanning, nullability, query design, and explicit persistence boundaries.
+    prerequisites: [go.language.errors]
+    sharedScaffolds: [shared.database.sql]
+    freshnessClass: stable-concept
+
+  - id: go.database.pooling
+    name: PostgreSQL pooling and cancellation
+    dimension: database
+    description: Configure and reason about pools, request cancellation, resource limits, and query lifetimes.
+    prerequisites: [go.database.sql, go.runtime.context]
+    freshnessClass: ecosystem-choice
+
+  - id: go.database.transactions
+    name: Transaction ownership
+    dimension: database
+    description: Define transaction boundaries, isolation/locking behavior, error handling, and composable query execution without repository ceremony.
+    prerequisites: [go.database.pooling]
+    sharedScaffolds: [shared.database.transactions]
+    freshnessClass: ecosystem-choice
+
+  - id: go.database.typed-queries
+    name: Typed SQL/code generation
+    dimension: database
+    description: Use typed query generation where appropriate while retaining SQL ownership and clean transaction composition.
+    prerequisites: [go.database.sql]
+    freshnessClass: ecosystem-choice
+
+  # Testing / verification
+  - id: go.testing.unit
+    name: Unit and table-driven testing
+    dimension: testing
+    description: Write focused tests/subtests/helpers with appropriate boundaries and without mock-heavy design.
+    prerequisites: [go.language.syntax]
+    freshnessClass: stable-concept
+
+  - id: go.testing.http
+    name: HTTP testing
+    dimension: testing
+    description: Test handlers/servers/clients through net/http/httptest at useful boundaries.
+    prerequisites: [go.backend.http-stdlib, go.testing.unit]
+    freshnessClass: version-sensitive-language-runtime
+
+  - id: go.testing.integration
+    name: Database/integration testing
+    dimension: testing
+    description: Test real infrastructure boundaries with reproducible fixtures/containers where mocks would hide behavior.
+    prerequisites: [go.database.sql, go.testing.unit]
+    sharedScaffolds: [shared.testing.integration]
+    freshnessClass: ecosystem-choice
+
+  - id: go.testing.race-fuzz-bench
+    name: Race, fuzz, and benchmark workflows
+    dimension: testing
+    description: Use race testing, fuzzing, and benchmarks when the risk or performance question justifies them.
+    prerequisites: [go.testing.unit, go.concurrency.races-deadlocks-leaks]
+    freshnessClass: version-sensitive-language-runtime
+
+  # Architecture / production
+  - id: go.architecture.packages
+    name: Package boundaries and dependency direction
+    dimension: architecture
+    description: Build cohesive packages with explicit dependency direction and appropriate use of internal packages.
+    prerequisites: [go.language.packages-modules, go.language.interfaces]
+    sharedScaffolds: [shared.architecture.modularity, shared.architecture.dependency-direction]
+    freshnessClass: stable-concept
+
+  - id: go.architecture.abstraction
+    name: Go-appropriate abstraction judgment
+    dimension: architecture
+    description: Distinguish architecturally sound abstractions from unnecessary interfaces/layers imported from framework-heavy stacks.
+    prerequisites: [go.architecture.packages]
+    sharedScaffolds: [shared.architecture.abstraction]
+    productionReadyRequires:
+      - independent design-review evidence
+      - justification for interface and layer ownership
+    freshnessClass: stable-concept
+
+  - id: go.production.configuration
+    name: Configuration and secrets boundaries
+    dimension: production
+    description: Configure long-lived services explicitly without import-time surprises or secret leakage.
+    freshnessClass: ecosystem-choice
+
+  - id: go.production.lifecycle
+    name: Startup, readiness, and graceful shutdown
+    dimension: production
+    description: Own process lifecycle, signals, server shutdown, worker draining, dependency teardown, readiness, and health.
+    prerequisites: [go.runtime.context, go.concurrency.structured, go.backend.http-stdlib]
+    productionReadyRequires:
+      - tested shutdown evidence
+    freshnessClass: stable-concept
+
+  - id: go.production.observability
+    name: Logs, metrics, traces
+    dimension: production
+    description: Instrument services using current structured logging and OpenTelemetry/metrics practices with useful semantic context.
+    prerequisites: [go.backend.http-stdlib]
+    sharedScaffolds: [shared.observability]
+    freshnessClass: ecosystem-choice
+
+  - id: go.production.reliability
+    name: Timeouts, retries, idempotency, limits
+    dimension: production
+    description: Apply reliability mechanisms at the correct ownership boundary while avoiding retry storms and unbounded work.
+    prerequisites: [go.runtime.context, go.backend.http-stdlib]
+    sharedScaffolds: [shared.distributed-systems.reliability]
+    freshnessClass: ecosystem-choice
+
+  - id: go.performance.pprof
+    name: Profiling with pprof and runtime tools
+    dimension: performance
+    description: Use profiles and runtime diagnostics to locate CPU, allocation, blocking, and goroutine problems before optimizing.
+    prerequisites: [go.runtime.memory-allocation]
+    productionReadyRequires:
+      - independent profile-driven diagnosis evidence
+    freshnessClass: version-sensitive-language-runtime
+
+  - id: go.performance.benchmarking
+    name: Measurement-driven optimization
+    dimension: performance
+    description: Design trustworthy benchmarks, compare changes, and avoid optimization without evidence.
+    prerequisites: [go.testing.race-fuzz-bench, go.performance.pprof]
+    freshnessClass: version-sensitive-language-runtime
+
+  - id: go.tooling.build-static-analysis
+    name: Build, vet, static analysis, vulnerability workflow
+    dimension: tooling
+    description: Use current Go build/test/vet/tool/vulnerability workflows and interpret their results.
+    prerequisites: [go.language.packages-modules]
+    freshnessClass: version-sensitive-language-runtime
+
+  - id: go.operations.container
+    name: Containerized Go service delivery
+    dimension: production
+    description: Build minimal, secure, observable container images and understand Go-specific binary/runtime implications.
+    prerequisites: [go.production.lifecycle, go.tooling.build-static-analysis]
+    sharedScaffolds: [shared.containers]
+    freshnessClass: operational-platform
+
+  - id: go.operations.local-orchestration
+    name: Local orchestration and reproducible environments
+    dimension: tooling
+    description: Integrate Go services into reproducible local environments and polyglot orchestration without hiding Go runtime behavior.
+    prerequisites: [go.operations.container]
+    sharedScaffolds: [shared.dev-environments]
+    freshnessClass: operational-platform
+
+  - id: go.operations.deployment
+    name: Production deployment and operations
+    dimension: production
+    description: Deploy and operate Go services on an appropriate target such as a VPS/Dokploy or AWS based on workload constraints.
+    prerequisites: [go.operations.container, go.production.observability, go.production.reliability]
+    sharedScaffolds: [shared.cloud, shared.deployment]
+    productionReadyRequires:
+      - deployed-service evidence
+      - observability evidence
+      - failure/recovery reasoning
+    freshnessClass: operational-platform
