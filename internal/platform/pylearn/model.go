@@ -1,5 +1,7 @@
 package pylearn
 
+import "github.com/adams100111/agentic-learning-partner/internal/state"
+
 type Export struct {
 	SchemaVersion  int             `yaml:"schemaVersion" json:"schemaVersion"`
 	ExportedAt     string          `yaml:"exportedAt" json:"exportedAt"`
@@ -91,5 +93,5 @@ type Result struct {
 
 type NormalizedEvidence struct {
 	StableKey string
-	Record    any
+	Record    state.Evidence
 }
