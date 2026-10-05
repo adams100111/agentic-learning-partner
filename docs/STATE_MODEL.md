@@ -4,7 +4,7 @@
 
 A learner-state system becomes unreliable when an agent can simply write "channels: strong". ALP therefore persists observations before conclusions.
 
-## Four categories
+## Five categories
 
 ### Profile
 
@@ -58,6 +58,12 @@ Each evidence record must contain:
 
 Evidence is never silently deleted.
 
+### Assessment
+
+A versioned semantic judgment that links evidence to a competency under a specific rubric.
+
+Assessments are canonical and append-only. They record the evidence IDs, rubric/domain-pack version, assessor, judgment, confidence, rationale, and status. A later assessment may supersede an earlier one without rewriting history.
+
 ### Projections
 
 Derived current views:
@@ -71,7 +77,7 @@ Derived current views:
 - review due dates;
 - next recommended activity.
 
-Projections are rebuildable from evidence + rules.
+Projections are rebuildable deterministically from accepted assessments + projection rules. Evidence alone is not sufficient because interpreting evidence is a semantic judgment.
 
 ## Competency levels
 
@@ -120,7 +126,9 @@ Example domain dimensions:
 
 This matters for Adams: weak Go syntax recall must not erase strong architecture reasoning.
 
-## Canonical state layout
+## Canonical learner-workspace layout
+
+The following lives in the separate learner workspace, not the reusable ALP engine repository.
 
 ```
 learner/
@@ -142,13 +150,15 @@ learner/
     │       └── roadmap.yaml
     ├── evidence/
     │   └── <uuid>.yaml
+    ├── assessments/
+    │   └── <uuid>.yaml
     └── sessions/
         └── <timestamp>.md
 ```
 
 ## State mutation protocol
 
-Only the state-update workflow may mutate canonical projections.
+Only the state-update workflow may mutate derived projections. Canonical evidence/assessments are appended through validated transactions.
 
 Other skills:
 
@@ -199,3 +209,14 @@ Natural-language learner corrections and persona-wizard outcomes may update mult
 ## Representation
 
 Canonical editable profile/persona/state uses YAML validated by schemas. JSON is used for interchange where useful. Markdown/HTML are derived human views. Agent tasks normally consume compact context projections rather than full canonical state; see `REPRESENTATION.md`.
+
+
+## Multi-agent concurrency
+
+Canonical evidence and assessments use collision-resistant sortable IDs and are merge-friendly.
+
+Every mutation is computed against an expected workspace Git revision. A stale writer must re-read the new head before retrying. Generated projections are never manually merged; they are regenerated after canonical histories are reconciled.
+
+## Corrections
+
+Canonical history is not silently rewritten. Incorrect imported evidence or assessments are corrected through explicit correction/supersession records. The exact correction schema is defined before implementation.
