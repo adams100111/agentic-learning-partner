@@ -2,6 +2,8 @@
 
 Repository: `adams100111/pylearn`
 
+> **Authority boundary:** PyLearn is an integration/validation target and a source of learner evidence/candidate content. It is **not** ALP's technical source of truth. Version-sensitive claims and ecosystem recommendations must be re-verified against current upstream sources per [`../SOURCE_POLICY.md`](../SOURCE_POLICY.md).
+
 ## Why PyLearn is an excellent first use case
 
 PyLearn is already much more than static course content. It contains several pieces of the learning system ALP intends to generalize:
