@@ -128,6 +128,16 @@ pylearn
 
 ALP operates against a configured learner workspace. Synthetic fixtures/examples may live in the engine repository; real learner state must not.
 
+## Engine / workspace separation
+
+The reusable engine/plugin does not own personal learner state.
+
+- `agentic-learning-partner` contains reusable engine code, schemas, skills, domain packs, rubrics, and adapters.
+- a learner workspace such as `agentic-learning-state` contains private profile/persona/evidence/assessment/state.
+- learning platforms such as PyLearn remain separate systems.
+
+See `WORKSPACE.md` and ADR-0009.
+
 ## Persistence
 
 Git is the durable synchronization and audit mechanism.
@@ -176,6 +186,8 @@ Deterministic code should:
 - produce machine-readable status.
 
 Principle: **models reason; deterministic tooling maintains truth.**
+
+Semantic competency judgment is explicitly persisted as an **assessment**. Projection rebuild does not ask an LLM to reinterpret raw evidence. It deterministically folds accepted, versioned assessments.
 
 ## Persona and context boundary
 
