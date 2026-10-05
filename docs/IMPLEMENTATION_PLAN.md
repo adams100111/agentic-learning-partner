@@ -8,18 +8,22 @@ Deliver:
 
 - portable `plugin.json` skeleton;
 - Go module for the ALP CLI;
-- `schemas/` for profile, evidence, competency taxonomy, projection, adaptation proposal;
+- `schemas/` for profile, persona, evidence, competency taxonomy, projection, context bundle, adaptation proposal;
 - fixtures;
 - schema validation tests;
 - docs CI.
 
-No learner inference yet.
+No learner inference yet. Canonical YAML + schema validation is established here; HTML/Markdown views remain derived.
 
-## I2 — Evidence store and projections
+## I2 — Persona, context, evidence store and projections
 
 Deliver CLI capabilities:
 
 - `alp validate`;
+- `alp persona show`;
+- `alp persona diff`;
+- `alp context build`;
+- `alp context inspect`;
 - `alp evidence add`;
 - `alp state rebuild`;
 - `alp status`.
@@ -36,13 +40,15 @@ Properties:
 
 Initial portable skills:
 
+- `discover-learner-persona`;
+- `refine-learner-persona`;
 - `assess-learning`;
 - `plan-learning`;
 - `record-learning-evidence`;
 - `review-learning-progress`;
 - `adapt-learning-content`.
 
-Keep instructions goal-oriented and delegate state mutation to CLI.
+Keep instructions goal-oriented and delegate state mutation to CLI. Persona discovery uses adaptive rounds, inspects existing docs/repositories first, asks only high-information follow-ups, and writes structured multi-file updates with provenance.
 
 ## I4 — Go pack v0
 
