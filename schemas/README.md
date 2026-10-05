@@ -7,6 +7,7 @@ Current v1 contracts:
 - `profile.schema.json`
 - `persona.schema.json`
 - `evidence.schema.json`
+- `assessment.schema.json`
 - `context-bundle.schema.json`
 - `competency-taxonomy.schema.json`
 - `adaptation-proposal.schema.json`
