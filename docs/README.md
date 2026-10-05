@@ -6,9 +6,10 @@ Read in this order:
 2. [Architecture](ARCHITECTURE.md) — component boundaries.
 3. [State Model](STATE_MODEL.md) — profile, evidence, projections, mutation rules.
 4. [Roadmap](ROADMAP.md) — delivery sequence.
-5. [PyLearn Integration](integrations/PYLEARN.md) — first real use case.
-6. [Domain Packs](DOMAIN_PACKS.md) — Go now, Rust later.
-7. [ADRs](adr/README.md) — decisions and rationale.
+5. [Source Policy](SOURCE_POLICY.md) — authority, provenance, and freshness rules.
+6. [PyLearn Integration](integrations/PYLEARN.md) — first real use case.
+7. [Domain Packs](DOMAIN_PACKS.md) — Go now, Rust later.
+8. [ADRs](adr/README.md) — decisions and rationale.
 
 Implementation-specific specifications should be added under `docs/specs/` before substantial features are built.
 
