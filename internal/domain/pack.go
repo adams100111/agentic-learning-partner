@@ -32,6 +32,12 @@ type Migration struct {
 	Strategy string   `yaml:"strategy"`
 }
 
+var validDimensions = map[string]struct{}{
+	"recall": {}, "mental-model": {}, "idiomatic": {}, "runtime": {},
+	"backend": {}, "database": {}, "testing": {}, "production": {},
+	"architecture": {}, "tooling": {}, "performance": {},
+}
+
 var validFreshnessClasses = map[string]struct{}{
 	"stable-concept":                    {},
 	"version-sensitive-language-runtime": {},
@@ -76,6 +82,9 @@ func (p Pack) Validate() error {
 		if competency.Name == "" || competency.Dimension == "" || competency.Description == "" {
 			return fmt.Errorf("competency %q requires name, dimension, and description", competency.ID)
 		}
+		if _, ok := validDimensions[competency.Dimension]; !ok {
+			return fmt.Errorf("competency %q has invalid dimension %q", competency.ID, competency.Dimension)
+		}
 		if _, ok := validFreshnessClasses[competency.FreshnessClass]; !ok {
 			return fmt.Errorf("competency %q has invalid freshness class %q", competency.ID, competency.FreshnessClass)
 		}
@@ -88,9 +97,28 @@ func (p Pack) Validate() error {
 				return fmt.Errorf("competency %q references unknown prerequisite %q", competency.ID, prerequisite)
 			}
 		}
+		seenRequirement := map[string]struct{}{}
+		for _, requirement := range competency.ProductionReadyRequires {
+			if strings.TrimSpace(requirement) == "" {
+				return fmt.Errorf("competency %q has an empty production-ready requirement", competency.ID)
+			}
+			if _, exists := seenRequirement[requirement]; exists {
+				return fmt.Errorf("competency %q repeats production-ready requirement %q", competency.ID, requirement)
+			}
+			seenRequirement[requirement] = struct{}{}
+		}
 	}
 
+	if err := validatePrerequisiteCycles(byID); err != nil {
+		return err
+	}
+
+	seenMigration := map[string]struct{}{}
 	for _, migration := range p.Migrations {
+		if _, exists := seenMigration[migration.From]; exists {
+			return fmt.Errorf("duplicate migration source %q", migration.From)
+		}
+		seenMigration[migration.From] = struct{}{}
 		if migration.From == "" {
 			return fmt.Errorf("domain %q: migration from is required", p.Domain)
 		}
@@ -107,6 +135,40 @@ func (p Pack) Validate() error {
 		}
 	}
 
+	return nil
+}
+
+func validatePrerequisiteCycles(byID map[string]Competency) error {
+	const (
+		unseen = iota
+		visiting
+		done
+	)
+	state := make(map[string]int, len(byID))
+	var visit func(string) error
+	visit = func(id string) error {
+		switch state[id] {
+		case visiting:
+			return fmt.Errorf("competency prerequisite cycle includes %q", id)
+		case done:
+			return nil
+		}
+		state[id] = visiting
+		for _, dependency := range byID[id].Prerequisites {
+			if err := visit(dependency); err != nil {
+				return err
+			}
+		}
+		state[id] = done
+		return nil
+	}
+	for id := range byID {
+		if state[id] == unseen {
+			if err := visit(id); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
