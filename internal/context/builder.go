@@ -137,10 +137,14 @@ func (b Builder) Build(request Request) (Bundle, error) {
 		})
 	}
 
-	bundle.OmittedSources = append(bundle.OmittedSources,
-		SourceSelection{Ref: "evidence/", Reason: "full evidence history is excluded from ordinary context; load only for assessment/audit"},
-		SourceSelection{Ref: "assessments/", Reason: "full assessment history is excluded from ordinary context; projection is sufficient"},
-	)
+	if request.Inspect {
+		bundle.OmittedSources = append(bundle.OmittedSources,
+			SourceSelection{Ref: "evidence/", Reason: "full evidence history is excluded from ordinary context; load only for assessment/audit"},
+			SourceSelection{Ref: "assessments/", Reason: "full assessment history is excluded from ordinary context; projection is sufficient"},
+		)
+	} else {
+		bundle.OmittedSources = nil
+	}
 
 	sort.Slice(bundle.IncludedSources, func(i, j int) bool { return bundle.IncludedSources[i].Ref < bundle.IncludedSources[j].Ref })
 	sort.Slice(bundle.OmittedSources, func(i, j int) bool { return bundle.OmittedSources[i].Ref < bundle.OmittedSources[j].Ref })
