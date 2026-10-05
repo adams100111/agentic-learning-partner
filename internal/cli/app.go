@@ -49,20 +49,8 @@ func (a App) runValidate(args []string) int {
 		return 2
 	}
 
-	resolution, info, ok := a.resolveAndInspect(*explicit)
+	resolution, info, ok := a.checkWorkspace(*explicit)
 	if !ok {
-		return 1
-	}
-	validator, err := workspace.NewValidator()
-	if err != nil {
-		fmt.Fprintf(a.ErrOut, "initialize validation: %v\n", err)
-		return 1
-	}
-	issues := validator.ValidateWorkspace(info.Path)
-	if len(issues) != 0 {
-		for _, issue := range issues {
-			fmt.Fprintln(a.ErrOut, issue.Error())
-		}
 		return 1
 	}
 
@@ -77,26 +65,34 @@ func (a App) runWorkspaceCheck(args []string) int {
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
-	resolution, info, ok := a.resolveAndInspect(*explicit)
+	resolution, info, ok := a.checkWorkspace(*explicit)
 	if !ok {
 		return 1
+	}
+
+	fmt.Fprintf(a.Out, "workspace: %s\nsource: %s\nrevision: %s\nschema: compatible\n", info.Path, resolution.Source, info.Revision)
+	return 0
+}
+
+func (a App) checkWorkspace(explicit string) (workspace.Resolution, workspace.Info, bool) {
+	resolution, info, ok := a.resolveAndInspect(explicit)
+	if !ok {
+		return workspace.Resolution{}, workspace.Info{}, false
 	}
 
 	validator, err := workspace.NewValidator()
 	if err != nil {
 		fmt.Fprintf(a.ErrOut, "initialize validation: %v\n", err)
-		return 1
+		return workspace.Resolution{}, workspace.Info{}, false
 	}
 	issues := validator.ValidateWorkspace(info.Path)
 	if len(issues) != 0 {
 		for _, issue := range issues {
 			fmt.Fprintln(a.ErrOut, issue.Error())
 		}
-		return 1
+		return workspace.Resolution{}, workspace.Info{}, false
 	}
-
-	fmt.Fprintf(a.Out, "workspace: %s\nsource: %s\nrevision: %s\nschema: compatible\n", info.Path, resolution.Source, info.Revision)
-	return 0
+	return resolution, info, true
 }
 
 func (a App) resolveAndInspect(explicit string) (workspace.Resolution, workspace.Info, bool) {
