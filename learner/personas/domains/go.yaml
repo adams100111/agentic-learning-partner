@@ -1,0 +1,77 @@
+schemaVersion: 1
+scope: domain
+domain: go
+
+teaching:
+  pace: senior-dense
+  preferredActivityTypes:
+    - code-reading
+    - bug-finding
+    - small-implementation
+    - concurrency-debugging
+    - production-project
+    - agent-generated-code-review
+  avoid:
+    - full-beginner-course-reset
+    - CRUD-only-projects
+    - framework-first-Go
+    - repositories-and-interfaces-by-default
+  emphasis:
+    - language-reactivation
+    - idiomatic-Go
+    - context-and-cancellation
+    - concurrency
+    - testing
+    - production-runtime
+    - observability
+    - profiling
+    - deployment
+
+analogyPolicy:
+  defaultPriority:
+    - laravel
+    - nestjs
+    - dotnet
+    - fastapi
+  semanticOverrides:
+    context:
+      prefer:
+        - dotnet
+      reason: Use CancellationToken as a scaffold, then teach Go context's broader lifetime/deadline propagation role.
+    interfaces:
+      prefer:
+        - typescript
+        - dotnet
+      reason: Contrast Go implicit structural satisfaction with TypeScript structural interfaces and .NET nominal interfaces.
+    errors:
+      prefer:
+        - laravel
+        - dotnet
+      reason: Explicitly contrast returned errors with exception-oriented application stacks.
+    dependency-construction:
+      prefer:
+        - nestjs
+        - laravel
+      reason: Useful contrast for explicit constructors/dependency passing versus containers/providers.
+    database:
+      prefer:
+        - laravel
+        - dotnet
+      reason: Eloquent and EF Core expose what pgx/sqlc intentionally do not abstract.
+    concurrency:
+      prefer:
+        - dotnet
+        - typescript
+      reason: Compare Tasks/Channels/event-loop concepts while preserving Go-specific goroutine/channel semantics.
+
+risks:
+  - treating forgotten syntax as lack of engineering maturity
+  - translating service-container architecture mechanically into Go
+  - creating interfaces before a consumer needs abstraction
+  - unbounded goroutines or hidden goroutine ownership
+  - shallow familiarity with concurrency without race/leak/cancellation evidence
+
+provenance:
+  - sourceType: learner-stated
+    observedAt: "2026-10-05T00:00:00+03:00"
+    confidence: high
