@@ -8,6 +8,7 @@ import (
 
 	"github.com/adams100111/agentic-learning-partner/internal/domain"
 	"github.com/adams100111/agentic-learning-partner/internal/migrate"
+	"github.com/adams100111/agentic-learning-partner/internal/state"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 )
 
@@ -115,6 +116,10 @@ func (a App) runWorkspaceMigrate(args []string) int {
 		return 1
 	}
 	migrator := migrate.NewWorkspaceMigrator(validator)
+	migrator.Rebuild = func(root string) error {
+		_, err := (state.Store{Root: root, Validator: validator}).RebuildProjection()
+		return err
+	}
 
 	if *dryRun {
 		plan, err := migrator.Plan(info.Path)
