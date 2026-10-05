@@ -26,3 +26,15 @@ Implementation-specific specifications should be added under `docs/specs/` befor
 - Generated learner state never belongs in architecture docs.
 
 When documents disagree: accepted ADRs define the decision, then product invariants, then architecture, then feature specs.
+
+
+## Implementation Specs
+
+- [001 — Foundation Contracts](specs/001-foundation-contracts.md)
+- [002 — Persona Wizard](specs/002-persona-wizard.md)
+- [003 — Go Domain Pack v0](specs/003-go-domain-v0.md)
+- [004 — Human Persona and State Views](specs/004-human-views.md)
+- [005 — PyLearn Read Adapter](specs/005-pylearn-read-adapter.md)
+
+Integration contract:
+- [PyLearn Export and Evidence Mapping](integrations/PYLEARN_EXPORT.md)
