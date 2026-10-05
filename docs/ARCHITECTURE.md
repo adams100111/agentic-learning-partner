@@ -6,11 +6,12 @@ ALP is not a course repository and not a traditional LMS. It is a reusable **lea
 
 The system separates five concerns:
 
-1. **Learner model** — durable facts and preferences about the learner.
+1. **Learner profile/personas** — durable facts, preferences, and domain-specific learning configuration.
 2. **Evidence** — append-only observations of demonstrated behavior.
 3. **State projections** — current competencies, focus, reinforcement/review needs.
-4. **Domain packs** — language/domain-specific knowledge, rubrics, diagnostics, and teaching workflows.
-5. **Platform adapters** — translation between ALP and a concrete learning surface such as PyLearn.
+4. **Context projection** — compact task-specific learner context for agents.
+5. **Domain packs** — language/domain-specific knowledge, rubrics, diagnostics, and teaching workflows.
+6. **Platform adapters** — translation between ALP and a concrete learning surface such as PyLearn.
 
 ## Layers
 
@@ -41,7 +42,9 @@ The system separates five concerns:
 
 The core owns mechanisms, not Go content:
 
-- learner-profile contract;
+- learner-profile and persona contracts;
+- persona discovery/refinement workflow;
+- task-specific context projection;
 - evidence envelope;
 - competency/projection rules;
 - assessment workflow;
@@ -127,7 +130,9 @@ Derived/rebuildable:
 - current competency snapshot;
 - current focus;
 - reinforcement/review queue;
-- planner projection.
+- planner projection;
+- effective session persona/context;
+- human-readable Markdown/HTML views.
 
 No harness-specific chat memory is authoritative.
 
@@ -153,6 +158,18 @@ Deterministic code should:
 
 Principle: **models reason; deterministic tooling maintains truth.**
 
+## Persona and context boundary
+
+Canonical learner/profile/persona data is stored as structured YAML with schema validation. Agents normally receive a compact generated context, not the complete canonical learner state.
+
+The context builder selects only the information required for the current task. Historical evidence is loaded on demand for reassessment, contradiction resolution, or audit.
+
+Generated Markdown/HTML views exist for humans and are never authoritative.
+
+## Token-efficiency invariant
+
+ALP treats context cost as an architectural constraint. Optimize primarily by progressive disclosure and eliminating duplicated knowledge, not merely by choosing one serialization format over another.
+
 ## Plugin packaging
 
 The portable package uses the current Agent Plugins format with root `plugin.json` and root `skills/`. OpenAI-specific compatibility may also include `.codex-plugin/plugin.json`.
@@ -167,6 +184,9 @@ agentic-learning-partner/
 ├── README.md
 ├── docs/
 │   ├── ARCHITECTURE.md
+│   ├── PERSONAS.md
+│   ├── PERSONA_WIZARD.md
+│   ├── REPRESENTATION.md
 │   ├── ROADMAP.md
 │   ├── STATE_MODEL.md
 │   ├── integrations/
@@ -184,6 +204,9 @@ agentic-learning-partner/
 ├── internal/
 ├── learner/
 │   ├── profile/
+│   ├── personas/
+│   │   ├── global.yaml
+│   │   └── domains/
 │   └── state/
 ├── adapters/
 │   ├── pylearn/
