@@ -11,6 +11,7 @@ import (
 	"github.com/adams100111/agentic-learning-partner/internal/domain"
 	"github.com/adams100111/agentic-learning-partner/internal/migrate"
 	"github.com/adams100111/agentic-learning-partner/internal/state"
+	"github.com/adams100111/agentic-learning-partner/internal/view"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 	"go.yaml.in/yaml/v3"
 )
@@ -47,10 +48,136 @@ func (a App) Run(args []string) int {
 		return a.runDomain(args[1:])
 	case "context":
 		return a.runContext(args[1:])
+	case "persona":
+		return a.runPersona(args[1:])
+	case "status":
+		return a.runStatus(args[1:])
+	case "competency":
+		return a.runCompetency(args[1:])
+	case "evidence":
+		return a.runEvidence(args[1:])
 	default:
 		fmt.Fprintf(a.ErrOut, "unknown command %q\n", args[0])
 		a.usage()
 		return 2
+	}
+}
+
+func (a App) viewArgs(name string, args []string) (string, view.Format, bool) {
+	flags := flag.NewFlagSet(name, flag.ContinueOnError)
+	flags.SetOutput(a.ErrOut)
+	explicit := flags.String("workspace", "", "learner workspace path")
+	format := flags.String("format", "text", "output format: text or markdown")
+	if err := flags.Parse(args); err != nil {
+		return "", "", false
+	}
+	resolution, info, ok := a.checkWorkspace(*explicit)
+	if !ok {
+		return "", "", false
+	}
+	_ = resolution
+	switch *format {
+	case "text":
+		return info.Path, view.Text, true
+	case "markdown":
+		return info.Path, view.Markdown, true
+	default:
+		fmt.Fprintf(a.ErrOut, "unsupported view format %q\n", *format)
+		return "", "", false
+	}
+}
+
+func (a App) runPersona(args []string) int {
+	if len(args) == 0 || args[0] != "show" {
+		fmt.Fprintln(a.ErrOut, "usage: alp persona show [--domain DOMAIN] [--format text|markdown] [--workspace PATH]")
+		return 2
+	}
+	flags := flag.NewFlagSet("persona show", flag.ContinueOnError)
+	flags.SetOutput(a.ErrOut)
+	explicit := flags.String("workspace", "", "learner workspace path")
+	domainName := flags.String("domain", "", "domain")
+	format := flags.String("format", "text", "output format: text or markdown")
+	if err := flags.Parse(args[1:]); err != nil {
+		return 2
+	}
+	_, info, ok := a.checkWorkspace(*explicit)
+	if !ok {
+		return 1
+	}
+	outputFormat, ok := parseViewFormat(*format)
+	if !ok {
+		fmt.Fprintf(a.ErrOut, "unsupported view format %q\n", *format)
+		return 2
+	}
+	output, err := (view.Renderer{Root: info.Path}).Persona(*domainName, outputFormat)
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return 1
+	}
+	fmt.Fprint(a.Out, output)
+	return 0
+}
+
+func (a App) runStatus(args []string) int {
+	root, format, ok := a.viewArgs("status", args)
+	if !ok {
+		return 1
+	}
+	output, err := (view.Renderer{Root: root}).Status(format)
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return 1
+	}
+	fmt.Fprint(a.Out, output)
+	return 0
+}
+
+func (a App) runCompetency(args []string) int {
+	if len(args) == 0 || args[0] != "show" || len(args) < 2 {
+		fmt.Fprintln(a.ErrOut, "usage: alp competency show <id> [--format text|markdown] [--workspace PATH]")
+		return 2
+	}
+	id := args[1]
+	root, format, ok := a.viewArgs("competency show", args[2:])
+	if !ok {
+		return 1
+	}
+	output, err := (view.Renderer{Root: root}).Competency(id, format)
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return 1
+	}
+	fmt.Fprint(a.Out, output)
+	return 0
+}
+
+func (a App) runEvidence(args []string) int {
+	if len(args) == 0 || args[0] != "show" || len(args) < 2 {
+		fmt.Fprintln(a.ErrOut, "usage: alp evidence show <id> [--format text|markdown] [--workspace PATH]")
+		return 2
+	}
+	id := args[1]
+	root, format, ok := a.viewArgs("evidence show", args[2:])
+	if !ok {
+		return 1
+	}
+	output, err := (view.Renderer{Root: root}).Evidence(id, format)
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return 1
+	}
+	fmt.Fprint(a.Out, output)
+	return 0
+}
+
+func parseViewFormat(value string) (view.Format, bool) {
+	switch value {
+	case "text":
+		return view.Text, true
+	case "markdown":
+		return view.Markdown, true
+	default:
+		return "", false
 	}
 }
 
@@ -286,5 +413,5 @@ func (a App) resolveAndInspect(explicit string) (workspace.Resolution, workspace
 
 func (a App) usage() {
 	fmt.Fprintln(a.ErrOut, "usage: alp <command>")
-	fmt.Fprintln(a.ErrOut, "commands: validate, workspace check, workspace migrate, domain list, domain info, context build, context inspect")
+	fmt.Fprintln(a.ErrOut, "commands: validate, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show")
 }
