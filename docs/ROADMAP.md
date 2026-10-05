@@ -23,6 +23,9 @@ Deliver before implementation:
 
 - architecture and terminology;
 - learner/evidence/state model;
+- global/domain persona model;
+- persona discovery/refinement workflow;
+- canonical/derived representation and token-context policy;
 - domain-pack contract;
 - platform-integration contract;
 - state mutation rules;
@@ -40,13 +43,17 @@ Implement the harness-neutral core:
 
 - portable root `plugin.json`;
 - core Agent Skills;
-- learner profile schema;
+- learner profile/persona schemas;
+- persona wizard/refinement skill;
+- context projection builder;
 - evidence schema;
 - competency schema;
 - projection/state schema;
 - deterministic state validation/rebuild CLI;
 - append-only evidence store;
 - current-state projection;
+- human-readable persona/state views;
+- context inspection/token diagnostics;
 - adaptive planner contract;
 - review/reinforcement queue.
 
