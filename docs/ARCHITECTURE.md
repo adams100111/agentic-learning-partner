@@ -8,10 +8,11 @@ The system separates five concerns:
 
 1. **Learner profile/personas** — durable facts, preferences, and domain-specific learning configuration.
 2. **Evidence** — append-only observations of demonstrated behavior.
-3. **State projections** — current competencies, focus, reinforcement/review needs.
-4. **Context projection** — compact task-specific learner context for agents.
-5. **Domain packs** — language/domain-specific knowledge, rubrics, diagnostics, and teaching workflows.
-6. **Platform adapters** — translation between ALP and a concrete learning surface such as PyLearn.
+3. **Assessments** — versioned semantic judgments over evidence under explicit rubrics.
+4. **State projections** — deterministic current competencies, focus, reinforcement/review needs derived from accepted assessments.
+5. **Context projection** — compact task-specific learner context for agents.
+6. **Domain packs** — language/domain-specific knowledge, rubrics, diagnostics, and teaching workflows.
+7. **Platform adapters** — translation between ALP and a concrete learning surface such as PyLearn.
 
 ## Layers
 
@@ -27,7 +28,7 @@ The system separates five concerns:
        |                            Go | Rust | ...
        +----------------+----------------+
                         |
-                 Evidence/state API
+                 Evidence/assessment/state API
                         |
           deterministic local tooling
                         |
@@ -110,6 +111,23 @@ For PyLearn:
 - project/source code becomes high-value evidence;
 - ALP recommendations can become proposed PyLearn content changes.
 
+## Engine vs learner workspace
+
+The reusable ALP engine and learner-specific state have separate lifecycles.
+
+```
+agentic-learning-partner
+  schemas / skills / domain packs / CLI / adapters / docs
+
+agentic-learning-state (private learner workspace)
+  profile / personas / evidence / assessments / projections / sessions
+
+pylearn
+  learning platform / content / learner activity
+```
+
+ALP operates against a configured learner workspace. Synthetic fixtures/examples may live in the engine repository; real learner state must not.
+
 ## Persistence
 
 Git is the durable synchronization and audit mechanism.
@@ -124,6 +142,7 @@ Human-authored/static:
 
 Append-only:
 - evidence records;
+- assessment records;
 - session records.
 
 Derived/rebuildable:
@@ -151,7 +170,7 @@ Deterministic code should:
 - enforce IDs;
 - enforce allowed competency paths/levels;
 - append evidence;
-- rebuild projections;
+- rebuild projections from canonical accepted assessments;
 - detect dangling provenance;
 - detect projection drift;
 - produce machine-readable status.
@@ -202,12 +221,8 @@ agentic-learning-partner/
 ├── schemas/
 ├── cmd/alp/
 ├── internal/
-├── learner/
-│   ├── profile/
-│   ├── personas/
-│   │   ├── global.yaml
-│   │   └── domains/
-│   └── state/
+├── examples/
+│   └── synthetic-workspace/
 ├── adapters/
 │   ├── pylearn/
 │   ├── claude-code/
