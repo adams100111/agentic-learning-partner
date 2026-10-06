@@ -34,7 +34,7 @@ A stale lock is never discarded blindly. Recovery logic may classify a lock as s
 
 Local Store may use temporary directories plus atomic replacement.
 
-Git Store may use an isolated worktree/index or equivalent mechanism that prevents partially-written canonical state from becoming visible.
+Staging is provider-independent: a transaction writes into a staged copy under the runtime directory, never the canonical workspace. At checkpoint the Git Store publishes each staged file via temp-file-and-rename (rolling back on failure) and commits only ALP-owned paths with `git commit --only`, so partially-written canonical state never becomes visible. A temporary worktree is used only for sync reconciliation, not for staging.
 
 ## Consequences
 
