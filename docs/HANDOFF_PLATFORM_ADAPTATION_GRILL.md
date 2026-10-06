@@ -414,10 +414,16 @@ Q14, Q25, Q28, Q31, Q35 were explicitly accepted by the user (2026-10-07).
 
 ADR created: `docs/adr/0061-shared-targets-learner-projections.md`.
 
-## Next grill frontier (round 4) — NOT YET DECIDED
+## Settled grill round 4
 
-- **Q33 Cross-repo mapping validation:** rec: PyLearn gate invokes `alp platform mapping validate` against a pinned domain-pack version; PyLearn lint independently checks that mapped IDs are declared-stable and exist.
-- **Q34 `go-alp` course structure:** rec: phases/grouping derived from the Curriculum Specification at target-skeleton authoring and emitted as the course declaration file (Q23); later curriculum versions may append phases but not renumber realized ones.
+Q33, Q34 were explicitly accepted by the user (2026-10-07).
+
+- **Q33 Cross-repo mapping validation:** PyLearn lint (no ALP dependency) checks mapped IDs are declared-stable and exist. New PyLearn gate `gate:alp-mapping` runs `alp platform mapping validate --adapter pylearn` against the mapping's pinned pack version; required for ALP-authored targets and PRs touching the mapping file; `skipped` for unmapped courses; missing `alp` fails with an install hint.
+- **Q34 `go-alp` structure:** phases derived from the Curriculum Specification at target-skeleton authoring; PyLearn authoring skill emits `content/courses/go-alp.yaml`; phase IDs freeze once any unit in them is realized; later versions may add/insert phases but never renumber/rename realized ones; manual `go` course untouched.
+
+## Grill status
+
+Frontier empty after round 4, pending the user's confirmation of shared understanding. Next: `to-spec` → `to-tickets` → `implement-spec`.
 
 ## Important cautions for the next agent
 
