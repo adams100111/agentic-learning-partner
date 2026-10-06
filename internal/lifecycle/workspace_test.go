@@ -33,8 +33,8 @@ func TestManagerInitializesListsAndSwitchesLocalWorkspaces(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !second.Default {
-		t.Fatal("new init is expected to become default")
+	if second.Default {
+		t.Fatal("adding a second workspace must not silently replace the default")
 	}
 
 	if err := manager.Use("personal"); err != nil {
