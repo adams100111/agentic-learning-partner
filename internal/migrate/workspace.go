@@ -83,6 +83,39 @@ func (m Migrator) Plan(root string) (Plan, error) {
 	return plan, nil
 }
 
+func (m Migrator) ApplyStaged(root string) (Plan, error) {
+	plan, err := m.Plan(root)
+	if err != nil {
+		return Plan{}, err
+	}
+	if plan.Empty() {
+		return plan, nil
+	}
+	for _, planned := range plan.Steps {
+		step := m.Steps[planned.From]
+		if step.Apply == nil {
+			return Plan{}, fmt.Errorf("migration %d -> %d has no apply function", step.From, step.To)
+		}
+		if err := step.Apply(root); err != nil {
+			return Plan{}, fmt.Errorf("apply workspace migration %d -> %d: %w", step.From, step.To, err)
+		}
+		if err := setWorkspaceSchemaVersion(root, step.To); err != nil {
+			return Plan{}, err
+		}
+	}
+	if m.Rebuild != nil {
+		if err := m.Rebuild(root); err != nil {
+			return Plan{}, fmt.Errorf("rebuild derived state after migration: %w", err)
+		}
+	}
+	if m.Validator != nil {
+		if issues := m.Validator.ValidateWorkspace(root); len(issues) > 0 {
+			return Plan{}, fmt.Errorf("migrated workspace is invalid: %s", issues[0].Error())
+		}
+	}
+	return plan, nil
+}
+
 func (m Migrator) Apply(root string, expectedRevision string) (Plan, error) {
 	if strings.TrimSpace(expectedRevision) == "" {
 		return Plan{}, errors.New("expected workspace revision is required")
