@@ -60,6 +60,12 @@ func (m Manager) Init(ctx context.Context, name, provider, path, learnerID, bran
 	if strings.TrimSpace(learnerID) == "" { return WorkspaceStatus{}, errors.New("learner id is required") }
 	if strings.TrimSpace(path) == "" { return WorkspaceStatus{}, errors.New("workspace path is required") }
 	if provider == "" { provider = "local" }
+	if provider != "local" && provider != "git" {
+		return WorkspaceStatus{}, fmt.Errorf("unsupported store provider %q", provider)
+	}
+	if provider == "git" && remote != "" && !privacyAcknowledged {
+		return WorkspaceStatus{}, errors.New("Git remote privacy is not verified; acknowledge the existing/unverifiable remote explicitly")
+	}
 	absolute, err := filepath.Abs(path)
 	if err != nil { return WorkspaceStatus{}, err }
 	if err := ensureEmptyDirectory(absolute); err != nil { return WorkspaceStatus{}, err }
@@ -79,9 +85,6 @@ func (m Manager) Init(ctx context.Context, name, provider, path, learnerID, bran
 		entry.SyncMode = "manual"
 	case "git":
 		if branch == "" { branch = "main" }
-		if remote != "" && !privacyAcknowledged {
-			return WorkspaceStatus{}, errors.New("Git remote privacy is not verified; acknowledge the existing/unverifiable remote explicitly")
-		}
 		if _, err := store.InitializeGit(ctx, absolute, branch, remote, m.Validator); err != nil { return WorkspaceStatus{}, err }
 		entry.SyncMode = "session"
 		entry.Remote = "origin"
