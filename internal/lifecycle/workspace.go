@@ -240,6 +240,19 @@ func (m Manager) Open(name string) (storepkg.Store, workspace.ProviderConfig, er
 	return active, provider, err
 }
 
+func (m Manager) Replace(name string, provider workspace.ProviderConfig) error {
+	config, err := workspace.ReadUserConfig(m.ConfigPath)
+	if err != nil {
+		return err
+	}
+	if _, ok := config.Named(name); !ok {
+		return fmt.Errorf("workspace %q is not configured", name)
+	}
+	config.Workspaces[name] = provider
+	config.Workspace = ""
+	return workspace.WriteUserConfig(m.ConfigPath, config)
+}
+
 func (m Manager) saveWorkspace(name string, provider workspace.ProviderConfig, makeDefault bool) error {
 	config, err := workspace.ReadUserConfig(m.ConfigPath)
 	if err != nil {
