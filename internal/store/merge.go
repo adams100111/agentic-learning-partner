@@ -233,8 +233,8 @@ func mergeSemanticValue(base, local, remote any, path string, localContext, remo
 
 	requiresLearner := localScore >= 4 && remoteScore >= 4
 	return nil, SemanticConflict{
-		Path: path,
-		Reason: "both sides changed the same semantic field with equal authority",
+		Path:                  path,
+		Reason:                "both sides changed the same semantic field with equal authority",
 		RequiresLearnerChoice: requiresLearner,
 	}
 }
@@ -242,11 +242,19 @@ func mergeSemanticValue(base, local, remote any, path string, localContext, remo
 func mergeSemanticMap(base, local, remote map[string]any, path string, localContext, remoteContext any) (map[string]any, error) {
 	result := map[string]any{}
 	keys := map[string]struct{}{}
-	for key := range base { keys[key] = struct{}{} }
-	for key := range local { keys[key] = struct{}{} }
-	for key := range remote { keys[key] = struct{}{} }
+	for key := range base {
+		keys[key] = struct{}{}
+	}
+	for key := range local {
+		keys[key] = struct{}{}
+	}
+	for key := range remote {
+		keys[key] = struct{}{}
+	}
 	sorted := make([]string, 0, len(keys))
-	for key := range keys { sorted = append(sorted, key) }
+	for key := range keys {
+		sorted = append(sorted, key)
+	}
 	sort.Strings(sorted)
 
 	for _, key := range sorted {
@@ -290,11 +298,19 @@ func mergeIdentifiedArray(base, local, remote []any, path string) ([]any, error)
 	}
 
 	keys := map[string]struct{}{}
-	for key := range baseByID { keys[key] = struct{}{} }
-	for key := range localByID { keys[key] = struct{}{} }
-	for key := range remoteByID { keys[key] = struct{}{} }
+	for key := range baseByID {
+		keys[key] = struct{}{}
+	}
+	for key := range localByID {
+		keys[key] = struct{}{}
+	}
+	for key := range remoteByID {
+		keys[key] = struct{}{}
+	}
 	sorted := make([]string, 0, len(keys))
-	for key := range keys { sorted = append(sorted, key) }
+	for key := range keys {
+		sorted = append(sorted, key)
+	}
 	sort.Strings(sorted)
 
 	result := make([]any, 0, len(sorted))

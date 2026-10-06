@@ -34,7 +34,7 @@ func Inspect(path string) (Info, error) {
 	if err != nil {
 		return Info{}, fmt.Errorf("resolve workspace path: %w", err)
 	}
-	if filepath.Clean(absoluteRoot) != filepath.Clean(absolutePath) {
+	if !samePath(absoluteRoot, absolutePath) {
 		return Info{}, fmt.Errorf("workspace %s must be the Git repository root (%s)", absolutePath, absoluteRoot)
 	}
 
@@ -52,4 +52,16 @@ func git(dir string, args ...string) (string, error) {
 		return "", fmt.Errorf("%s: %w", strings.TrimSpace(string(output)), err)
 	}
 	return string(output), nil
+}
+
+// samePath compares paths after resolving symlinks, so macOS /var and
+// /private/var refer to the same directory.
+func samePath(a, b string) bool {
+	if ra, err := filepath.EvalSymlinks(a); err == nil {
+		a = ra
+	}
+	if rb, err := filepath.EvalSymlinks(b); err == nil {
+		b = rb
+	}
+	return filepath.Clean(a) == filepath.Clean(b)
 }

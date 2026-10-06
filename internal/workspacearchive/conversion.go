@@ -31,7 +31,9 @@ func ConvertToGit(ctx context.Context, source store.Store, validator *workspace.
 			return nil, errors.New("Git Store destination must be a directory")
 		}
 		entries, readErr := os.ReadDir(options.Destination)
-		if readErr != nil { return nil, readErr }
+		if readErr != nil {
+			return nil, readErr
+		}
 		if len(entries) != 0 {
 			return nil, errors.New("Git Store destination must be empty")
 		}
@@ -42,21 +44,27 @@ func ConvertToGit(ctx context.Context, source store.Store, validator *workspace.
 	}
 
 	temp, err := os.MkdirTemp("", "alp-convert-*")
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	defer os.RemoveAll(temp)
 	archivePath := filepath.Join(temp, "workspace.alp")
 	if _, err := Export(ctx, source, archivePath, time.Unix(0, 0).UTC()); err != nil {
 		return nil, err
 	}
 	verified, err := Verify(archivePath, validator)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	workspaceData := verified.Files["workspace.yaml"]
 	if err := os.WriteFile(filepath.Join(options.Destination, "workspace.yaml"), workspaceData, 0o644); err != nil {
 		return nil, err
 	}
 	target, err := store.InitializeGit(ctx, options.Destination, options.Branch, options.Remote, validator)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	if _, err := Restore(ctx, verified, target, validator, RestoreOptions{
 		Mode: RestoreRecover, RuntimeDir: options.RuntimeDir, Rebuild: options.Rebuild,
 	}); err != nil {

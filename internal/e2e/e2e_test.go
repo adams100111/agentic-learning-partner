@@ -36,21 +36,21 @@ func TestV0ClosedLoopFromPlatformEvidenceToPlan(t *testing.T) {
 		Platform:      "pylearn",
 		Mappings: []pylearn.ContentMapping{
 			{
-				ContentID: "go-context",
-				Domain: "go",
-				PackVersion: ">=0.1 <0.2",
+				ContentID:    "go-context",
+				Domain:       "go",
+				PackVersion:  ">=0.1 <0.2",
 				Competencies: []string{"go.runtime.context"},
 			},
 		},
 	}
 	export := pylearn.Export{
 		SchemaVersion: 1,
-		ExportedAt: "2026-10-06T00:00:00Z",
+		ExportedAt:    "2026-10-06T00:00:00Z",
 		Attempts: []pylearn.Attempt{
 			{
-				ID: "attempt-1",
+				ID:        "attempt-1",
 				ContentID: "go-context",
-				Passed: true,
+				Passed:    true,
 				CreatedAt: "2026-10-06T00:00:00Z",
 			},
 		},
@@ -70,8 +70,8 @@ func TestV0ClosedLoopFromPlatformEvidenceToPlan(t *testing.T) {
 	}
 
 	store := state.Store{
-		Root: root,
-		Catalog: domain.NewRegistry(),
+		Root:      root,
+		Catalog:   domain.NewRegistry(),
 		Validator: validator,
 	}
 	evidence := normalized.Evidence[0].Record
@@ -82,17 +82,17 @@ func TestV0ClosedLoopFromPlatformEvidenceToPlan(t *testing.T) {
 
 	assessment, err := store.AppendAssessment(revision, state.Assessment{
 		SchemaVersion: 1,
-		ID: "asmt_context_e2e",
-		RecordedAt: "2026-10-06T00:01:00Z",
-		Domain: "go",
-		Competency: "go.runtime.context",
-		Evidence: []string{evidence.ID},
-		Rubric: state.RubricRef{ID: "go.runtime.context", Version: "1", DomainPackVersion: "0.1.0"},
-		Assessor: state.Assessor{Type: "agent", ID: "e2e"},
-		Judgment: state.Judgment{Level: "functional"},
-		Confidence: "high",
-		Rationale: "Passed mapped implementation exercise; enough for functional, not production-ready.",
-		Status: "proposed",
+		ID:            "asmt_context_e2e",
+		RecordedAt:    "2026-10-06T00:01:00Z",
+		Domain:        "go",
+		Competency:    "go.runtime.context",
+		Evidence:      []string{evidence.ID},
+		Rubric:        state.RubricRef{ID: "go.runtime.context", Version: "1", DomainPackVersion: "0.1.0"},
+		Assessor:      state.Assessor{Type: "agent", ID: "e2e"},
+		Judgment:      state.Judgment{Level: "functional"},
+		Confidence:    "high",
+		Rationale:     "Passed mapped implementation exercise; enough for functional, not production-ready.",
+		Status:        "proposed",
 	})
 	if err != nil {
 		t.Fatal(err)

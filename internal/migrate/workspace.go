@@ -52,7 +52,7 @@ func NewWorkspaceMigrator(validator *workspace.Validator) Migrator {
 		Steps: map[int]Step{
 			1: {From: 1, To: 2, Description: "assign immutable workspace identity", Apply: migrateWorkspaceV1ToV2},
 		},
-		Validator:     validator,
+		Validator: validator,
 	}
 }
 

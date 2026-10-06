@@ -18,9 +18,13 @@ workspaces:
     path: ~/state/offline
     provider: local
 `)
-	if err := os.WriteFile(path, data, 0o644); err != nil { t.Fatal(err) }
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
 	config, err := LoadConfig(path)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if config.DefaultWorkspace != "personal" || config.Workspaces["offline"].Provider != "local" {
 		t.Fatalf("config = %#v", config)
 	}
@@ -34,7 +38,9 @@ func TestConfigResolveNamedWorkspace(t *testing.T) {
 		},
 	}
 	entry, err := config.Resolve("")
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if entry.Name != "personal" || entry.Provider != "git" {
 		t.Fatalf("entry = %#v", entry)
 	}

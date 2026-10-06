@@ -89,7 +89,7 @@ func TestProductionV0LocalToGitToSecondDeviceContinuation(t *testing.T) {
 	}
 	session := []byte("schemaVersion: 1\nid: sess_device_b\nstartedAt: 2026-10-06T12:00:00Z\nclosedAt: 2026-10-06T12:01:00Z\nbaseRevision: " + string(revB) + "\nsyncMode: session\nharness: codex\nsummary: Continued from synchronized learner state.\n")
 	if _, err := deviceB.Commit(ctx, revB, store.ChangeSet{
-		Message: "alp: device b continuation",
+		Message:   "alp: device b continuation",
 		Mutations: []store.Mutation{{Path: "sessions/sess_device_b.yaml", Data: session}},
 	}); err != nil {
 		t.Fatal(err)

@@ -20,9 +20,9 @@ import (
 type RecoveryStatus string
 
 const (
-	RecoveryStaged      RecoveryStatus = "staged"
+	RecoveryStaged       RecoveryStatus = "staged"
 	RecoveryCheckpointed RecoveryStatus = "checkpointed"
-	RecoverySyncPending RecoveryStatus = "sync-pending"
+	RecoverySyncPending  RecoveryStatus = "sync-pending"
 )
 
 type Recovery struct {
@@ -88,9 +88,9 @@ func (c *Coordinator) Begin(ctx context.Context, sessionID string, expected Revi
 	}
 	lock := lockMetadata{
 		WorkspaceID: workspaceKey,
-		SessionID: sessionID,
-		PID: os.Getpid(),
-		StartedAt: time.Now().UTC().Format(time.RFC3339),
+		SessionID:   sessionID,
+		PID:         os.Getpid(),
+		StartedAt:   time.Now().UTC().Format(time.RFC3339),
 	}
 	if err := createExclusiveJSON(c.lockPath(workspaceKey), lock); err != nil {
 		if errors.Is(err, os.ErrExist) {
@@ -110,12 +110,12 @@ func (c *Coordinator) Begin(ctx context.Context, sessionID string, expected Revi
 		return nil, err
 	}
 	recovery := Recovery{
-		WorkspaceID: workspaceKey,
-		SessionID: sessionID,
+		WorkspaceID:  workspaceKey,
+		SessionID:    sessionID,
 		BaseRevision: expected,
-		Status: RecoveryStaged,
-		StageDir: stageDir,
-		StartedAt: lock.StartedAt,
+		Status:       RecoveryStaged,
+		StageDir:     stageDir,
+		StartedAt:    lock.StartedAt,
 	}
 	if err := c.writeRecovery(recovery); err != nil {
 		_ = os.RemoveAll(stageDir)
@@ -236,8 +236,12 @@ func (t *Transaction) refreshChangesFromStage() error {
 		return err
 	}
 	paths := map[string]struct{}{}
-	for path := range before { paths[path] = struct{}{} }
-	for path := range after { paths[path] = struct{}{} }
+	for path := range before {
+		paths[path] = struct{}{}
+	}
+	for path := range after {
+		paths[path] = struct{}{}
+	}
 	changes := map[string]Mutation{}
 	for path := range paths {
 		left, leftOK := before[path]
@@ -413,9 +417,9 @@ func (c *Coordinator) writeRecovery(recovery Recovery) error {
 	return os.Rename(name, c.journalPath(recovery.WorkspaceID))
 }
 
-func (c *Coordinator) lockDir() string    { return filepath.Join(c.runtimeDir, "locks") }
-func (c *Coordinator) journalDir() string { return filepath.Join(c.runtimeDir, "journals") }
-func (c *Coordinator) lockPath(id string) string { return filepath.Join(c.lockDir(), id+".lock") }
+func (c *Coordinator) lockDir() string              { return filepath.Join(c.runtimeDir, "locks") }
+func (c *Coordinator) journalDir() string           { return filepath.Join(c.runtimeDir, "journals") }
+func (c *Coordinator) lockPath(id string) string    { return filepath.Join(c.lockDir(), id+".lock") }
 func (c *Coordinator) journalPath(id string) string { return filepath.Join(c.journalDir(), id+".json") }
 
 func legacyWorkspaceKey(root string) (string, error) {

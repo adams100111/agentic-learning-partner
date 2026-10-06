@@ -227,7 +227,6 @@ func TestProductionReadyRequiresGate(t *testing.T) {
 	}
 }
 
-
 func TestNegativeEvidenceRequiresClassification(t *testing.T) {
 	root, revision := makeStateWorkspace(t)
 	validator, err := workspace.NewValidator()

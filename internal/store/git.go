@@ -38,7 +38,7 @@ func OpenGit(root string, validator *workspace.Validator) (*Git, error) {
 		return nil, fmt.Errorf("open Git Store: %w", err)
 	}
 	top = strings.TrimSpace(top)
-	if filepath.Clean(top) != filepath.Clean(absolute) {
+	if !samePath(top, absolute) {
 		return nil, fmt.Errorf("Git Store workspace must be repository root: %s", absolute)
 	}
 	if issues := validator.ValidateWorkspace(absolute); len(issues) > 0 {
@@ -236,8 +236,7 @@ func (s *Git) Status(ctx context.Context) (GitStatus, error) {
 		return GitStatus{}, err
 	}
 	status := GitStatus{Branch: strings.TrimSpace(branch), Remote: strings.TrimSpace(remote)}
-	for _, line := range strings.Split(raw, "
-") {
+	for _, line := range strings.Split(raw, "\n") {
 		if len(line) < 4 {
 			continue
 		}
@@ -357,4 +356,16 @@ func existingOwnedPaths(root string) ([]string, error) {
 	})
 	sort.Strings(paths)
 	return paths, err
+}
+
+// samePath compares paths after resolving symlinks, so macOS /var and
+// /private/var refer to the same directory.
+func samePath(a, b string) bool {
+	if ra, err := filepath.EvalSymlinks(a); err == nil {
+		a = ra
+	}
+	if rb, err := filepath.EvalSymlinks(b); err == nil {
+		b = rb
+	}
+	return filepath.Clean(a) == filepath.Clean(b)
 }

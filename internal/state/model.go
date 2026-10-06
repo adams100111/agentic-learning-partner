@@ -1,21 +1,21 @@
 package state
 
 type Evidence struct {
-	SchemaVersion int               `yaml:"schemaVersion"`
-	ID            string            `yaml:"id"`
-	RecordedAt    string            `yaml:"recordedAt"`
-	Domain        string            `yaml:"domain"`
-	Competencies  []string          `yaml:"competencies"`
-	Type          string            `yaml:"type"`
-	Source        EvidenceSource    `yaml:"source"`
-	Observation   string            `yaml:"observation"`
-	Result        string            `yaml:"result,omitempty"`
-	Strength      string            `yaml:"strength"`
-	FailureClass  string            `yaml:"failureClassification,omitempty"`
-	Supports      []string          `yaml:"supports,omitempty"`
-	Contradicts   []string          `yaml:"contradicts,omitempty"`
-	Supersedes    []string          `yaml:"supersedes,omitempty"`
-	Metadata      map[string]any    `yaml:"metadata,omitempty"`
+	SchemaVersion int            `yaml:"schemaVersion"`
+	ID            string         `yaml:"id"`
+	RecordedAt    string         `yaml:"recordedAt"`
+	Domain        string         `yaml:"domain"`
+	Competencies  []string       `yaml:"competencies"`
+	Type          string         `yaml:"type"`
+	Source        EvidenceSource `yaml:"source"`
+	Observation   string         `yaml:"observation"`
+	Result        string         `yaml:"result,omitempty"`
+	Strength      string         `yaml:"strength"`
+	FailureClass  string         `yaml:"failureClassification,omitempty"`
+	Supports      []string       `yaml:"supports,omitempty"`
+	Contradicts   []string       `yaml:"contradicts,omitempty"`
+	Supersedes    []string       `yaml:"supersedes,omitempty"`
+	Metadata      map[string]any `yaml:"metadata,omitempty"`
 }
 
 type EvidenceSource struct {
@@ -26,20 +26,20 @@ type EvidenceSource struct {
 }
 
 type Assessment struct {
-	SchemaVersion     int            `yaml:"schemaVersion"`
-	ID                string         `yaml:"id"`
-	RecordedAt        string         `yaml:"recordedAt"`
-	Domain            string         `yaml:"domain"`
-	Competency        string         `yaml:"competency"`
-	Evidence          []string       `yaml:"evidence"`
-	Rubric            RubricRef      `yaml:"rubric"`
-	Assessor          Assessor       `yaml:"assessor"`
-	Judgment          Judgment       `yaml:"judgment"`
-	Confidence        string         `yaml:"confidence"`
-	Rationale         string         `yaml:"rationale"`
-	Status            string         `yaml:"status"`
-	Supersedes        []string       `yaml:"supersedes,omitempty"`
-	WorkspaceRevision string         `yaml:"workspaceRevision,omitempty"`
+	SchemaVersion     int       `yaml:"schemaVersion"`
+	ID                string    `yaml:"id"`
+	RecordedAt        string    `yaml:"recordedAt"`
+	Domain            string    `yaml:"domain"`
+	Competency        string    `yaml:"competency"`
+	Evidence          []string  `yaml:"evidence"`
+	Rubric            RubricRef `yaml:"rubric"`
+	Assessor          Assessor  `yaml:"assessor"`
+	Judgment          Judgment  `yaml:"judgment"`
+	Confidence        string    `yaml:"confidence"`
+	Rationale         string    `yaml:"rationale"`
+	Status            string    `yaml:"status"`
+	Supersedes        []string  `yaml:"supersedes,omitempty"`
+	WorkspaceRevision string    `yaml:"workspaceRevision,omitempty"`
 }
 
 type RubricRef struct {

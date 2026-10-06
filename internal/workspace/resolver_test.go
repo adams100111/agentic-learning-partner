@@ -58,7 +58,7 @@ func TestResolverUsesEnvironmentThenUserConfig(t *testing.T) {
 
 	envWorkspace := filepath.Join(root, "env-workspace")
 	resolver := Resolver{
-		Getenv: func(string) string { return envWorkspace },
+		Getenv:  func(string) string { return envWorkspace },
 		HomeDir: func() (string, error) { return home, nil },
 	}
 	got, err := resolver.Resolve("", root)
@@ -100,7 +100,7 @@ func TestResolverUsesNamedWorkspaceReferencesAcrossLayers(t *testing.T) {
 	}
 
 	resolver := Resolver{
-		Getenv: func(string) string { return "" },
+		Getenv:  func(string) string { return "" },
 		HomeDir: func() (string, error) { return home, nil },
 	}
 	got, err := resolver.Resolve("", project)
@@ -120,7 +120,9 @@ func TestResolverUsesNamedWorkspaceReferencesAcrossLayers(t *testing.T) {
 	}
 
 	resolver.Getenv = func(key string) string {
-		if key == EnvWorkspace { return "personal" }
+		if key == EnvWorkspace {
+			return "personal"
+		}
 		return ""
 	}
 	got, err = resolver.Resolve("", root)

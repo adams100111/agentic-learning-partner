@@ -3,15 +3,15 @@ package pylearn
 import "github.com/adams100111/agentic-learning-partner/internal/state"
 
 type Export struct {
-	SchemaVersion  int             `yaml:"schemaVersion" json:"schemaVersion"`
-	ExportedAt     string          `yaml:"exportedAt" json:"exportedAt"`
-	Learner        map[string]any  `yaml:"learner,omitempty" json:"learner,omitempty"`
-	Progress       []Progress      `yaml:"progress,omitempty" json:"progress,omitempty"`
-	Attempts       []Attempt       `yaml:"attempts,omitempty" json:"attempts,omitempty"`
+	SchemaVersion  int              `yaml:"schemaVersion" json:"schemaVersion"`
+	ExportedAt     string           `yaml:"exportedAt" json:"exportedAt"`
+	Learner        map[string]any   `yaml:"learner,omitempty" json:"learner,omitempty"`
+	Progress       []Progress       `yaml:"progress,omitempty" json:"progress,omitempty"`
+	Attempts       []Attempt        `yaml:"attempts,omitempty" json:"attempts,omitempty"`
 	ConceptMastery []ConceptMastery `yaml:"conceptMastery,omitempty" json:"conceptMastery,omitempty"`
-	QuizAnswers    []QuizAnswer    `yaml:"quizAnswers,omitempty" json:"quizAnswers,omitempty"`
-	Reflections    []Reflection    `yaml:"reflections,omitempty" json:"reflections,omitempty"`
-	Bookmarks      []Bookmark      `yaml:"bookmarks,omitempty" json:"bookmarks,omitempty"`
+	QuizAnswers    []QuizAnswer     `yaml:"quizAnswers,omitempty" json:"quizAnswers,omitempty"`
+	Reflections    []Reflection     `yaml:"reflections,omitempty" json:"reflections,omitempty"`
+	Bookmarks      []Bookmark       `yaml:"bookmarks,omitempty" json:"bookmarks,omitempty"`
 }
 
 type Progress struct {
@@ -60,8 +60,8 @@ type Bookmark struct {
 }
 
 type Mapping struct {
-	SchemaVersion int            `yaml:"schemaVersion" json:"schemaVersion"`
-	Platform      string         `yaml:"platform" json:"platform"`
+	SchemaVersion int              `yaml:"schemaVersion" json:"schemaVersion"`
+	Platform      string           `yaml:"platform" json:"platform"`
 	Mappings      []ContentMapping `yaml:"mappings" json:"mappings"`
 }
 

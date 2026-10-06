@@ -52,7 +52,9 @@ func (a App) appendEvidence(explicitWorkspace, file string) int {
 	}
 	record, err = engine.AppendEvidence(string(expected), record)
 	if err != nil {
-		if !activeSession { _ = tx.Rollback() }
+		if !activeSession {
+			_ = tx.Rollback()
+		}
 		fmt.Fprintln(a.ErrOut, err)
 		return 1
 	}
@@ -102,7 +104,9 @@ func (a App) appendAssessment(explicitWorkspace, file string) int {
 	}
 	record, err = engine.AppendAssessment(string(expected), record)
 	if err != nil {
-		if !activeSession { _ = tx.Rollback() }
+		if !activeSession {
+			_ = tx.Rollback()
+		}
 		fmt.Fprintln(a.ErrOut, err)
 		return 1
 	}
@@ -141,7 +145,9 @@ func (a App) rebuildState(explicitWorkspace string) int {
 		RevisionProvider: func() (string, error) { return string(expected), nil },
 	}).RebuildProjection()
 	if err != nil {
-		if !activeSession { _ = tx.Rollback() }
+		if !activeSession {
+			_ = tx.Rollback()
+		}
 		fmt.Fprintln(a.ErrOut, err)
 		return 1
 	}
