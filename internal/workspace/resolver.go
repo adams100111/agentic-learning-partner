@@ -12,8 +12,10 @@ import (
 const EnvWorkspace = "ALP_WORKSPACE"
 
 type Resolution struct {
-	Path   string
-	Source string
+	Path     string
+	Source   string
+	Name     string
+	Provider ProviderConfig
 }
 
 type Resolver struct {
@@ -22,29 +24,29 @@ type Resolver struct {
 }
 
 func NewResolver() Resolver {
-	return Resolver{
-		Getenv:  os.Getenv,
-		HomeDir: os.UserHomeDir,
-	}
+	return Resolver{Getenv: os.Getenv, HomeDir: os.UserHomeDir}
 }
 
 func (r Resolver) Resolve(explicit, startDir string) (Resolution, error) {
+	home, configPath, config, err := r.userConfig()
+	if err != nil {
+		return Resolution{}, err
+	}
+
 	if explicit != "" {
-		return resolvePath(explicit, "explicit --workspace")
+		return resolveReference(explicit, config, filepath.Dir(configPath), "explicit --workspace")
 	}
 
 	if startDir == "" {
-		var err error
 		startDir, err = os.Getwd()
 		if err != nil {
 			return Resolution{}, fmt.Errorf("resolve working directory: %w", err)
 		}
 	}
-
-	if path, ok, err := findProjectConfig(startDir); err != nil {
+	if reference, ok, err := findProjectConfig(startDir); err != nil {
 		return Resolution{}, err
 	} else if ok {
-		return resolvePath(path, "project .alp.yaml")
+		return resolveReference(reference, config, filepath.Dir(configPath), "project .alp.yaml")
 	}
 
 	getenv := r.Getenv
@@ -52,24 +54,32 @@ func (r Resolver) Resolve(explicit, startDir string) (Resolution, error) {
 		getenv = os.Getenv
 	}
 	if value := getenv(EnvWorkspace); value != "" {
-		return resolvePath(value, EnvWorkspace)
+		return resolveReference(value, config, filepath.Dir(configPath), EnvWorkspace)
 	}
 
+	name, provider, ok := config.Default()
+	if ok {
+		return resolveProvider(name, provider, filepath.Dir(configPath), "user config default")
+	}
+
+	return Resolution{}, fmt.Errorf("no ALP learner workspace configured under %s; pass --workspace, add .alp.yaml, set ALP_WORKSPACE, or configure a default workspace", home)
+}
+
+func (r Resolver) userConfig() (string, string, UserConfig, error) {
 	homeDir := r.HomeDir
 	if homeDir == nil {
 		homeDir = os.UserHomeDir
 	}
 	home, err := homeDir()
 	if err != nil {
-		return Resolution{}, fmt.Errorf("resolve home directory: %w", err)
+		return "", "", UserConfig{}, fmt.Errorf("resolve home directory: %w", err)
 	}
-	if path, ok, err := readWorkspaceConfig(filepath.Join(home, ".config", "alp", "config.yaml")); err != nil {
-		return Resolution{}, err
-	} else if ok {
-		return resolvePath(path, "user config")
+	path := filepath.Join(home, ".config", "alp", "config.yaml")
+	config, err := ReadUserConfig(path)
+	if err != nil {
+		return "", "", UserConfig{}, err
 	}
-
-	return Resolution{}, errors.New("no ALP learner workspace configured; pass --workspace, add .alp.yaml, set ALP_WORKSPACE, or configure ~/.config/alp/config.yaml")
+	return home, path, config, nil
 }
 
 func findProjectConfig(start string) (string, bool, error) {
@@ -77,44 +87,62 @@ func findProjectConfig(start string) (string, bool, error) {
 	if err != nil {
 		return "", false, fmt.Errorf("resolve project directory: %w", err)
 	}
-
 	for {
-		path, ok, err := readWorkspaceConfig(filepath.Join(current, ".alp.yaml"))
-		if err != nil || ok {
-			return path, ok, err
+		path := filepath.Join(current, ".alp.yaml")
+		data, err := os.ReadFile(path)
+		if errors.Is(err, os.ErrNotExist) {
+			parent := filepath.Dir(current)
+			if parent == current {
+				return "", false, nil
+			}
+			current = parent
+			continue
 		}
-
-		parent := filepath.Dir(current)
-		if parent == current {
-			return "", false, nil
+		if err != nil {
+			return "", false, fmt.Errorf("read %s: %w", path, err)
 		}
-		current = parent
+		var config struct {
+			Workspace string `yaml:"workspace"`
+		}
+		if err := yaml.Unmarshal(data, &config); err != nil {
+			return "", false, fmt.Errorf("parse %s: %w", path, err)
+		}
+		if config.Workspace == "" {
+			return "", false, fmt.Errorf("%s: workspace is required", path)
+		}
+		if !filepath.IsAbs(config.Workspace) && looksLikePath(config.Workspace) {
+			config.Workspace = filepath.Join(filepath.Dir(path), config.Workspace)
+		}
+		return config.Workspace, true, nil
 	}
 }
 
-func readWorkspaceConfig(path string) (string, bool, error) {
-	data, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return "", false, nil
+func resolveReference(reference string, config UserConfig, configDir, source string) (Resolution, error) {
+	if provider, ok := config.Named(reference); ok {
+		return resolveProvider(reference, provider, configDir, source)
 	}
+	return resolvePath(reference, source)
+}
+
+func resolveProvider(name string, provider ProviderConfig, configDir, source string) (Resolution, error) {
+	if provider.Type == "" {
+		provider.Type = "local"
+	}
+	if provider.Path == "" {
+		return Resolution{}, fmt.Errorf("workspace %q: path is required", name)
+	}
+	path := provider.Path
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(configDir, path)
+	}
+	resolution, err := resolvePath(path, source)
 	if err != nil {
-		return "", false, fmt.Errorf("read %s: %w", path, err)
+		return Resolution{}, err
 	}
-
-	var config struct {
-		Workspace string `yaml:"workspace"`
-	}
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return "", false, fmt.Errorf("parse %s: %w", path, err)
-	}
-	if config.Workspace == "" {
-		return "", false, fmt.Errorf("%s: workspace is required", path)
-	}
-
-	if !filepath.IsAbs(config.Workspace) {
-		config.Workspace = filepath.Join(filepath.Dir(path), config.Workspace)
-	}
-	return config.Workspace, true, nil
+	resolution.Name = name
+	resolution.Provider = provider
+	resolution.Provider.Path = resolution.Path
+	return resolution, nil
 }
 
 func resolvePath(path, source string) (Resolution, error) {
@@ -141,4 +169,9 @@ func expandHome(path string) (string, error) {
 		return filepath.Join(home, path[2:]), nil
 	}
 	return path, nil
+}
+
+func looksLikePath(value string) bool {
+	return value == "." || value == ".." || filepath.IsAbs(value) || value[0] == '.' ||
+		filepath.Dir(value) != "."
 }
