@@ -132,6 +132,7 @@ func (s *Git) Commit(ctx context.Context, expected Revision, changes ChangeSet) 
 	}
 
 	paths := make([]string, 0, len(changes.Mutations))
+	intentPaths := make([]string, 0, len(changes.Mutations))
 	for _, mutation := range changes.Mutations {
 		target, _ := safePath(s.root, mutation.Path)
 		prior := previous{path: target}
@@ -178,7 +179,11 @@ func (s *Git) Commit(ctx context.Context, expected Revision, changes ChangeSet) 
 				return "", err
 			}
 		}
-		paths = append(paths, filepath.ToSlash(filepath.Clean(filepath.FromSlash(mutation.Path))))
+		cleanPath := filepath.ToSlash(filepath.Clean(filepath.FromSlash(mutation.Path)))
+		paths = append(paths, cleanPath)
+		if !mutation.Delete {
+			intentPaths = append(intentPaths, cleanPath)
+		}
 	}
 
 	if issues := s.validator.ValidateWorkspace(s.root); len(issues) > 0 {
@@ -197,10 +202,12 @@ func (s *Git) Commit(ctx context.Context, expected Revision, changes ChangeSet) 
 
 	// Intent-to-add lets path-limited commit include new files while preserving
 	// unrelated staged/untracked work in the real index.
-	addArgs := append([]string{"add", "-N", "--"}, paths...)
-	if _, err := gitCommand(s.root, addArgs...); err != nil {
-		rollback()
-		return "", fmt.Errorf("prepare Git Store checkpoint: %w", err)
+	if len(intentPaths) > 0 {
+		addArgs := append([]string{"add", "-N", "--"}, intentPaths...)
+		if _, err := gitCommand(s.root, addArgs...); err != nil {
+			rollback()
+			return "", fmt.Errorf("prepare Git Store checkpoint: %w", err)
+		}
 	}
 
 	message := strings.TrimSpace(changes.Message)
@@ -283,6 +290,24 @@ func InitializeGit(ctx context.Context, root, branch, remote string, validator *
 	if err != nil {
 		return nil, err
 	}
+	if _, headErr := gitCommand(root, "rev-parse", "HEAD"); headErr != nil {
+		owned, listErr := existingOwnedPaths(root)
+		if listErr != nil {
+			return nil, listErr
+		}
+		if len(owned) == 0 {
+			return nil, errors.New("cannot initialize Git Store without ALP-owned workspace files")
+		}
+		addArgs := append([]string{"add", "--"}, owned...)
+		if _, err := gitCommand(root, addArgs...); err != nil {
+			return nil, fmt.Errorf("stage initial Git Store state: %w", err)
+		}
+		commitArgs := []string{"commit", "--only", "-m", "alp: initialize learner workspace", "--"}
+		commitArgs = append(commitArgs, owned...)
+		if _, err := gitCommand(root, commitArgs...); err != nil {
+			return nil, fmt.Errorf("create initial Git Store checkpoint: %w", err)
+		}
+	}
 	if remote != "" {
 		if current, remoteErr := gitCommand(root, "remote", "get-url", "origin"); remoteErr == nil {
 			if strings.TrimSpace(current) != remote {
@@ -306,4 +331,30 @@ func gitCommandContext(ctx context.Context, dir string, args ...string) (string,
 		return "", fmt.Errorf("%s: %w", strings.TrimSpace(string(output)), err)
 	}
 	return string(output), nil
+}
+
+func existingOwnedPaths(root string) ([]string, error) {
+	var paths []string
+	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			if entry.Name() == ".git" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		relative, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		relative = filepath.ToSlash(relative)
+		if IsOwnedPath(relative) {
+			paths = append(paths, relative)
+		}
+		return nil
+	})
+	sort.Strings(paths)
+	return paths, err
 }
