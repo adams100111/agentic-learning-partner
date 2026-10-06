@@ -3,11 +3,15 @@
   "$id": "https://agentic-learning-partner.dev/schemas/workspace.schema.json",
   "title": "ALP Learner Workspace",
   "type": "object",
-  "required": ["schemaVersion", "learnerId"],
+  "required": ["schemaVersion", "workspaceId", "learnerId"],
   "properties": {
     "schemaVersion": {
       "type": "integer",
-      "const": 1
+      "const": 2
+    },
+    "workspaceId": {
+      "type": "string",
+      "pattern": "^ws_[A-Za-z0-9_-]+$"
     },
     "learnerId": {
       "type": "string",
