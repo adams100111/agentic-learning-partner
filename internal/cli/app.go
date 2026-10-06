@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"github.com/adams100111/agentic-learning-partner/internal/domain"
 	"github.com/adams100111/agentic-learning-partner/internal/migrate"
 	"github.com/adams100111/agentic-learning-partner/internal/state"
+	storepkg "github.com/adams100111/agentic-learning-partner/internal/store"
 	"github.com/adams100111/agentic-learning-partner/internal/view"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 	"go.yaml.in/yaml/v3"
@@ -470,12 +472,27 @@ func (a App) resolveAndInspect(explicit string) (workspace.Resolution, workspace
 		fmt.Fprintln(a.ErrOut, err)
 		return workspace.Resolution{}, workspace.Info{}, false
 	}
-	info, err := workspace.Inspect(resolution.Path)
+	validator, err := workspace.NewValidator()
 	if err != nil {
 		fmt.Fprintln(a.ErrOut, err)
 		return workspace.Resolution{}, workspace.Info{}, false
 	}
-	return resolution, info, true
+	var active storepkg.Store
+	if _, statErr := os.Stat(resolution.Path + string(os.PathSeparator) + ".git"); statErr == nil {
+		active, err = storepkg.OpenGit(resolution.Path, validator)
+	} else {
+		active, err = storepkg.OpenLocal(resolution.Path, validator)
+	}
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return workspace.Resolution{}, workspace.Info{}, false
+	}
+	revision, err := active.Revision(context.Background())
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return workspace.Resolution{}, workspace.Info{}, false
+	}
+	return resolution, workspace.Info{Path: active.Root(), Revision: string(revision)}, true
 }
 
 func (a App) usage() {
