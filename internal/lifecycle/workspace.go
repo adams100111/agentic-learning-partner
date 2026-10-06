@@ -240,6 +240,13 @@ func (m Manager) Open(name string) (storepkg.Store, workspace.ProviderConfig, er
 	return active, provider, err
 }
 
+func (m Manager) Register(name string, provider workspace.ProviderConfig) error {
+	if err := validateName(name); err != nil {
+		return err
+	}
+	return m.saveWorkspace(name, provider, false)
+}
+
 func (m Manager) Replace(name string, provider workspace.ProviderConfig) error {
 	config, err := workspace.ReadUserConfig(m.ConfigPath)
 	if err != nil {
