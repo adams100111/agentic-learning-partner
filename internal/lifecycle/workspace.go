@@ -138,6 +138,23 @@ func (m Manager) List() ([]WorkspaceStatus, error) {
 	return result, nil
 }
 
+func (m Manager) AcknowledgeRemotePrivacy(name string) error {
+	config, err := workspace.ReadUserConfig(m.ConfigPath)
+	if err != nil {
+		return err
+	}
+	provider, ok := config.Named(name)
+	if !ok {
+		return fmt.Errorf("workspace %q is not configured", name)
+	}
+	if provider.Type != "git" {
+		return fmt.Errorf("workspace %q does not use Git Store", name)
+	}
+	provider.PrivacyAck = true
+	config.Workspaces[name] = provider
+	return workspace.WriteUserConfig(m.ConfigPath, config)
+}
+
 func (m Manager) Use(name string) error {
 	config, err := workspace.ReadUserConfig(m.ConfigPath)
 	if err != nil {
