@@ -12,7 +12,7 @@ grill-with-docs
   -> to-tickets
   -> implement-spec
   -> code-review
-  -> retro
+  -> retro (human-in-the-loop, optional)
 ```
 
 The architecture grill is now complete, so ALP does not need `wayfinder` for the current implementation phase.
@@ -92,7 +92,9 @@ Do not let a clean implementation hide missing requirements, or a complete featu
 
 ## Retro
 
-After each substantial implementation tranche, run a retrospective focused on the agent environment:
+Retro is human-in-the-loop and is not an automatic implementation-loop step.
+
+Run a retrospective only when the user explicitly invokes it or approves a recommendation to do so, typically after a substantial tranche, repeated review failures, or an agent-environment problem. Focus on:
 
 - missing navigation pointers;
 - missing deterministic checks;
