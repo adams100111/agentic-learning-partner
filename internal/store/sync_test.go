@@ -192,3 +192,32 @@ func TestGitSyncMergesNonOverlappingProfileClaims(t *testing.T) {
 func validSyncSession(id string) []byte {
 	return []byte("schemaVersion: 1\nid: " + id + "\nstartedAt: 2026-10-06T00:00:00Z\nclosedAt: 2026-10-06T00:01:00Z\nbaseRevision: git:test\nsyncMode: session\n")
 }
+
+func TestRunBoundedSyncRetriesPushRaceAtMostConfiguredLimit(t *testing.T) {
+	attempts := 0
+	result, err := runBoundedSync(3, func(attempt int) (SyncResult, bool, error) {
+		attempts++
+		if attempt < 3 {
+			return SyncResult{}, true, nil
+		}
+		return SyncResult{Attempts: attempt, Revision: "git:final"}, false, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if attempts != 3 || result.Attempts != 3 {
+		t.Fatalf("attempts=%d result=%#v", attempts, result)
+	}
+
+	attempts = 0
+	_, err = runBoundedSync(3, func(attempt int) (SyncResult, bool, error) {
+		attempts++
+		return SyncResult{}, true, nil
+	})
+	if err == nil || !strings.Contains(err.Error(), "retry limit reached after 3 attempts") {
+		t.Fatalf("error=%v attempts=%d", err, attempts)
+	}
+	if attempts != 3 {
+		t.Fatalf("retry attempts = %d", attempts)
+	}
+}
