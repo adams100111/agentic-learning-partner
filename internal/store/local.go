@@ -46,7 +46,6 @@ func (s *Local) Capabilities() Capabilities {
 	return Capabilities{
 		CapabilityPersistence:           true,
 		CapabilityOptimisticConcurrency: true,
-		CapabilityAtomicCheckpoint:      true,
 		CapabilityRevisions:             true,
 		CapabilityOffline:               true,
 	}
