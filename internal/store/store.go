@@ -54,3 +54,9 @@ func Require(store Store, capability Capability) error {
 	}
 	return nil
 }
+
+type Syncer interface {
+	Pull(context.Context, SyncOptions) (SyncResult, error)
+	Push(context.Context, SyncOptions) (SyncResult, error)
+	Sync(context.Context, SyncOptions) (SyncResult, error)
+}
