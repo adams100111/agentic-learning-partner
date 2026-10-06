@@ -1,9 +1,10 @@
 package workspace
 
 import (
+	"context"
 	"fmt"
+	"github.com/adams100111/agentic-learning-partner/internal/gitexec"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -46,7 +47,7 @@ func Inspect(path string) (Info, error) {
 }
 
 func git(dir string, args ...string) (string, error) {
-	command := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	command := gitexec.Command(context.Background(), dir, args...)
 	output, err := command.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", strings.TrimSpace(string(output)), err)

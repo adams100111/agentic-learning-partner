@@ -3,11 +3,11 @@ package session
 import (
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/adams100111/agentic-learning-partner/internal/gitexec"
 	"github.com/adams100111/agentic-learning-partner/internal/store"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 )
@@ -139,7 +139,7 @@ func sessionGitFixture(t *testing.T) (string, *store.Git) {
 	runSessionGit(t, source, "add", "workspace.yaml")
 	runSessionGit(t, source, "commit", "-m", "init")
 	remote := filepath.Join(t.TempDir(), "state.git")
-	cmd := exec.Command("git", "clone", "--bare", source, remote)
+	cmd := gitexec.Command(context.Background(), "", "clone", "--bare", source, remote)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("bare clone: %v\n%s", err, out)
 	}
@@ -172,7 +172,7 @@ func writeSessionFileErr(root, name, content string) error {
 
 func runSessionGit(t *testing.T, root string, args ...string) string {
 	t.Helper()
-	cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
+	cmd := gitexec.Command(context.Background(), "", append([]string{"-C", root}, args...)...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("git %v: %v\n%s", args, err, out)

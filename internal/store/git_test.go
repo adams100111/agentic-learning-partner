@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/adams100111/agentic-learning-partner/internal/gitexec"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 )
 
@@ -111,6 +112,7 @@ func runGitStore(t *testing.T, root string, args ...string) string {
 func runCommandGitStore(t *testing.T, dir, name string, args ...string) string {
 	t.Helper()
 	cmd := exec.Command(name, args...)
+	cmd.Env = gitexec.Env()
 	if dir != "" {
 		cmd.Dir = dir
 	}
