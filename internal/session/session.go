@@ -254,7 +254,7 @@ func (s *Session) checkpoint(ctx context.Context, closing bool, input CloseInput
 	}
 
 	shouldSync := s.mode != SyncManual && s.manager.Store.Capabilities().Has(store.CapabilitySync)
-	revision, err := s.tx.Checkpoint(ctx, shouldSync)
+	revision, err := s.tx.CheckpointWithMessage(ctx, shouldSync, "alp: session "+s.id)
 	if err != nil {
 		return CloseResult{}, err
 	}
