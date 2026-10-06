@@ -20,7 +20,7 @@ import (
 
 func (a App) runSession(args []string) int {
 	if len(args) == 0 {
-		fmt.Fprintln(a.ErrOut, "usage: alp session <begin|status|put|delete|close|abort|recover-sync> [options]")
+		fmt.Fprintln(a.ErrOut, "usage: alp session <begin|status|put|delete|flush|close|abort|recover-sync> [options]")
 		return 2
 	}
 	command := args[0]
@@ -156,6 +156,23 @@ func (a App) runSession(args []string) int {
 			return 1
 		}
 		fmt.Fprintf(a.Out, "staged deletion: %s\n", *path)
+		return 0
+
+	case "flush":
+		resumed, err := manager.Resume(context.Background())
+		if err != nil {
+			fmt.Fprintln(a.ErrOut, err)
+			return 1
+		}
+		result, err := resumed.Flush(context.Background())
+		if err != nil {
+			fmt.Fprintln(a.ErrOut, err)
+			return 1
+		}
+		fmt.Fprintf(a.Out, "revision: %s\nsync pending: %t\n", result.Revision, result.SyncPending)
+		if result.SyncResult.Message != "" {
+			fmt.Fprintf(a.Out, "sync message: %s\n", result.SyncResult.Message)
+		}
 		return 0
 
 	case "close":
