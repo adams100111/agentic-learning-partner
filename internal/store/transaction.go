@@ -92,9 +92,9 @@ func (c *Coordinator) Begin(ctx context.Context, sessionID string, expected Revi
 		PID: os.Getpid(),
 		StartedAt: time.Now().UTC().Format(time.RFC3339),
 	}
-	if err := createExclusiveJSON(c.lockPath(manifest.WorkspaceID), lock); err != nil {
+	if err := createExclusiveJSON(c.lockPath(workspaceKey), lock); err != nil {
 		if errors.Is(err, os.ErrExist) {
-			return nil, fmt.Errorf("workspace %s already has a writer; inspect recovery before resolving the existing lock", manifest.WorkspaceID)
+			return nil, fmt.Errorf("workspace %s already has a writer; inspect recovery before resolving the existing lock", workspaceKey)
 		}
 		return nil, err
 	}
