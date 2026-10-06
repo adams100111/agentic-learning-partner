@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/adams100111/agentic-learning-partner/internal/gitexec"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 )
 
@@ -269,7 +269,7 @@ func CloneGit(ctx context.Context, remote, destination, branch string, validator
 		return nil, err
 	}
 	args := []string{"clone", "--branch", branch, "--single-branch", remote, destination}
-	command := exec.CommandContext(ctx, "git", args...)
+	command := gitexec.Command(ctx, "", args...)
 	if output, err := command.CombinedOutput(); err != nil {
 		return nil, fmt.Errorf("clone Git Store: %s: %w", strings.TrimSpace(string(output)), err)
 	}
@@ -324,7 +324,7 @@ func gitCommand(dir string, args ...string) (string, error) {
 }
 
 func gitCommandContext(ctx context.Context, dir string, args ...string) (string, error) {
-	command := exec.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...)
+	command := gitexec.Command(ctx, dir, args...)
 	output, err := command.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", strings.TrimSpace(string(output)), err)

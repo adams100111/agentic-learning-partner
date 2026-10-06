@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"context"
+	"github.com/adams100111/agentic-learning-partner/internal/gitexec"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 )
 
@@ -343,7 +344,7 @@ func makeStateWorkspace(t *testing.T) (string, string) {
 
 func runStateGit(t *testing.T, dir string, args ...string) {
 	t.Helper()
-	command := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	command := gitexec.Command(context.Background(), "", append([]string{"-C", dir}, args...)...)
 	output, err := command.CombinedOutput()
 	if err != nil {
 		t.Fatalf("git %v: %v\n%s", args, err, output)
