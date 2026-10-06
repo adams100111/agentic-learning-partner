@@ -37,7 +37,7 @@ func (a App) Run(args []string) int {
 		return a.runValidate(args[1:])
 	case "workspace":
 		if len(args) < 2 {
-			fmt.Fprintln(a.ErrOut, "usage: alp workspace <init|clone|list|use|status|check|migrate> [options]")
+			fmt.Fprintln(a.ErrOut, "usage: alp workspace <init|clone|list|use|status|acknowledge-privacy|check|migrate> [options]")
 			return 2
 		}
 		if args[1] == "check" {
