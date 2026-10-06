@@ -3,11 +3,11 @@ package lifecycle
 import (
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/adams100111/agentic-learning-partner/internal/gitexec"
 	"github.com/adams100111/agentic-learning-partner/internal/store"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 )
@@ -134,7 +134,7 @@ func lifecycleRemote(t *testing.T) string {
 	runLifecycleGit(t, source, "add", "workspace.yaml")
 	runLifecycleGit(t, source, "commit", "-m", "init")
 	remote := filepath.Join(t.TempDir(), "state.git")
-	cmd := exec.Command("git", "clone", "--bare", source, remote)
+	cmd := gitexec.Command(context.Background(), "", "clone", "--bare", source, remote)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("bare clone: %v\n%s", err, out)
 	}
@@ -143,7 +143,7 @@ func lifecycleRemote(t *testing.T) string {
 
 func runLifecycleGit(t *testing.T, root string, args ...string) {
 	t.Helper()
-	cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
+	cmd := gitexec.Command(context.Background(), "", append([]string{"-C", root}, args...)...)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("git %v: %v\n%s", args, err, out)
 	}

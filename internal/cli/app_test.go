@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"github.com/adams100111/agentic-learning-partner/internal/gitexec"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -73,6 +74,7 @@ func makeWorkspace(t *testing.T) string {
 func run(t *testing.T, dir, name string, args ...string) {
 	t.Helper()
 	command := exec.Command(name, args...)
+	command.Env = gitexec.Env()
 	command.Dir = dir
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("%s %v: %v\n%s", name, args, err, output)

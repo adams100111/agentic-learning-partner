@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -12,8 +11,10 @@ import (
 	"testing"
 	"time"
 
+	"context"
 	contextbundle "github.com/adams100111/agentic-learning-partner/internal/context"
 	"github.com/adams100111/agentic-learning-partner/internal/domain"
+	"github.com/adams100111/agentic-learning-partner/internal/gitexec"
 	"github.com/adams100111/agentic-learning-partner/internal/learning"
 	"github.com/adams100111/agentic-learning-partner/internal/platform/pylearn"
 	"github.com/adams100111/agentic-learning-partner/internal/state"
@@ -274,7 +275,7 @@ func write(t *testing.T, root, name, content string) {
 
 func runGit(t *testing.T, root string, args ...string) {
 	t.Helper()
-	command := exec.Command("git", append([]string{"-C", root}, args...)...)
+	command := gitexec.Command(context.Background(), "", append([]string{"-C", root}, args...)...)
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("git %v: %v\n%s", args, err, output)
 	}

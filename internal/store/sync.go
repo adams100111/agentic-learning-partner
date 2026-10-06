@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/adams100111/agentic-learning-partner/internal/gitexec"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -432,7 +433,7 @@ func isPushRace(output string) bool {
 }
 
 func execGit(ctx context.Context, dir string, args ...string) *exec.Cmd {
-	return exec.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...)
+	return gitexec.Command(ctx, dir, args...)
 }
 
 func gitCommandBytes(dir string, args ...string) ([]byte, error) {

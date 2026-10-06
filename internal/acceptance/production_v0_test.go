@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/adams100111/agentic-learning-partner/internal/gitexec"
 	"github.com/adams100111/agentic-learning-partner/internal/store"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 	"github.com/adams100111/agentic-learning-partner/internal/workspacearchive"
@@ -120,6 +121,7 @@ func TestProductionV0LocalToGitToSecondDeviceContinuation(t *testing.T) {
 func runAcceptance(t *testing.T, dir, name string, args ...string) {
 	t.Helper()
 	command := exec.Command(name, args...)
+	command.Env = gitexec.Env()
 	if dir != "" {
 		command.Dir = dir
 	}

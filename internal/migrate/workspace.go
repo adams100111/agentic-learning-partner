@@ -6,12 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 
+	"context"
+	"github.com/adams100111/agentic-learning-partner/internal/gitexec"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 	"go.yaml.in/yaml/v3"
 )
@@ -208,7 +209,7 @@ func setWorkspaceSchemaVersion(root string, version int) error {
 }
 
 func gitClean(root string) (bool, error) {
-	command := exec.Command("git", "-C", root, "status", "--porcelain")
+	command := gitexec.Command(context.Background(), root, "status", "--porcelain")
 	output, err := command.CombinedOutput()
 	if err != nil {
 		return false, fmt.Errorf("inspect workspace Git status: %s: %w", strings.TrimSpace(string(output)), err)

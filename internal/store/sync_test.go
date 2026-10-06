@@ -3,11 +3,11 @@ package store
 import (
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/adams100111/agentic-learning-partner/internal/gitexec"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 )
 
@@ -173,7 +173,7 @@ func makeTwoGitDevicesFromProfile(t *testing.T, profile []byte) (string, *Git, *
 	runGitStore(t, source, "commit", "-m", "init")
 
 	remote := filepath.Join(t.TempDir(), "state.git")
-	cmd := exec.Command("git", "clone", "--bare", source, remote)
+	cmd := gitexec.Command(context.Background(), "", "clone", "--bare", source, remote)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("bare clone: %v\n%s", err, out)
 	}
