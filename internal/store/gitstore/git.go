@@ -20,7 +20,9 @@ type Validator func(root string) error
 type Store struct {
 	root      string
 	branch    string
+	remote    string
 	validator Validator
+	rebuild   func(string) error
 }
 
 type fileBackup struct {
@@ -50,7 +52,7 @@ func Open(root, branch string, validator Validator) (*Store, error) {
 	if filepath.Clean(absoluteRoot) != filepath.Clean(absoluteTop) {
 		return nil, fmt.Errorf("git store workspace must be repository root")
 	}
-	s := &Store{root: root, branch: branch, validator: validator}
+	s := &Store{root: root, branch: branch, remote: "origin", validator: validator}
 	if validator != nil {
 		if err := validator(root); err != nil {
 			return nil, err
@@ -455,4 +457,16 @@ func git(dir string, args ...string) (string, error) {
 		return "", fmt.Errorf("git %s: %s: %w", strings.Join(args, " "), strings.TrimSpace(string(output)), err)
 	}
 	return string(output), nil
+}
+
+func (s *Store) WithRemote(remote string) *Store {
+	if strings.TrimSpace(remote) != "" {
+		s.remote = remote
+	}
+	return s
+}
+
+func (s *Store) WithRebuilder(rebuild func(string) error) *Store {
+	s.rebuild = rebuild
+	return s
 }
