@@ -67,32 +67,28 @@ func (s *Git) Sync(ctx context.Context, options SyncOptions) (SyncResult, error)
 		maxRetries = 3
 	}
 	changed := false
-	for attempt := 1; attempt <= maxRetries; attempt++ {
+	return runBoundedSync(maxRetries, func(attempt int) (SyncResult, bool, error) {
 		remoteSHA, fetchErr := s.fetchRemote(ctx, remote, branch)
 		if fetchErr != nil {
 			revision, _ := s.Revision(ctx)
-			return SyncResult{Changed: changed, Pending: true, Attempts: attempt, Revision: revision, Message: fetchErr.Error()}, nil
+			return SyncResult{Changed: changed, Pending: true, Attempts: attempt, Revision: revision, Message: fetchErr.Error()}, false, nil
 		}
 		pulled, revision, reconcileErr := s.reconcileRemote(ctx, remoteSHA, options)
 		if reconcileErr != nil {
-			return SyncResult{}, reconcileErr
+			return SyncResult{}, false, reconcileErr
 		}
 		changed = changed || pulled
 
 		output, pushErr := s.pushRemote(ctx, remote, branch)
 		if pushErr == nil {
 			finalRevision, _ := s.Revision(ctx)
-			return SyncResult{Changed: changed, Attempts: attempt, Revision: finalRevision}, nil
+			return SyncResult{Changed: changed, Attempts: attempt, Revision: finalRevision}, false, nil
 		}
 		if isPushRace(output) {
-			if attempt == maxRetries {
-				return SyncResult{}, fmt.Errorf("Git Store concurrency retry limit reached after %d attempts", maxRetries)
-			}
-			continue
+			return SyncResult{}, true, nil
 		}
-		return SyncResult{Changed: changed, Pending: true, Attempts: attempt, Revision: revision, Message: output}, nil
-	}
-	return SyncResult{}, fmt.Errorf("Git Store synchronization failed")
+		return SyncResult{Changed: changed, Pending: true, Attempts: attempt, Revision: revision, Message: output}, false, nil
+	})
 }
 
 func (s *Git) syncTarget(options SyncOptions) (string, string, error) {
@@ -459,4 +455,20 @@ func changedSnapshotPaths(before, after map[string][]byte) []string {
 		}
 	}
 	return result
+}
+
+func runBoundedSync(maxRetries int, attempt func(int) (SyncResult, bool, error)) (SyncResult, error) {
+	for current := 1; current <= maxRetries; current++ {
+		result, retry, err := attempt(current)
+		if err != nil {
+			return SyncResult{}, err
+		}
+		if !retry {
+			return result, nil
+		}
+		if current == maxRetries {
+			return SyncResult{}, fmt.Errorf("Git Store concurrency retry limit reached after %d attempts", maxRetries)
+		}
+	}
+	return SyncResult{}, fmt.Errorf("Git Store synchronization failed")
 }
