@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/learning-plan.schema.json",
+  "title": "ALP Learner-Specific Learning Plan",
+  "type": "object",
+  "required": ["schemaVersion", "domain", "asOf", "items"],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "domain": {"type": "string"},
+    "asOf": {"type": "string", "format": "date-time"},
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["competency", "mode", "reason"],
+        "properties": {
+          "competency": {"type": "string"},
+          "mode": {"enum": ["skip", "skim", "challenge-only", "full"]},
+          "reason": {"type": "string"},
+          "priority": {"type": "integer", "minimum": 0}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

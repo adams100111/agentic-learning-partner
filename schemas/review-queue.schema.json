@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/review-queue.schema.json",
+  "title": "ALP Review Queue",
+  "type": "object",
+  "required": ["schemaVersion", "asOf", "items"],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "asOf": {"type": "string", "format": "date-time"},
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["domain", "competency", "priority", "reasons"],
+        "properties": {
+          "domain": {"type": "string"},
+          "competency": {"type": "string"},
+          "priority": {"type": "integer", "minimum": 0},
+          "reasons": {"type": "array", "items": {"type": "string"}},
+          "lastVerified": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

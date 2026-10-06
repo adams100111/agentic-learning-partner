@@ -1,0 +1,63 @@
+schemaVersion: 1
+domain: go
+activities:
+  - id: go-diag-slice-aliasing
+    kind: predict
+    competencies: [go.language.slices]
+    prompt: Predict how slice aliasing and append affect both visible slices, then explain why.
+  - id: go-diag-receivers
+    kind: code-reading
+    competencies: [go.language.pointers, go.language.structs-methods]
+    prompt: Choose pointer or value receivers for a small type and justify the method-set and mutation consequences.
+  - id: go-diag-interfaces
+    kind: design-review
+    competencies: [go.language.interfaces, go.architecture.abstraction]
+    prompt: Review an interface-heavy service design and identify which interfaces should be consumer-owned, removed, or kept.
+  - id: go-diag-errors
+    kind: debugging
+    competencies: [go.language.errors]
+    prompt: Diagnose wrapped-error handling and choose the correct errors.Is/errors.As boundary.
+  - id: go-diag-defer
+    kind: code-reading
+    competencies: [go.language.defer-resource-lifetime]
+    prompt: Trace defer evaluation and resource lifetime in a handler with multiple returns.
+  - id: go-diag-http
+    kind: code-reading
+    competencies: [go.backend.http-stdlib, go.backend.routing-middleware]
+    prompt: Review a net/http handler/middleware chain for request lifetime, body handling, and timeout mistakes.
+  - id: go-diag-context
+    kind: debugging
+    competencies: [go.runtime.context, go.concurrency.goroutines]
+    prompt: Find the cancellation ownership bug in a request-scoped goroutine flow and explain who should terminate what.
+  - id: go-diag-transactions
+    kind: design-review
+    competencies: [go.database.transactions, go.database.pooling]
+    prompt: Place the transaction boundary for a multi-query use case and explain cancellation/error behavior.
+  - id: go-diag-goroutine-lifecycle
+    kind: debugging
+    competencies: [go.concurrency.goroutines, go.concurrency.races-deadlocks-leaks]
+    prompt: Identify goroutine ownership, termination, and capture problems in a concurrent worker.
+  - id: go-diag-channels
+    kind: predict
+    competencies: [go.concurrency.channels]
+    prompt: Predict blocking and close behavior for a small producer-consumer channel flow and identify the close owner.
+  - id: go-diag-select
+    kind: predict
+    competencies: [go.concurrency.select, go.runtime.context]
+    prompt: Trace select behavior under timeout, cancellation, and channel readiness.
+  - id: go-diag-sync-choice
+    kind: design-review
+    competencies: [go.concurrency.sync]
+    prompt: Choose between mutex, channel, atomic, and ownership transfer for a shared invariant and justify the choice.
+  - id: go-diag-race-leak
+    kind: debugging
+    competencies: [go.concurrency.races-deadlocks-leaks, go.testing.race-fuzz-bench]
+    prompt: Diagnose a race or goroutine leak and name the Go tooling that would prove the diagnosis.
+  - id: go-diag-packages
+    kind: architecture-review
+    competencies: [go.architecture.packages, go.architecture.abstraction]
+    prompt: Simplify an over-layered Go package structure while preserving dependency direction and testability.
+  - id: go-diag-lifecycle
+    kind: production-scenario
+    competencies: [go.production.lifecycle, go.production.observability, go.production.reliability]
+    prompt: Design startup, readiness, graceful shutdown, worker draining, and failure observability for a long-running Go service.
