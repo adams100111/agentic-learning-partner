@@ -169,6 +169,10 @@ func (t *Transaction) Rollback() error {
 	return t.coordinator.DiscardRecovery(t.recovery.WorkspaceID)
 }
 
+func (t *Transaction) BaseRevision() Revision {
+	return t.recovery.BaseRevision
+}
+
 func (t *Transaction) StageRoot() string {
 	if t.recovery.StageDir == "" {
 		return ""
