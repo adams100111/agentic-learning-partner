@@ -282,9 +282,25 @@ func (t *transaction) finish() {
 	}
 }
 
-type lockMetadata struct {
+type LockInfo struct {
 	PID       int
 	StartedAt time.Time
+	Path      string
+}
+
+type LockError struct {
+	Info LockInfo
+}
+
+func (e LockError) Error() string {
+	return fmt.Sprintf("workspace is locked by writer pid=%d startedAt=%s", e.Info.PID, e.Info.StartedAt.UTC().Format(time.RFC3339))
+}
+
+func (e LockError) RecoverableAfter(maxAge time.Duration, now time.Time) bool {
+	if e.Info.StartedAt.IsZero() {
+		return false
+	}
+	return now.Sub(e.Info.StartedAt) > maxAge
 }
 
 type writeLock struct {
@@ -304,8 +320,17 @@ func acquireLock(root string) (*writeLock, error) {
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 	if err != nil {
 		if errors.Is(err, os.ErrExist) {
+			info := LockInfo{Path: path}
 			data, _ := os.ReadFile(path)
-			return nil, fmt.Errorf("workspace is locked by another writer (%s)", strings.TrimSpace(string(data)))
+			for _, line := range strings.Split(string(data), "\n") {
+				if strings.HasPrefix(line, "pid=") {
+					info.PID, _ = strconv.Atoi(strings.TrimPrefix(line, "pid="))
+				}
+				if strings.HasPrefix(line, "startedAt=") {
+					info.StartedAt, _ = time.Parse(time.RFC3339, strings.TrimPrefix(line, "startedAt="))
+				}
+			}
+			return nil, LockError{Info: info}
 		}
 		return nil, err
 	}
