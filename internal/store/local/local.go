@@ -48,6 +48,21 @@ func Initialize(root, learnerID string, validator Validator) (*Store, error) {
 	if strings.TrimSpace(learnerID) == "" {
 		return nil, errors.New("learner id is required")
 	}
+	id, err := workspace.NewWorkspaceID()
+	if err != nil {
+		return nil, err
+	}
+	return InitializeWithManifest(root, workspace.Manifest{
+		SchemaVersion: workspace.CurrentSchemaVersion,
+		WorkspaceID: id,
+		LearnerID: learnerID,
+	}, validator)
+}
+
+func InitializeWithManifest(root string, manifest workspace.Manifest, validator Validator) (*Store, error) {
+	if manifest.SchemaVersion != workspace.CurrentSchemaVersion || manifest.WorkspaceID == "" || manifest.LearnerID == "" {
+		return nil, errors.New("valid current workspace manifest is required")
+	}
 	if info, err := os.Stat(root); err == nil && info.IsDir() {
 		entries, readErr := os.ReadDir(root)
 		if readErr != nil {
@@ -59,15 +74,7 @@ func Initialize(root, learnerID string, validator Validator) (*Store, error) {
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return nil, err
 	}
-	id, err := workspace.NewWorkspaceID()
-	if err != nil {
-		return nil, err
-	}
-	if err := workspace.WriteManifest(root, workspace.Manifest{
-		SchemaVersion: workspace.CurrentSchemaVersion,
-		WorkspaceID:   id,
-		LearnerID:     learnerID,
-	}); err != nil {
+	if err := workspace.WriteManifest(root, manifest); err != nil {
 		return nil, err
 	}
 	return Open(root, validator)
