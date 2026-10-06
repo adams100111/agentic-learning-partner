@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/adams100111/agentic-learning-partner/internal/migrate"
 	"github.com/adams100111/agentic-learning-partner/internal/store"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 	"github.com/adams100111/agentic-learning-partner/internal/workspacearchive"
@@ -103,7 +104,11 @@ func (m Manager) Clone(ctx context.Context, name, remote, path, branch string, p
 	if branch == "" { branch = "main" }
 	absolute, err := filepath.Abs(path)
 	if err != nil { return WorkspaceStatus{}, err }
-	if _, err := store.CloneGit(ctx, remote, absolute, branch, m.Validator); err != nil {
+	gitStore, err := store.CloneGit(ctx, remote, absolute, branch, m.Validator)
+	if err != nil {
+		return WorkspaceStatus{}, err
+	}
+	if err := m.migrateClonedGitWorkspace(ctx, gitStore); err != nil {
 		return WorkspaceStatus{}, err
 	}
 	entry := workspace.WorkspaceConfig{
@@ -294,6 +299,34 @@ func (m Manager) open(name string) (store.Store, workspace.WorkspaceConfig, stri
 		err = fmt.Errorf("unsupported store provider %q", entry.Provider)
 	}
 	return active, entry, resolvedName, config, err
+}
+
+func (m Manager) migrateClonedGitWorkspace(ctx context.Context, active *store.Git) error {
+	manifest, err := workspace.ReadManifest(active.Root())
+	if err != nil {
+		return err
+	}
+	if manifest.SchemaVersion >= workspace.CurrentSchemaVersion {
+		return nil
+	}
+	before, err := active.Revision(ctx)
+	if err != nil {
+		return err
+	}
+	migrator := migrate.NewWorkspaceMigrator(m.Validator)
+	migrator.Rebuild = m.Rebuild
+	if _, err := migrator.Apply(active.Root(), strings.TrimPrefix(string(before), "git:")); err != nil {
+		return err
+	}
+	data, err := os.ReadFile(filepath.Join(active.Root(), "workspace.yaml"))
+	if err != nil {
+		return err
+	}
+	_, err = active.Commit(ctx, before, store.ChangeSet{
+		Message: "alp: migrate workspace schema",
+		Mutations: []store.Mutation{{Path: "workspace.yaml", Data: data}},
+	})
+	return err
 }
 
 func (m Manager) addWorkspace(name string, entry workspace.WorkspaceConfig) error {
