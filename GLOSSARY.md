@@ -44,11 +44,35 @@ A subject-specific package of competency taxonomy, diagnostic/teaching rubrics, 
 
 ## Platform Adapter
 
-A boundary that translates between an external learning platform and ALP. A platform adapter normalizes learner/activity signals and adaptation outputs without making the platform ALP's technical source of truth.
+The umbrella integration boundary between ALP and an external learning platform or delivery environment. A Platform Adapter is capability-oriented rather than one mandatory bidirectional interface. An integration may expose activity ingestion, curriculum inspection, content mapping, authoring-target realization, and platform validation independently.
+
+## Platform Capability
+
+A concrete capability exposed by a Platform Adapter. Initial capability families are activity sourcing/normalization, curriculum reading, content-to-competency mapping, authoring-target realization, and platform validation. Integrations implement only capabilities they can support honestly.
+
+## Learning Target
+
+A platform-independent destination for a learner-facing learning experience. A target may be a course, track, workshop, lab series, project path, or another structured delivery surface. A platform-specific course ID is one implementation of a Learning Target, not a core ALP identity.
+
+## Target Adaptation Projection
+
+A derived, rebuildable projection of learner/domain state for one Learning Target. It may contain sequencing, skip/skim/challenge/full decisions, reinforcement needs, uncovered competencies, and authoring requirements. It is not evidence and does not own competency truth.
+
+## Curriculum Specification
+
+A platform-neutral specification of the shape, coverage, dependencies, sequencing, and evidence expectations for a Learning Target. It is derived from learner/domain state and target constraints.
+
+## Learning Unit Specification
+
+A platform-neutral specification for one learner-facing unit. It describes competencies, objectives, prior-knowledge assumptions, adaptation mode, misconceptions, evidence requirements, analogies/transfer constraints, freshness/source requirements, dependencies, and done bars. It deliberately excludes platform-native rendering concepts such as PyLearn Reel MDX components.
+
+## Authoring Plan
+
+A validated proposal for realizing one or more Curriculum/Learning Unit Specifications in a target platform. It may be executed by an agent or adapter through a branch/worktree/PR workflow, but ALP core does not silently mutate platform production content.
 
 ## PyLearn
 
-ALP's first integration and validation environment. PyLearn is a source of learner activity, project evidence, and candidate course material; it is not an authoritative source for technical correctness.
+ALP's primary reference integration and first validation environment, but not the only platform target. PyLearn is a source of learner activity, project evidence, and candidate course material; it is not an authoritative source for technical correctness. Its Reel MDX system is the first reference implementation of a platform-native authoring target.
 
 ## Context Bundle
 
@@ -56,7 +80,7 @@ The structured output produced by ALP's context builder for a specific agent tas
 
 ## Adaptation Proposal
 
-An evidence-linked proposal to alter learning content or sequencing. It is not an automatic content mutation.
+An evidence-linked proposal to alter sequencing, reinforcement, or content for a Learning Target. It does not mutate learner truth. When content changes are justified, it can lead to a Target Adaptation Projection and Authoring Plan rather than direct core-owned platform mutation.
 
 ## Canonical State
 
