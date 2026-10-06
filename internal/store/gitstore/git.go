@@ -23,6 +23,13 @@ type Store struct {
 	validator Validator
 }
 
+type fileBackup struct {
+	path   string
+	data   []byte
+	mode   fs.FileMode
+	exists bool
+}
+
 func Open(root, branch string, validator Validator) (*Store, error) {
 	if branch == "" {
 		branch = "main"
@@ -300,13 +307,7 @@ func (t *transaction) Commit(ctx context.Context, summary string) (storepkg.Chec
 		return storepkg.Checkpoint{Revision: current, Summary: summary}, nil
 	}
 
-	type backup struct {
-		path   string
-		data   []byte
-		mode   fs.FileMode
-		exists bool
-	}
-	backups := make(map[string]backup, len(t.changes))
+	backups := make(map[string]fileBackup, len(t.changes))
 	var paths []string
 	for _, change := range t.changes {
 		clean, _ := safeOwnedPath(change.Path)
@@ -317,9 +318,9 @@ func (t *transaction) Commit(ctx context.Context, summary string) (storepkg.Chec
 			if readErr != nil {
 				return storepkg.Checkpoint{}, readErr
 			}
-			backups[clean] = backup{path: target, data: data, mode: info.Mode(), exists: true}
+			backups[clean] = fileBackup{path: target, data: data, mode: info.Mode(), exists: true}
 		} else {
-			backups[clean] = backup{path: target}
+			backups[clean] = fileBackup{path: target}
 		}
 		paths = append(paths, filepath.ToSlash(clean))
 		if change.Delete {
@@ -436,12 +437,7 @@ func copyOwned(source, destination string) error {
 	})
 }
 
-func restore(backups map[string]struct {
-	path   string
-	data   []byte
-	mode   fs.FileMode
-	exists bool
-}) {
+func restore(backups map[string]fileBackup) {
 	for _, item := range backups {
 		if item.exists {
 			_ = os.MkdirAll(filepath.Dir(item.path), 0o755)
