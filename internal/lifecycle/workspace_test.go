@@ -124,3 +124,33 @@ func runLifecycleGit(t *testing.T, root string, args ...string) {
 	cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
 	if out, err := cmd.CombinedOutput(); err != nil { t.Fatalf("git %v: %v\n%s", args, err, out) }
 }
+
+func TestConnectExistingLocalWorkspaceWithoutCopyingState(t *testing.T) {
+	validator, _ := workspace.NewValidator()
+	root := makeArchiveCompatibleLocalWorkspace(t, "ws_existing", "learner")
+	profilePath := filepath.Join(root, "profile", "profile.yaml")
+	if err := os.MkdirAll(filepath.Dir(profilePath), 0o755); err != nil { t.Fatal(err) }
+	profile := []byte("schemaVersion: 1\nlearner:\n  id: learner\nexperience: {}\ngoals: []\npreferences: {}\n")
+	if err := os.WriteFile(profilePath, profile, 0o644); err != nil { t.Fatal(err) }
+
+	manager := New(filepath.Join(t.TempDir(), "config.yaml"), t.TempDir(), validator)
+	status, err := manager.Connect(context.Background(), "existing", "local", root, "", "", false)
+	if err != nil { t.Fatal(err) }
+	if status.WorkspaceID != "ws_existing" || status.Provider != "local" {
+		t.Fatalf("status = %#v", status)
+	}
+	data, err := os.ReadFile(profilePath)
+	if err != nil { t.Fatal(err) }
+	if string(data) != string(profile) {
+		t.Fatal("connecting existing state must not rewrite learner data")
+	}
+}
+
+func makeArchiveCompatibleLocalWorkspace(t *testing.T, id, learner string) string {
+	t.Helper()
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "workspace.yaml"), []byte("schemaVersion: 2\nworkspaceId: "+id+"\nlearnerId: "+learner+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return root
+}

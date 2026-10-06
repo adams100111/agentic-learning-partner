@@ -39,7 +39,7 @@ func (a App) Run(args []string) int {
 		return a.runValidate(args[1:])
 	case "workspace":
 		if len(args) < 2 {
-			fmt.Fprintln(a.ErrOut, "usage: alp workspace <init|clone|list|use|status|sync|export|verify|restore|move|acknowledge-privacy|check|migrate> [options]")
+			fmt.Fprintln(a.ErrOut, "usage: alp workspace <init|connect|clone|list|use|status|sync|export|verify|restore|move|acknowledge-privacy|check|migrate> [options]")
 			return 2
 		}
 		if args[1] == "check" {
@@ -497,5 +497,5 @@ func (a App) resolveAndInspect(explicit string) (workspace.Resolution, workspace
 
 func (a App) usage() {
 	fmt.Fprintln(a.ErrOut, "usage: alp <command>")
-	fmt.Fprintln(a.ErrOut, "commands: validate, workspace init, workspace clone, workspace list, workspace use, workspace status, workspace sync, workspace export, workspace verify, workspace restore, workspace move, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, plan build, diagnostic")
+	fmt.Fprintln(a.ErrOut, "commands: validate, workspace init, workspace connect, workspace clone, workspace list, workspace use, workspace status, workspace sync, workspace export, workspace verify, workspace restore, workspace move, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, plan build, diagnostic")
 }
