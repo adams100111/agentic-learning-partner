@@ -105,6 +105,24 @@ func (a App) runWorkspaceLifecycle(command string, args []string) int {
 		fmt.Fprintf(a.Out, "default workspace: %s\n", flags.Arg(0))
 		return 0
 
+	case "acknowledge-privacy":
+		flags := flag.NewFlagSet("workspace acknowledge-privacy", flag.ContinueOnError)
+		flags.SetOutput(a.ErrOut)
+		config := flags.String("config", configPath, "ALP machine config path")
+		if err := flags.Parse(args); err != nil {
+			return 2
+		}
+		if flags.NArg() != 1 {
+			fmt.Fprintln(a.ErrOut, "usage: alp workspace acknowledge-privacy <name>")
+			return 2
+		}
+		if err := lifecycle.New(*config, validator).AcknowledgeRemotePrivacy(flags.Arg(0)); err != nil {
+			fmt.Fprintln(a.ErrOut, err)
+			return 1
+		}
+		fmt.Fprintf(a.Out, "remote privacy acknowledged for workspace: %s\n", flags.Arg(0))
+		return 0
+
 	case "status":
 		flags := flag.NewFlagSet("workspace status", flag.ContinueOnError)
 		flags.SetOutput(a.ErrOut)
