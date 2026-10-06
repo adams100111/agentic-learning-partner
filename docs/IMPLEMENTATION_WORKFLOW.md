@@ -18,6 +18,8 @@ retro is a separate human-in-the-loop follow-up, not an automatic workflow stage
 
 The architecture grill is now complete, so ALP does not need `wayfinder` for the current implementation phase.
 
+The skills come from the `mattpocock-skills` plugin, installed from the `mattpocock/skills` marketplace at version 1.3.1 or later (`claude plugin marketplace add mattpocock/skills`); earlier official-marketplace builds ship `implement-spec` unexposed. `to-spec`, `to-tickets`, `implement-spec`, and `retro` are user-invoked: the human types `/mattpocock-skills:<name>`.
+
 ## Why this fits ALP
 
 ALP is a multi-slice build with clear blocking relationships:

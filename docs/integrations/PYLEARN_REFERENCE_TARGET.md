@@ -67,96 +67,28 @@ It handles/defines normalization semantics for:
 
 Important existing rule: PyLearn's derived concept mastery is not imported as authoritative ALP competency truth.
 
-## Verified gaps before a closed-loop PyLearn smoke
+## Gaps and their resolution
 
-### 1. Adapter is not exposed through the ALP product surface
+The 2026-10 platform adaptation grill settled every gap below. Spec: adams100111/agentic-learning-partner#66; decisions: ADR-0054 through ADR-0061 and the grill record in `docs/HANDOFF_PLATFORM_ADAPTATION_GRILL.md`.
 
-The adapter exists as an internal package, but the current CLI does not expose a deterministic user/agent workflow such as:
+| Gap | Resolution | Ticket |
+|---|---|---|
+| Adapter not reachable from the CLI | Generic `alp platform` family (`inspect`, `mapping validate`, `import`, `plan`, `gates record`) with `--adapter`/`--target`, gated by declared capabilities | ALP #68 |
+| No PyLearn → competency mapping | Mapping v2 with Mapping Roles, owned by the PyLearn repo, keyed by Declared-Stable Identifiers (ADR-0057, ADR-0058) | ALP #69, PyLearn #45 |
+| Write-side authoring missing | Unit specs → Authoring Plan → PyLearn-local Reel authoring skill → Platform Gate Result (ADR-0056, ADR-0060) | ALP #72–#74, PyLearn #47 |
+| Hard-coded course registration | One declaration file per course, per-course phases, unknown course is a hard error | PyLearn #43 |
+| Activity ingestion not wired | `export:activity` v2 with Synthetic Event Identity and cursor; idempotent `alp platform import` (ADR-0059) | ALP #70, PyLearn #46 |
 
-```text
-alp platform pylearn import ...
-alp platform pylearn analyze ...
-alp platform pylearn ...
-```
+`go-alp` is the settled identifier for the first ALP-authored target (ADR-0061: shared, learner-free target with per-learner projections).
 
-Exact command shape is not decided yet.
+## Verified PyLearn facts (2026-10)
 
-### 2. No concrete PyLearn content → ALP competency mapping exists in the PyLearn repository
-
-ADR-0017 remains correct: the **platform/content repository must own this mapping**.
-
-The mapping must evolve in the same PR as platform content.
-
-The next design round must settle:
-
-- mapping file location;
-- schema/version;
-- teach/reinforce/assess semantics;
-- compatibility with ALP domain-pack versions;
-- stable content/activity identity.
-
-### 3. Write-side authoring capability is not implemented
-
-Current ALP docs intentionally describe write-side flow as:
-
-```text
-adaptation proposal
-→ branch
-→ platform content changes
-→ platform gates
-→ PR/review
-```
-
-The next tranche must turn that into an explicit generic authoring contract and PyLearn reference implementation/skill.
-
-### 4. PyLearn course registration is partly hard-coded
-
-Verified current PyLearn code has first-class multi-course schema/routing, but registration/sync still contains hard-coded assumptions:
-
-- `COURSE_CONFIG` explicitly lists `pylearn` and `go`;
-- `KNOWN_COURSES` explicitly contains the default course and `go`;
-- sync explicitly seeds only those known course rows.
-
-Therefore a fresh target such as `go-alp` is not yet a clean first-class course. Unknown Reel course tags are currently redirected to the default course.
-
-This is a PyLearn implementation gap, not a reason to put course registration in ALP core.
-
-### 5. Closed-loop activity ingestion is not wired end-to-end
-
-The conceptual PyLearn export contract exists, but the full production path:
-
-```text
-PyLearn activity
-→ export
-→ ALP platform capability
-→ canonical evidence
-→ assessment/projection
-→ target adaptation
-```
-
-is not yet exposed as a complete agent-facing workflow.
-
-## Recommended first smoke target
-
-Do not overwrite the existing `go` course.
-
-Create a separate experimental target, provisionally:
-
-```text
-go-alp
-```
-
-Purpose:
-
-```text
-go
-= manually designed pre-ALP curriculum
-
-go-alp
-= curriculum/content generated/adapted from canonical ALP learner state
-```
-
-The identifier is provisional until the next grill settles target identity/naming.
+- ORM is Drizzle on SQLite/libSQL.
+- Learner activity tables (`progress`, `quiz_answers`, `concept_mastery`, `attempts`) are upserted latest-state rows with no event IDs; `attempts` has no writer.
+- Declared-stable identifiers: lesson front-matter `id`, explicit Scene `id`, quiz/question IDs. Section IDs (slugified headings) and positional scene IDs are unstable.
+- The only content → concept link is free-text `concept="..."` on Quiz/SectionQuiz; it doubles as quiz ID and `concept_mastery` key. It is platform-local, not the ALP mapping.
+- `lint:lessons` and `gate:reels` print text and exit non-zero on failure; an internal gate report type exists but is not emitted as JSON.
+- All content is static MDX shared by every user.
 
 ## Existing PyLearn Go course
 
