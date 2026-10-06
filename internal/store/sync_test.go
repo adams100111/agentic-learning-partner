@@ -155,3 +155,36 @@ func makeTwoGitDevicesFromProfile(t *testing.T, profile []byte) (string, *Git, *
 func validProfile(level string) []byte {
 	return []byte("schemaVersion: 1\nlearner:\n  id: learner\nexperience:\n  php:\n    level: " + level + "\n    provenance:\n      sourceType: learner-stated\n      intent: statement\ngoals: []\npreferences: {}\n")
 }
+
+func TestGitSyncMergesNonOverlappingProfileClaims(t *testing.T) {
+	_, a, b := makeTwoGitDevicesWithProfile(t)
+	ctx := context.Background()
+
+	profileA := []byte("schemaVersion: 1\nlearner:\n  id: learner\nexperience:\n  php:\n    level: strong\n    provenance:\n      sourceType: learner-stated\n      intent: statement\n  go:\n    level: functional\n    provenance:\n      sourceType: learner-stated\n      intent: statement\ngoals: []\npreferences: {}\n")
+	profileB := []byte("schemaVersion: 1\nlearner:\n  id: learner\nexperience:\n  php:\n    level: functional\n    provenance:\n      sourceType: learner-stated\n      intent: statement\n  typescript:\n    level: strong\n    provenance:\n      sourceType: learner-stated\n      intent: statement\ngoals: []\npreferences: {}\n")
+
+	revA, _ := a.Revision(ctx)
+	if _, err := a.Commit(ctx, revA, ChangeSet{Message: "profile php", Mutations: []Mutation{{Path: "profile/profile.yaml", Data: profileA}}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := a.Push(ctx, SyncOptions{}); err != nil {
+		t.Fatal(err)
+	}
+
+	revB, _ := b.Revision(ctx)
+	if _, err := b.Commit(ctx, revB, ChangeSet{Message: "profile ts", Mutations: []Mutation{{Path: "profile/profile.yaml", Data: profileB}}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.Sync(ctx, SyncOptions{}); err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(b.Root(), "profile", "profile.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	if !strings.Contains(text, "go:") || !strings.Contains(text, "typescript:") {
+		t.Fatalf("non-overlapping learner claims were not merged:\n%s", text)
+	}
+}
