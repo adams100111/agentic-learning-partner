@@ -48,6 +48,27 @@ func (a App) runWorkspaceLifecycle(command string, args []string) int {
 		a.printWorkspaceStatus(status)
 		return 0
 
+	case "connect":
+		flags := flag.NewFlagSet("workspace connect", flag.ContinueOnError)
+		flags.SetOutput(a.ErrOut)
+		config := flags.String("config", configPath, "ALP machine config path")
+		runtime := flags.String("runtime", runtimeDir, "ALP machine runtime directory")
+		provider := flags.String("provider", "local", "store provider: local or git")
+		path := flags.String("path", "", "existing local workspace path")
+		branchName := flags.String("branch", "main", "Git branch")
+		remote := flags.String("remote", "", "configured Git remote URL, when relevant")
+		privacy := flags.Bool("acknowledge-unverified-privacy", false, "acknowledge that ALP cannot verify remote privacy")
+		if err := flags.Parse(args); err != nil { return 2 }
+		if flags.NArg() != 1 || *path == "" {
+			fmt.Fprintln(a.ErrOut, "usage: alp workspace connect <name> --path PATH [--provider local|git]")
+			return 2
+		}
+		manager.ConfigPath, manager.RuntimeDir = *config, *runtime
+		status, err := manager.Connect(ctx, flags.Arg(0), *provider, *path, *branchName, *remote, *privacy)
+		if err != nil { fmt.Fprintln(a.ErrOut, err); return 1 }
+		a.printWorkspaceStatus(status)
+		return 0
+
 	case "clone":
 		flags := flag.NewFlagSet("workspace clone", flag.ContinueOnError)
 		flags.SetOutput(a.ErrOut)
