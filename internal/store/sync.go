@@ -219,8 +219,12 @@ func (s *Git) reconcileRemote(ctx context.Context, remoteSHA string, options Syn
 		return false, "", err
 	}
 
-	if _, err := gitCommand(temp, "add", "-A", "--", "."); err != nil {
-		return false, "", fmt.Errorf("stage reconciled worktree: %w", err)
+	changedPaths := changedSnapshotPaths(remoteSnapshot, finalSnapshot)
+	if len(changedPaths) > 0 {
+		args := append([]string{"add", "-A", "--"}, changedPaths...)
+		if _, err := gitCommand(temp, args...); err != nil {
+			return false, "", fmt.Errorf("stage reconciled owned paths: %w", err)
+		}
 	}
 	tree, err := gitCommand(temp, "write-tree")
 	if err != nil {
@@ -443,4 +447,16 @@ func gitCommandBytes(dir string, args ...string) ([]byte, error) {
 		return nil, err
 	}
 	return output, nil
+}
+
+func changedSnapshotPaths(before, after map[string][]byte) []string {
+	var result []string
+	for _, path := range unionSnapshotPaths(before, after) {
+		left, leftOK := before[path]
+		right, rightOK := after[path]
+		if leftOK != rightOK || (leftOK && string(left) != string(right)) {
+			result = append(result, path)
+		}
+	}
+	return result
 }
