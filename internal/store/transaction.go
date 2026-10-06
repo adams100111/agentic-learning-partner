@@ -156,6 +156,13 @@ func (t *Transaction) Commit(ctx context.Context) (Revision, error) {
 	return t.CheckpointWithMessage(ctx, false, "")
 }
 
+func (t *Transaction) Rollback() error {
+	if t.coordinator == nil {
+		return nil
+	}
+	return t.coordinator.DiscardRecovery(t.recovery.WorkspaceID)
+}
+
 func (t *Transaction) StageRoot() string {
 	if t.recovery.StageDir == "" {
 		return ""
