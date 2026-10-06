@@ -22,10 +22,11 @@ type ProductionGate interface {
 }
 
 type Store struct {
-	Root           string
-	Catalog        Catalog
-	ProductionGate ProductionGate
-	Validator      *workspace.Validator
+	Root             string
+	Catalog          Catalog
+	ProductionGate   ProductionGate
+	Validator        *workspace.Validator
+	RevisionProvider func() (string, error)
 }
 
 func (s Store) AppendEvidence(expectedRevision string, evidence Evidence) (Evidence, error) {
@@ -205,6 +206,16 @@ func (s Store) RebuildProjection() (Projection, error) {
 func (s Store) requireRevision(expected string) error {
 	if strings.TrimSpace(expected) == "" {
 		return errors.New("expected workspace revision is required")
+	}
+	if s.RevisionProvider != nil {
+		current, err := s.RevisionProvider()
+		if err != nil {
+			return err
+		}
+		if current != expected {
+			return fmt.Errorf("workspace revision changed: expected %s, found %s", expected, current)
+		}
+		return nil
 	}
 	info, err := workspace.Inspect(s.Root)
 	if err != nil {

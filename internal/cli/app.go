@@ -1,16 +1,20 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	contextbundle "github.com/adams100111/agentic-learning-partner/internal/context"
 	"github.com/adams100111/agentic-learning-partner/internal/domain"
+	"github.com/adams100111/agentic-learning-partner/internal/lifecycle"
 	"github.com/adams100111/agentic-learning-partner/internal/migrate"
 	"github.com/adams100111/agentic-learning-partner/internal/state"
+	storepkg "github.com/adams100111/agentic-learning-partner/internal/store"
 	"github.com/adams100111/agentic-learning-partner/internal/view"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 	"go.yaml.in/yaml/v3"
@@ -36,14 +40,17 @@ func (a App) Run(args []string) int {
 	case "validate":
 		return a.runValidate(args[1:])
 	case "workspace":
-		if len(args) > 1 && args[1] == "check" {
+		if len(args) < 2 {
+			fmt.Fprintln(a.ErrOut, "usage: alp workspace <init|connect|clone|list|use|status|sync|export|verify|restore|move|acknowledge-privacy|check|migrate> [options]")
+			return 2
+		}
+		if args[1] == "check" {
 			return a.runWorkspaceCheck(args[2:])
 		}
-		if len(args) > 1 && args[1] == "migrate" {
+		if args[1] == "migrate" {
 			return a.runWorkspaceMigrate(args[2:])
 		}
-		fmt.Fprintln(a.ErrOut, "usage: alp workspace <check|migrate> [options]")
-		return 2
+		return a.runWorkspaceLifecycle(args[1], args[2:])
 	case "domain":
 		return a.runDomain(args[1:])
 	case "context":
@@ -60,6 +67,8 @@ func (a App) Run(args []string) int {
 		return a.runAssessment(args[1:])
 	case "state":
 		return a.runState(args[1:])
+	case "session":
+		return a.runSession(args[1:])
 	case "plan":
 		return a.runPlan(args[1:])
 	case "diagnostic":
@@ -404,14 +413,41 @@ func (a App) runWorkspaceMigrate(args []string) int {
 		return 0
 	}
 
-	plan, err := migrator.Apply(info.Path, info.Revision)
+	active, err := openStateStore(info.Path, validator)
 	if err != nil {
 		fmt.Fprintln(a.ErrOut, err)
 		return 1
 	}
+	revision, err := active.Revision(context.Background())
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return 1
+	}
+	runtimeDir, err := lifecycle.DefaultRuntimeDir()
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return 1
+	}
+	coordinator := storepkg.NewCoordinator(active, validator, runtimeDir)
+	tx, err := coordinator.Begin(context.Background(), fmt.Sprintf("migration-%d", time.Now().UTC().UnixNano()), revision)
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return 1
+	}
+	plan, err := migrator.ApplyStaged(tx.StageRoot())
+	if err != nil {
+		_ = tx.Rollback()
+		fmt.Fprintln(a.ErrOut, err)
+		return 1
+	}
 	if plan.Empty() {
+		_ = tx.Rollback()
 		fmt.Fprintln(a.Out, "workspace already uses the current schema")
 		return 0
+	}
+	if _, err := tx.CheckpointWithMessage(context.Background(), false, fmt.Sprintf("alp: migrate workspace schema %d to %d", plan.Current, plan.Target)); err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return 1
 	}
 	fmt.Fprintf(a.Out, "migrated workspace from schema %d to %d\n", plan.Current, plan.Target)
 	return 0
@@ -467,15 +503,30 @@ func (a App) resolveAndInspect(explicit string) (workspace.Resolution, workspace
 		fmt.Fprintln(a.ErrOut, err)
 		return workspace.Resolution{}, workspace.Info{}, false
 	}
-	info, err := workspace.Inspect(resolution.Path)
+	validator, err := workspace.NewValidator()
 	if err != nil {
 		fmt.Fprintln(a.ErrOut, err)
 		return workspace.Resolution{}, workspace.Info{}, false
 	}
-	return resolution, info, true
+	var active storepkg.Store
+	if _, statErr := os.Stat(resolution.Path + string(os.PathSeparator) + ".git"); statErr == nil {
+		active, err = storepkg.OpenGit(resolution.Path, validator)
+	} else {
+		active, err = storepkg.OpenLocal(resolution.Path, validator)
+	}
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return workspace.Resolution{}, workspace.Info{}, false
+	}
+	revision, err := active.Revision(context.Background())
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return workspace.Resolution{}, workspace.Info{}, false
+	}
+	return resolution, workspace.Info{Path: active.Root(), Revision: string(revision)}, true
 }
 
 func (a App) usage() {
 	fmt.Fprintln(a.ErrOut, "usage: alp <command>")
-	fmt.Fprintln(a.ErrOut, "commands: validate, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, plan build, diagnostic")
+	fmt.Fprintln(a.ErrOut, "commands: validate, workspace init, workspace connect, workspace clone, workspace list, workspace use, workspace status, workspace sync, workspace export, workspace verify, workspace restore, workspace move, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, session begin, session status, session put, session delete, session flush, session close, session abort, session recover-sync, plan build, diagnostic")
 }

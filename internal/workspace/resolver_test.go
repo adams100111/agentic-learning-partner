@@ -78,3 +78,56 @@ func TestResolverUsesEnvironmentThenUserConfig(t *testing.T) {
 		t.Fatalf("user config resolution = %#v", got)
 	}
 }
+
+func TestResolverUsesNamedWorkspaceReferencesAcrossLayers(t *testing.T) {
+	root := t.TempDir()
+	home := filepath.Join(root, "home")
+	configDir := filepath.Join(home, ".config", "alp")
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(root, "named-state")
+	config := []byte("defaultWorkspace: personal\nworkspaces:\n  personal:\n    path: " + target + "\n    provider: local\n")
+	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), config, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	project := filepath.Join(root, "project", "nested")
+	if err := os.MkdirAll(project, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "project", ".alp.yaml"), []byte("workspace: personal\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	resolver := Resolver{
+		Getenv: func(string) string { return "" },
+		HomeDir: func() (string, error) { return home, nil },
+	}
+	got, err := resolver.Resolve("", project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Path != target || got.Source != "project .alp.yaml named workspace personal" {
+		t.Fatalf("project named resolution = %#v", got)
+	}
+
+	got, err = resolver.Resolve("personal", root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Path != target {
+		t.Fatalf("explicit named resolution = %#v", got)
+	}
+
+	resolver.Getenv = func(key string) string {
+		if key == EnvWorkspace { return "personal" }
+		return ""
+	}
+	got, err = resolver.Resolve("", root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Path != target || got.Source != "ALP_WORKSPACE named workspace personal" {
+		t.Fatalf("environment named resolution = %#v", got)
+	}
+}

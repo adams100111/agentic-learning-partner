@@ -23,7 +23,20 @@ Verify:
 
 ## Learner workspace
 
-Configure the learner workspace using one of the supported resolution layers:
+The preferred setup path is the portable `setup-learning-workspace` skill. It inspects existing configuration/state first and delegates mutations to deterministic CLI commands.
+
+Core lifecycle commands include:
+
+    alp workspace init <name> ...
+    alp workspace connect <name> --path ...
+    alp workspace clone <name> <remote> ...
+    alp workspace list
+    alp workspace use <name>
+    alp workspace status [name]
+    alp workspace sync [name]
+    alp workspace move <name> ...
+
+Workspace discovery continues to support these resolution layers:
 
 1. `--workspace /path/to/workspace`;
 2. project-local `.alp.yaml`;
@@ -36,8 +49,11 @@ Example project pointer:
 
 Then:
 
+    alp workspace status
     alp workspace check
     alp validate
+
+For Git Store, ordinary synchronization uses the host's existing Git/SSH credentials. ALP does not ask for or persist those credentials.
 
 ## OpenAI / Codex
 
