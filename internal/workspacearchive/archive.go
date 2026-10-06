@@ -251,6 +251,9 @@ func Restore(ctx context.Context, archive Verified, destination store.Store, val
 	for _, path := range paths {
 		if err := tx.Put(path, incoming[path]); err != nil { return "", err }
 	}
+	if err := os.RemoveAll(filepath.Join(tx.StageRoot(), "state")); err != nil {
+		return "", fmt.Errorf("discard stale derived state before restore rebuild: %w", err)
+	}
 	if options.Rebuild != nil {
 		if err := options.Rebuild(tx.StageRoot()); err != nil {
 			return "", fmt.Errorf("rebuild restored workspace: %w", err)
