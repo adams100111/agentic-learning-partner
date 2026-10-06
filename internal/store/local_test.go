@@ -58,12 +58,12 @@ learnerId: learner
 	s, err := OpenLocal(root, validator)
 	if err != nil { t.Fatal(err) }
 
-	for _, capability := range []Capability{CapabilityPersistence, CapabilityOptimisticConcurrency, CapabilityAtomicCheckpoint, CapabilityOffline} {
+	for _, capability := range []Capability{CapabilityPersistence, CapabilityOptimisticConcurrency, CapabilityRevisions, CapabilityOffline} {
 		if !s.Capabilities().Has(capability) {
 			t.Fatalf("missing capability %s", capability)
 		}
 	}
-	for _, capability := range []Capability{CapabilitySync, CapabilityHistory, CapabilityMultiDevice, CapabilityRemoteManagement} {
+	for _, capability := range []Capability{CapabilityAtomicCheckpoint, CapabilitySync, CapabilityHistory, CapabilityMultiDevice, CapabilityRemoteManagement} {
 		if s.Capabilities().Has(capability) {
 			t.Fatalf("local store must not claim %s", capability)
 		}
