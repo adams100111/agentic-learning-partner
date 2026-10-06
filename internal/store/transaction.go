@@ -106,7 +106,7 @@ func (c *Coordinator) Begin(ctx context.Context, sessionID string, expected Revi
 	}
 	stageWorkspace := filepath.Join(stageDir, "workspace")
 	if err := copyWorkspace(c.store.Root(), stageWorkspace); err != nil {
-		_ = os.Remove(c.lockPath(manifest.WorkspaceID))
+		_ = os.Remove(c.lockPath(workspaceKey))
 		return nil, err
 	}
 	recovery := Recovery{
@@ -119,7 +119,7 @@ func (c *Coordinator) Begin(ctx context.Context, sessionID string, expected Revi
 	}
 	if err := c.writeRecovery(recovery); err != nil {
 		_ = os.RemoveAll(stageDir)
-		_ = os.Remove(c.lockPath(manifest.WorkspaceID))
+		_ = os.Remove(c.lockPath(workspaceKey))
 		return nil, err
 	}
 	return &Transaction{coordinator: c, recovery: recovery, changes: map[string]Mutation{}}, nil
@@ -296,8 +296,7 @@ func (t *Transaction) persistChanges() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, append(data, '
-'), 0o600)
+	return os.WriteFile(path, append(data, '\n'), 0o600)
 }
 
 func (c *Coordinator) Resume(workspaceID string) (*Transaction, error) {
@@ -400,8 +399,7 @@ func (c *Coordinator) writeRecovery(recovery Recovery) error {
 	}
 	name := temp.Name()
 	defer os.Remove(name)
-	if _, err := temp.Write(append(data, '
-')); err != nil {
+	if _, err := temp.Write(append(data, '\n')); err != nil {
 		temp.Close()
 		return err
 	}
@@ -435,8 +433,7 @@ func createExclusiveJSON(path string, value any) error {
 		return err
 	}
 	defer file.Close()
-	_, err = file.Write(append(data, '
-'))
+	_, err = file.Write(append(data, '\n'))
 	return err
 }
 
