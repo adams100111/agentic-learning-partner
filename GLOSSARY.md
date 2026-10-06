@@ -52,7 +52,7 @@ A concrete capability exposed by a Platform Adapter. Initial capability families
 
 ## Learning Target
 
-A platform-independent destination for a learner-facing learning experience. A target may be a course, track, workshop, lab series, project path, or another structured delivery surface. A platform-specific course ID is one implementation of a Learning Target, not a core ALP identity.
+A platform-independent destination for a learner-facing learning experience. A target may be a course, track, workshop, lab series, project path, or another structured delivery surface. A platform-specific course ID is one implementation of a Learning Target, not a core ALP identity. Targets are shared and learner-free; per-learner variation lives in Target Adaptation Projections and Accepted Adaptation Decisions (ADR-0061).
 
 ## Target Adaptation Projection
 
@@ -69,6 +69,38 @@ A platform-neutral specification for one learner-facing unit. It describes compe
 ## Authoring Plan
 
 A validated proposal for realizing one or more Curriculum/Learning Unit Specifications in a target platform. It may be executed by an agent or adapter through a branch/worktree/PR workflow, but ALP core does not silently mutate platform production content.
+
+## External Identity
+
+An opaque, platform-owned identifier ALP references in a namespaced form (`{platform, target, item}`), such as a platform instance, Learning Target, or content/activity item. ALP never derives meaning from external identity strings. Curriculum/Learning Unit Specification IDs are ALP-owned instead. See ADR-0057.
+
+## Declared-Stable Identifier
+
+A platform identifier the adapter declares stable across ordinary authoring edits. Only declared-stable identifiers may appear in mappings, realization links, or evidence provenance. For PyLearn: lesson `id`, explicit Scene `id`, quiz/question IDs — not heading-derived section slugs or positional scene IDs.
+
+## Mapping Role
+
+The relationship a mapped content item has to a competency: `teaches`, `reinforces`, or `assesses`. Only `assesses` activity can yield assessment-grade evidence. See ADR-0058.
+
+## Accepted Adaptation Decision
+
+A canonical, append-only record of an explicit adaptation choice (for example, an accepted skip) that must survive Target Adaptation Projection rebuilds. It is an input to the projection, not part of it, and requires explicit learner confirmation; agents may only propose. See ADR-0060, ADR-0061.
+
+## Synthetic Event Identity
+
+An adapter-derived activity identity (row key plus content hash) for platforms that store only latest-state rows rather than event logs. It makes evidence import idempotent without treating a snapshot as many events. See ADR-0059.
+
+## Realization Link
+
+The record on a Learning Unit Specification of which declared-stable platform items realized it. It is the path by which platform activity is traced back to the specification that motivated the content.
+
+## Platform Gate Result
+
+Structured output of a Platform Validator: per-gate ID, status (pass/fail/warn/skipped), platform-native command/version provenance, checked artifacts, item-referenced diagnostics, and an overall `publishable` flag. ALP consumes it without interpreting platform-native formats.
+
+## Authoring Intent
+
+The hierarchical scope of an authoring request: target skeleton → curriculum → unit → activity → patch. The default is the smallest justified intent.
 
 ## PyLearn
 

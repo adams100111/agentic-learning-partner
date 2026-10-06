@@ -107,7 +107,7 @@ This can be stronger than platform exercise evidence because it shows independen
 
 Every exported lesson/exercise/quiz concept that should affect competency projection needs a stable content identifier.
 
-PyLearn-to-ALP mapping should live in the adapter/configuration, for example:
+PyLearn-to-ALP mapping is owned by the PyLearn content repository (ADR-0017), keyed by declared-stable identifiers (ADR-0057) with mapping roles (ADR-0058). Illustrative v1 shape:
 
 ```yaml
 phase-a-l3.error-wrapping:

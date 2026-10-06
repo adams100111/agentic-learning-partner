@@ -361,136 +361,69 @@ apps/web/app/(app)/learn/[course]/reel/[slug]/page.tsx
 
 Then inspect current Reel authoring/component/runtime contracts in PyLearn before asking any component-specific design question.
 
-## Next grill frontier — NOT YET DECIDED
+## Settled grill round 2
 
-The next agent should recompute dependencies, but the following decisions are expected to be unblocked after round 1.
+Q13, Q15–Q24, Q26, Q27, Q29, Q30 were explicitly accepted by the user (2026-10-07), including amendments made after PyLearn fact-finding.
 
-Do not treat the recommendations below as accepted until the user explicitly agrees.
+### Additional verified PyLearn facts (round 2)
 
-### Candidate Q13 — Stable identities
+- ORM is Drizzle on SQLite/libSQL (`apps/web/db/schema.ts`), not Prisma.
+- Learner activity tables (`progress`, `quiz_answers`, `concept_mastery`, `attempts`) are upserted latest-state rows; no event log, no event IDs. No `attempts` writer exists. No export endpoint/script/CLI exists.
+- Stable IDs: lesson front-matter `id`, explicit Scene `id`, quiz/question IDs. Unstable: section IDs (slugified H2), positional scene IDs.
+- Only content→concept link is free-text `concept="..."` on Quiz/SectionQuiz (143 tags, 142 unique, no registry); it is also the quiz ID and `concept_mastery` key.
+- Gates (`lint:lessons`, `gate:reels`) emit text and exit codes; an internal `GateReport` type exists but is not emitted as JSON. No CI.
+- New course needs `COURSE_CONFIG`, `KNOWN_COURSES`, and a hard-coded `syncLessons` insert; unknown/missing `course:` tags fall back to `pylearn`; phases outside global `PHASE_ORDER` are silently dropped.
+- All content is static public MDX; no per-user content mechanism.
 
-How should ALP distinguish:
+### Decisions
 
-- Platform;
-- Learning Target;
-- Curriculum;
-- Learning Unit;
-- Activity/content item?
+- **Q13 Identities (ADR-0057):** platform instance, Learning Target, content/activity item IDs are platform-owned opaque External Identities, namespaced `{platform, target, item}`. Curriculum/Unit Specification IDs are ALP-owned. Realized specs record Realization Links. Only Declared-Stable Identifiers may be referenced; adapter validators reject unstable ones.
+- **Q15 Adaptation persistence (ADR-0060):** Target Adaptation Projection is a generated, rebuildable workspace file. Inputs: learner state, target content/mapping snapshot, target constraints, Accepted Adaptation Decisions (canonical, append-only, separate record).
+- **Q16 Spec persistence (ADR-0060):** Curriculum/Unit Specifications are immutable versioned Store-owned artifacts in the private learner workspace; content PRs cite spec ID/hash.
+- **Q17 Mapping semantics (ADR-0058):** mapping schema v2 with Mapping Roles `teaches|reinforces|assesses`; only `assesses` yields assessment-grade evidence; no static strength, optional strength ceiling. PyLearn `concept` tags are not the mapping; a separate mapping file in the PyLearn repo maps stable item IDs to ALP competencies.
+- **Q18 Compatibility (ADR-0058):** semver `packVersion` range; validation resolves through pack migrations (rename → warn; split/merge → specific fail; removed/out-of-range → fail).
+- **Q19 Idempotency (ADR-0059):** evidence ID = hash(platform instance, target, learner, item, event identity, event revision). State-only platforms use Synthetic Event Identity (row key + content hash). Re-import skips; higher revision supersedes; unmapped activity is reported, never dropped.
+- **Q20 Transport (ADR-0059):** Activity Source contract is "records since cursor"; transport is an adapter detail; never direct platform DB access. Fix export doc/schema `courses` mismatch → `targets`.
+- **Q21 Authoring granularity:** hierarchical Authoring Intent (target skeleton → curriculum → unit → activity → patch); default smallest justified; whole-course only on explicit request.
+- **Q22 Validation:** structured Platform Gate Result (per-gate id/status/provenance/artifacts/diagnostics + `publishable`), stored with the Authoring Plan.
+- **Q23 PyLearn course registration:** one declarative file per course (e.g. `content/courses/<id>.yaml`) generating config and DB rows; per-course phase lists; unknown/missing `course:` is a hard error.
+- **Q24 Authoring ownership:** ALP skill → adaptation + unit spec; PyLearn-local skill → Reel MDX realization + PyLearn gates; thin ALP orchestration skill dispatches to the platform-declared authoring target skill and collects gate results.
+- **Q26 Personalization/privacy (ADR-0060):** `go-alp` content is reusable and learner-free; personalization shapes selection/sequence/difficulty/examples/analogies; specs (with rationale) stay private; per-learner variants out of scope.
+- **Q27 Freshness:** pack/spec declare version-sensitive claims; platform authoring re-verifies and records provenance in the PR; ALP refuses to mark a unit realized without required provenance.
+- **Q29 PyLearn export (ADR-0059):** versioned export CLI producing `pylearn-export` v2 (`targets`, cursor) from current tables using synthetic identities; append-only activity log optional later; add an `attempts` writer or exclude attempt evidence from v0.
+- **Q30 PyLearn gate output:** `--json` on `gate:reels`/`lint:lessons` emitting the existing `GateReport` mapped to Platform Gate Result; the PyLearn Platform Validator composes these plus `typecheck` and `compile:go`.
 
-**Recommendation:** use provider/platform-owned stable IDs namespaced by adapter/target; ALP should reference them as opaque external identities and never synthesize meaning from ID strings.
+### ADRs created from round 2
 
-### Candidate Q14 — Target lifecycle
+- `docs/adr/0057-opaque-stable-external-identities.md`
+- `docs/adr/0058-mapping-roles-and-migration-aware-validation.md`
+- `docs/adr/0059-deterministic-activity-import-identity.md`
+- `docs/adr/0060-versioned-private-specs-and-learner-free-content.md`
 
-Can a Learning Target be ephemeral/generated per learner, shared/template-based, or both?
+Glossary gained: External Identity, Declared-Stable Identifier, Mapping Role, Accepted Adaptation Decision, Synthetic Event Identity, Realization Link, Platform Gate Result, Authoring Intent.
 
-**Recommendation:** support both. Separate target identity from a reusable curriculum/template identity. A target may instantiate/adapt a reusable curriculum for one learner/cohort without duplicating competency truth.
+## Settled grill round 3
 
-### Candidate Q15 — Adaptation persistence
+Q14, Q25, Q28, Q31, Q35 were explicitly accepted by the user (2026-10-07).
 
-Should Target Adaptation Projections be canonical learner state or derived caches?
+- **Q14 Target lifecycle (ADR-0061):** Learning Targets are shared, learner-free platform identities; each learner has their own Target Adaptation Projection over a shared target. Realization Links live in the motivating learner's specs; other learners trace via platform mapping.
+- **Q25 Progressive regeneration:** recompute projections freely; new spec version / content PR only when an evidence-linked adaptation materially changes a realized unit's spec (competencies, prerequisites, adaptation mode, misconceptions, required evidence). No PR for cosmetic/no-op recomputes. Unrealized units are re-specified freely.
+- **Q28 Acceptance:** capability-tiered. Read-only: inspect, mapping validate, idempotent import (re-run → zero new evidence; unmapped reported). Authoring: + spec → branch → `publishable` Platform Gate Result → PR on a fresh target. Closed loop: scripted run where synthetic activity on the new unit changes the projection when warranted and the next adaptation derives from it. PyLearn `go-alp` must pass all three locally (no CI). Real Claude/Codex harness smoke reported separately, never assumed.
+- **Q31 Decision authority (ADR-0061):** Accepted Adaptation Decisions only with explicit learner confirmation; agents propose via Adaptation Proposals; records confirmer/time/basis projection revision; revocable by superseding record.
+- **Q35 ALP CLI:** generic `alp platform` family over an adapter registry, gated by declared capabilities: `inspect`, `mapping validate`, `import`, `plan` (spec + Authoring Plan), `gates record`; `--adapter <id> --target <id>`; deterministic JSON output. No platform-specific commands.
 
-**Recommendation:** derived/rebuildable projection; canonical inputs are learner state + target/content snapshot/mapping + explicit target constraints/accepted learner choices.
+ADR created: `docs/adr/0061-shared-targets-learner-projections.md`.
 
-If an explicit accepted curriculum decision must survive rebuild, store that decision separately from the projection.
+## Settled grill round 4
 
-### Candidate Q16 — Curriculum/unit spec persistence
+Q33, Q34 were explicitly accepted by the user (2026-10-07).
 
-Are generated specifications canonical artifacts or ephemeral prompts?
+- **Q33 Cross-repo mapping validation:** PyLearn lint (no ALP dependency) checks mapped IDs are declared-stable and exist. New PyLearn gate `gate:alp-mapping` runs `alp platform mapping validate --adapter pylearn` against the mapping's pinned pack version; required for ALP-authored targets and PRs touching the mapping file; `skipped` for unmapped courses; missing `alp` fails with an install hint.
+- **Q34 `go-alp` structure:** phases derived from the Curriculum Specification at target-skeleton authoring; PyLearn authoring skill emits `content/courses/go-alp.yaml`; phase IDs freeze once any unit in them is realized; later versions may add/insert phases but never renumber/rename realized ones; manual `go` course untouched.
 
-**Recommendation:** versioned artifacts tied to learner revision, target snapshot, mapping/domain-pack versions, sources, and authoring intent. They are not learner truth but should be reproducible/auditable when they drive content PRs.
+## Grill status
 
-### Candidate Q17 — Mapping semantics
-
-Should one content mapping distinguish:
-
-- teaches;
-- reinforces;
-- assesses;
-- evidence strength/type?
-
-**Recommendation:** yes for teach/reinforce/assess; do not hard-code evidence strength solely in the static mapping. Assessment/evidence strength should also depend on actual activity/task design and observed result.
-
-### Candidate Q18 — Mapping compatibility/versioning
-
-How should platform mappings declare compatibility with ALP domain packs?
-
-**Recommendation:** retain semantic compatibility ranges plus explicit migration/validation failure when referenced competency IDs disappear/change.
-
-### Candidate Q19 — Activity identity/idempotency
-
-How does ALP avoid importing the same platform event twice?
-
-**Recommendation:** adapter supplies stable platform event/activity identity plus export/cursor metadata; ALP derives deterministic evidence identity/idempotency from platform + learner + event identity/version rather than timestamps alone.
-
-### Candidate Q20 — Export transport
-
-Should ALP require file export, direct DB access, API, or capability-specific transport?
-
-**Recommendation:** generic Activity Source contract; transports are adapter implementation details. PyLearn v0 reference can keep explicit versioned export/file or CLI output because it is portable/testable.
-
-### Candidate Q21 — Authoring granularity
-
-Should authoring capability generate entire target, curriculum skeleton, unit, activity, or patch?
-
-**Recommendation:** capability should support hierarchical intents, but normal execution is smallest justified change: patch/unit first, curriculum skeleton when creating a new target, whole-course materialization only when explicitly requested.
-
-### Candidate Q22 — Platform-native validation
-
-What does ALP need from Platform Validator?
-
-**Recommendation:** structured gate results with platform-native command/provenance, not merely pass/fail text. ALP should know whether authoring is publishable without owning how the platform validates MDX/runtime/media.
-
-### Candidate Q23 — PyLearn course registration
-
-Should PyLearn derive course registry dynamically from content/database/config instead of a hard-coded set?
-
-**Recommendation:** yes. Make course registration declarative/generic so `go-alp` is a normal target and unknown target IDs fail explicitly rather than silently falling back to Python/default.
-
-### Candidate Q24 — PyLearn authoring ownership
-
-Should the generic authoring skill live in ALP, PyLearn, or be split?
-
-**Recommendation:** split composition:
-- ALP skill owns learner/adaptation/specification decisions;
-- PyLearn-local skill/instructions own Reel MDX realization and platform gates;
-- an orchestration skill composes both without duplicating PyLearn authoring knowledge inside ALP.
-
-### Candidate Q25 — Progressive materialization policy
-
-When should downstream units be regenerated after new evidence?
-
-**Recommendation:** target projection can recompute broadly, but regenerate platform content only when an evidence-linked adaptation materially changes an authored unit; never churn already-correct content merely because state was recomputed.
-
-### Candidate Q26 — Learner-specific content vs shared content
-
-Should generated `go-alp` content be personalized directly to one learner or remain reusable?
-
-**Recommendation:** separate reusable technical/content core from learner-specific adaptation/selection where practical. Personalization can influence examples, analogy choices, sequencing, challenge level, and optional variants without embedding private learner state into public/shared course content.
-
-This question needs careful privacy/product grilling.
-
-### Candidate Q27 — Source freshness in generated content
-
-Where is source verification enforced?
-
-**Recommendation:** ALP/domain pack provides freshness/source requirements; platform authoring workflow must re-verify version-sensitive technical claims at author time and preserve relevant provenance in the spec/PR, not blindly trust historical PyLearn content.
-
-### Candidate Q28 — Closed-loop release acceptance
-
-What exact integration tests constitute “platform support”?
-
-**Recommendation:** require both read and write loop for a full authoring-capable adapter:
-- target inspect;
-- mapping validation;
-- adaptation/spec generation;
-- platform-native authoring branch;
-- platform gates;
-- learner activity export;
-- idempotent ALP evidence import;
-- projection change when warranted;
-- next adaptation derived from new state.
-
-Read-only adapters may have a lower capability-specific acceptance bar.
+Frontier empty after round 4, pending the user's confirmation of shared understanding. Next: `to-spec` → `to-tickets` → `implement-spec`.
 
 ## Important cautions for the next agent
 
