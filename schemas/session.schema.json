@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/session.schema.json",
+  "title": "ALP Compact Session Record",
+  "type": "object",
+  "required": ["schemaVersion","id","startedAt","closedAt","baseRevision","syncMode"],
+  "properties": {
+    "schemaVersion": {"type":"integer","const":1},
+    "id": {"type":"string","pattern":"^sess_[A-Za-z0-9_-]+$"},
+    "startedAt": {"type":"string","format":"date-time"},
+    "closedAt": {"type":"string","format":"date-time"},
+    "harness": {"type":"string"},
+    "deviceId": {"type":"string"},
+    "baseRevision": {"type":"string","minLength":1},
+    "syncMode": {"enum":["session","manual","eager"]},
+    "offline": {"type":"boolean"},
+    "domains": {"type":"array","items":{"type":"string"},"uniqueItems":true},
+    "evidence": {"type":"array","items":{"type":"string","pattern":"^ev_"},"uniqueItems":true},
+    "assessments": {"type":"array","items":{"type":"string","pattern":"^asmt_"},"uniqueItems":true},
+    "summary": {"type":"string"}
+  },
+  "additionalProperties": false
+}
