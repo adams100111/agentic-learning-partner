@@ -470,3 +470,23 @@ func (s *Store) WithRebuilder(rebuild func(string) error) *Store {
 	s.rebuild = rebuild
 	return s
 }
+
+func (s *Store) ConfigureRemote(name, url string) error {
+	if strings.TrimSpace(name) == "" {
+		name = "origin"
+	}
+	if strings.TrimSpace(url) == "" {
+		return errors.New("git remote URL is required")
+	}
+	if _, err := git(s.root, "remote", "get-url", name); err == nil {
+		if _, err := git(s.root, "remote", "set-url", name, url); err != nil {
+			return err
+		}
+	} else {
+		if _, err := git(s.root, "remote", "add", name, url); err != nil {
+			return err
+		}
+	}
+	s.remote = name
+	return nil
+}
