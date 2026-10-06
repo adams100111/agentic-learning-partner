@@ -36,6 +36,14 @@ Core commands include:
     alp workspace restore <name> workspace.alp --mode recover|clone|merge
     alp workspace move <name> --provider local|git --path ...
     alp workspace migrate --dry-run
+
+    alp session begin --harness <harness>
+    alp session status
+    alp session put --path <ALP_PATH> --file <FILE>
+    alp session close --summary "..."
+    alp session abort
+    alp session recover-sync
+
     alp domain list
     alp domain info go
 
