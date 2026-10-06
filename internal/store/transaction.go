@@ -120,6 +120,9 @@ func (c *Coordinator) Begin(ctx context.Context, sessionID string, expected Revi
 }
 
 func (t *Transaction) Put(path string, data []byte) error {
+	if !IsOwnedPath(path) {
+		return fmt.Errorf("path %q is not ALP-owned", path)
+	}
 	target, err := safePath(filepath.Join(t.recovery.StageDir, "workspace"), path)
 	if err != nil {
 		return err
@@ -135,6 +138,9 @@ func (t *Transaction) Put(path string, data []byte) error {
 }
 
 func (t *Transaction) Delete(path string) error {
+	if !IsOwnedPath(path) {
+		return fmt.Errorf("path %q is not ALP-owned", path)
+	}
 	target, err := safePath(filepath.Join(t.recovery.StageDir, "workspace"), path)
 	if err != nil {
 		return err
@@ -147,7 +153,7 @@ func (t *Transaction) Delete(path string) error {
 }
 
 func (t *Transaction) Commit(ctx context.Context) (Revision, error) {
-	return t.Checkpoint(ctx, false)
+	return t.CheckpointWithMessage(ctx, false, "")
 }
 
 func (t *Transaction) StageRoot() string {
@@ -158,11 +164,18 @@ func (t *Transaction) StageRoot() string {
 }
 
 func (t *Transaction) Checkpoint(ctx context.Context, syncPending bool) (Revision, error) {
+	return t.CheckpointWithMessage(ctx, syncPending, "")
+}
+
+func (t *Transaction) CheckpointWithMessage(ctx context.Context, syncPending bool, message string) (Revision, error) {
 	stageWorkspace := filepath.Join(t.recovery.StageDir, "workspace")
 	if issues := t.coordinator.validator.ValidateWorkspace(stageWorkspace); len(issues) > 0 {
 		return "", fmt.Errorf("staged workspace is invalid: %s", issues[0].Error())
 	}
-	changeSet := ChangeSet{Mutations: make([]Mutation, 0, len(t.changes))}
+	if err := t.refreshChangesFromStage(); err != nil {
+		return "", err
+	}
+	changeSet := ChangeSet{Message: message, Mutations: make([]Mutation, 0, len(t.changes))}
 	keys := make([]string, 0, len(t.changes))
 	for key := range t.changes {
 		keys = append(keys, key)
@@ -190,6 +203,69 @@ func (t *Transaction) Checkpoint(ctx context.Context, syncPending bool) (Revisio
 		_ = os.Remove(t.coordinator.journalPath(t.recovery.WorkspaceID))
 	}
 	return revision, nil
+}
+
+func (t *Transaction) refreshChangesFromStage() error {
+	stageRoot := t.StageRoot()
+	if stageRoot == "" {
+		return errors.New("transaction staging workspace is unavailable")
+	}
+	before, err := ownedFileSnapshot(t.coordinator.store.Root())
+	if err != nil {
+		return err
+	}
+	after, err := ownedFileSnapshot(stageRoot)
+	if err != nil {
+		return err
+	}
+	paths := map[string]struct{}{}
+	for path := range before { paths[path] = struct{}{} }
+	for path := range after { paths[path] = struct{}{} }
+	changes := map[string]Mutation{}
+	for path := range paths {
+		left, leftOK := before[path]
+		right, rightOK := after[path]
+		switch {
+		case leftOK && rightOK && string(left) == string(right):
+			continue
+		case !rightOK:
+			changes[path] = Mutation{Path: path, Delete: true}
+		default:
+			changes[path] = Mutation{Path: path, Data: append([]byte(nil), right...)}
+		}
+	}
+	t.changes = changes
+	return t.persistChanges()
+}
+
+func ownedFileSnapshot(root string) (map[string][]byte, error) {
+	result := map[string][]byte{}
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			if entry.Name() == ".git" || entry.Name() == ".alp-runtime" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		relative, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		relative = filepath.ToSlash(relative)
+		if !IsOwnedPath(relative) {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		result[relative] = data
+		return nil
+	})
+	return result, err
 }
 
 func (t *Transaction) persistChanges() error {
