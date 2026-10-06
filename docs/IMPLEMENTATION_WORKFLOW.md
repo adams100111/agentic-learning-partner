@@ -12,7 +12,8 @@ grill-with-docs
   -> to-tickets
   -> implement-spec
   -> code-review
-  -> retro (human-in-the-loop, optional)
+
+retro is a separate human-in-the-loop follow-up, not an automatic workflow stage. (human-in-the-loop, optional)
 ```
 
 The architecture grill is now complete, so ALP does not need `wayfinder` for the current implementation phase.
@@ -130,4 +131,4 @@ Skills, AGENTS/CLAUDE steering, and referenced docs should follow progressive di
 
 ## Current next step
 
-The next step is to synthesize the settled architecture into one implementation spec, then break it into tracer-bullet tickets with blocking edges before starting code.
+For the production-v0 Store/sync tranche, the architecture grill is complete. The next step is to synthesize the settled Store/provider/sync/onboarding/recovery architecture into one implementation spec, then break it into tracer-bullet tickets with blocking edges before starting code.
