@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
 
-	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 )
 
 type SyncOptions struct {
