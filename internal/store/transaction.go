@@ -150,6 +150,13 @@ func (t *Transaction) Commit(ctx context.Context) (Revision, error) {
 	return t.Checkpoint(ctx, false)
 }
 
+func (t *Transaction) StageRoot() string {
+	if t.recovery.StageDir == "" {
+		return ""
+	}
+	return filepath.Join(t.recovery.StageDir, "workspace")
+}
+
 func (t *Transaction) Checkpoint(ctx context.Context, syncPending bool) (Revision, error) {
 	stageWorkspace := filepath.Join(t.recovery.StageDir, "workspace")
 	if issues := t.coordinator.validator.ValidateWorkspace(stageWorkspace); len(issues) > 0 {
@@ -254,6 +261,23 @@ func (c *Coordinator) InspectRecovery(workspaceID string) (Recovery, error) {
 		return Recovery{}, fmt.Errorf("parse recovery journal: %w", err)
 	}
 	return recovery, nil
+}
+
+func (c *Coordinator) CompleteSync(workspaceID string) error {
+	recovery, err := c.InspectRecovery(workspaceID)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return err
+	}
+	if recovery.Status != RecoverySyncPending && recovery.Status != RecoveryCheckpointed {
+		return fmt.Errorf("workspace %s recovery is %s, not checkpointed/sync-pending", workspaceID, recovery.Status)
+	}
+	if err := os.Remove(c.journalPath(workspaceID)); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
 }
 
 func (c *Coordinator) DiscardRecovery(workspaceID string) error {
