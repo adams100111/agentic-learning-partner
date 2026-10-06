@@ -134,7 +134,7 @@ func TestV0ClosedLoopFromPlatformEvidenceToPlan(t *testing.T) {
 
 	queue, plan, err := (learning.GoPlanner{
 		Root: root, Validator: validator, Registry: domain.NewRegistry(),
-	}).Build(time.Date(2026, 10, 6, 0, 5, 0, 0, time.UTC), 10)
+	}).Build(time.Date(2026, 10, 6, 0, 5, 0, 0, time.UTC), 100)
 	if err != nil {
 		t.Fatal(err)
 	}
