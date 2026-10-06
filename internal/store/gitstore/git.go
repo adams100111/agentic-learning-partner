@@ -352,6 +352,9 @@ func (t *transaction) Commit(ctx context.Context, summary string) (storepkg.Chec
 		restore(backups)
 		return storepkg.Checkpoint{}, err
 	}
+	if _, err := git(t.store.root, "diff", "--cached", "--quiet", "--exit-code"); err == nil {
+		return storepkg.Checkpoint{Revision: current, Summary: summary}, nil
+	}
 	if strings.TrimSpace(summary) == "" {
 		summary = "state: ALP checkpoint"
 	}
