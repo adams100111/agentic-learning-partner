@@ -60,11 +60,26 @@ func Open(root, branch string, validator Validator) (*Store, error) {
 }
 
 func Initialize(root, learnerID, branch string, validator Validator) (*Store, error) {
+	if strings.TrimSpace(learnerID) == "" {
+		return nil, errors.New("learner id is required")
+	}
+	id, err := workspace.NewWorkspaceID()
+	if err != nil {
+		return nil, err
+	}
+	return InitializeWithManifest(root, workspace.Manifest{
+		SchemaVersion: workspace.CurrentSchemaVersion,
+		WorkspaceID: id,
+		LearnerID: learnerID,
+	}, branch, validator)
+}
+
+func InitializeWithManifest(root string, manifest workspace.Manifest, branch string, validator Validator) (*Store, error) {
 	if branch == "" {
 		branch = "main"
 	}
-	if strings.TrimSpace(learnerID) == "" {
-		return nil, errors.New("learner id is required")
+	if manifest.SchemaVersion != workspace.CurrentSchemaVersion || manifest.WorkspaceID == "" || manifest.LearnerID == "" {
+		return nil, errors.New("valid current workspace manifest is required")
 	}
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		return nil, err
@@ -79,15 +94,7 @@ func Initialize(root, learnerID, branch string, validator Validator) (*Store, er
 	if _, err := git(root, "init", "-b", branch); err != nil {
 		return nil, err
 	}
-	id, err := workspace.NewWorkspaceID()
-	if err != nil {
-		return nil, err
-	}
-	if err := workspace.WriteManifest(root, workspace.Manifest{
-		SchemaVersion: workspace.CurrentSchemaVersion,
-		WorkspaceID: id,
-		LearnerID: learnerID,
-	}); err != nil {
+	if err := workspace.WriteManifest(root, manifest); err != nil {
 		return nil, err
 	}
 	if validator != nil {
