@@ -33,6 +33,7 @@ Use this when ALP is newly installed, no usable learner workspace is configured,
 
 5. Execute deterministic ALP commands for state mutations. Typical operations are:
    - `alp workspace init`
+   - `alp workspace connect`
    - `alp workspace clone`
    - `alp workspace use`
    - `alp workspace status`
