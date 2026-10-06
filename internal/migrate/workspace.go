@@ -16,7 +16,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-const CurrentWorkspaceSchema = 2
+const CurrentWorkspaceSchema = workspace.CurrentSchemaVersion
 
 type Step struct {
 	From        int

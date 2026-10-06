@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"github.com/adams100111/agentic-learning-partner/internal/domain"
 	"github.com/adams100111/agentic-learning-partner/internal/migrate"
 	"github.com/adams100111/agentic-learning-partner/internal/state"
+	storepkg "github.com/adams100111/agentic-learning-partner/internal/store"
 	"github.com/adams100111/agentic-learning-partner/internal/view"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 	"go.yaml.in/yaml/v3"
@@ -36,14 +38,17 @@ func (a App) Run(args []string) int {
 	case "validate":
 		return a.runValidate(args[1:])
 	case "workspace":
-		if len(args) > 1 && args[1] == "check" {
+		if len(args) < 2 {
+			fmt.Fprintln(a.ErrOut, "usage: alp workspace <init|clone|list|use|status|sync|export|verify|restore|move|acknowledge-privacy|check|migrate> [options]")
+			return 2
+		}
+		if args[1] == "check" {
 			return a.runWorkspaceCheck(args[2:])
 		}
-		if len(args) > 1 && args[1] == "migrate" {
+		if args[1] == "migrate" {
 			return a.runWorkspaceMigrate(args[2:])
 		}
-		fmt.Fprintln(a.ErrOut, "usage: alp workspace <check|migrate> [options]")
-		return 2
+		return a.runWorkspaceLifecycle(args[1], args[2:])
 	case "domain":
 		return a.runDomain(args[1:])
 	case "context":
@@ -467,15 +472,30 @@ func (a App) resolveAndInspect(explicit string) (workspace.Resolution, workspace
 		fmt.Fprintln(a.ErrOut, err)
 		return workspace.Resolution{}, workspace.Info{}, false
 	}
-	info, err := workspace.Inspect(resolution.Path)
+	validator, err := workspace.NewValidator()
 	if err != nil {
 		fmt.Fprintln(a.ErrOut, err)
 		return workspace.Resolution{}, workspace.Info{}, false
 	}
-	return resolution, info, true
+	var active storepkg.Store
+	if _, statErr := os.Stat(resolution.Path + string(os.PathSeparator) + ".git"); statErr == nil {
+		active, err = storepkg.OpenGit(resolution.Path, validator)
+	} else {
+		active, err = storepkg.OpenLocal(resolution.Path, validator)
+	}
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return workspace.Resolution{}, workspace.Info{}, false
+	}
+	revision, err := active.Revision(context.Background())
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return workspace.Resolution{}, workspace.Info{}, false
+	}
+	return resolution, workspace.Info{Path: active.Root(), Revision: string(revision)}, true
 }
 
 func (a App) usage() {
 	fmt.Fprintln(a.ErrOut, "usage: alp <command>")
-	fmt.Fprintln(a.ErrOut, "commands: validate, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, plan build, diagnostic")
+	fmt.Fprintln(a.ErrOut, "commands: validate, workspace init, workspace clone, workspace list, workspace use, workspace status, workspace sync, workspace export, workspace verify, workspace restore, workspace move, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, plan build, diagnostic")
 }

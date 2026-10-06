@@ -45,12 +45,30 @@ type Store interface {
 	Commit(context.Context, Revision, ChangeSet) (Revision, error)
 }
 
-func Require(store Store, capability Capability) error {
-	if store == nil {
+type CapabilityError struct {
+	Provider    string
+	Capability  Capability
+	Alternative string
+}
+
+func (e CapabilityError) Error() string {
+	message := fmt.Sprintf("store provider %q does not support capability %q", e.Provider, e.Capability)
+	if e.Alternative != "" {
+		message += "; " + e.Alternative
+	}
+	return message
+}
+
+func Require(active Store, capability Capability) error {
+	if active == nil {
 		return fmt.Errorf("store is required")
 	}
-	if !store.Capabilities().Has(capability) {
-		return fmt.Errorf("store provider %q does not support capability %q", store.Provider(), capability)
+	if !active.Capabilities().Has(capability) {
+		alternative := ""
+		if capability == CapabilitySync {
+			alternative = "continue local-only or move this workspace to provider git"
+		}
+		return CapabilityError{Provider: active.Provider(), Capability: capability, Alternative: alternative}
 	}
 	return nil
 }
