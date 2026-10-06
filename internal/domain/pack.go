@@ -39,11 +39,11 @@ var validDimensions = map[string]struct{}{
 }
 
 var validFreshnessClasses = map[string]struct{}{
-	"stable-concept":                    {},
+	"stable-concept":                     {},
 	"version-sensitive-language-runtime": {},
-	"ecosystem-choice":                  {},
-	"operational-platform":              {},
-	"security-sensitive":                {},
+	"ecosystem-choice":                   {},
+	"operational-platform":               {},
+	"security-sensitive":                 {},
 }
 
 var validMigrationStrategies = map[string]struct{}{

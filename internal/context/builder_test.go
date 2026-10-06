@@ -63,7 +63,7 @@ competencies:
 		Task:       "teach",
 		Domain:     "go",
 		Competency: "go.runtime.context",
-		Inspect: true,
+		Inspect:    true,
 	})
 	if err != nil {
 		t.Fatal(err)

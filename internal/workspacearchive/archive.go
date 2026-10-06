@@ -80,11 +80,11 @@ func Export(ctx context.Context, source store.Store, destination string, created
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Path < entries[j].Path })
 	manifest := Manifest{
 		FormatVersion: FormatVersion,
-		WorkspaceID: workspaceManifest.WorkspaceID,
-		LearnerID: workspaceManifest.LearnerID,
+		WorkspaceID:   workspaceManifest.WorkspaceID,
+		LearnerID:     workspaceManifest.LearnerID,
 		SchemaVersion: workspaceManifest.SchemaVersion,
-		CreatedAt: createdAt.UTC(),
-		Entries: entries,
+		CreatedAt:     createdAt.UTC(),
+		Entries:       entries,
 	}
 	if err := writeArchive(destination, manifest, files); err != nil {
 		return Manifest{}, err
@@ -110,7 +110,9 @@ func Verify(path string, validator *workspace.Validator) (Verified, error) {
 			}
 			foundManifest = true
 			data, err := readZipFile(file)
-			if err != nil { return Verified{}, err }
+			if err != nil {
+				return Verified{}, err
+			}
 			if err := json.Unmarshal(data, &manifest); err != nil {
 				return Verified{}, fmt.Errorf("parse archive manifest: %w", err)
 			}
@@ -123,7 +125,9 @@ func Verify(path string, validator *workspace.Validator) (Verified, error) {
 			return Verified{}, fmt.Errorf("archive contains duplicate entry %q", name)
 		}
 		data, err := readZipFile(file)
-		if err != nil { return Verified{}, err }
+		if err != nil {
+			return Verified{}, err
+		}
 		files[name] = data
 	}
 	if !foundManifest {
@@ -176,9 +180,13 @@ func Verify(path string, validator *workspace.Validator) (Verified, error) {
 
 	if validator != nil {
 		temp, err := os.MkdirTemp("", "alp-archive-verify-*")
-		if err != nil { return Verified{}, err }
+		if err != nil {
+			return Verified{}, err
+		}
 		defer os.RemoveAll(temp)
-		if err := writeSnapshot(temp, files); err != nil { return Verified{}, err }
+		if err := writeSnapshot(temp, files); err != nil {
+			return Verified{}, err
+		}
 		if issues := validator.ValidateWorkspace(temp); len(issues) > 0 {
 			return Verified{}, fmt.Errorf("archive canonical state is invalid: %s", issues[0].Error())
 		}
@@ -194,9 +202,13 @@ func Restore(ctx context.Context, archive Verified, destination store.Store, val
 		return "", errors.New("restore runtime directory is required")
 	}
 	targetData, err := destination.Read(ctx, "workspace.yaml")
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 	var targetManifest workspace.Manifest
-	if err := yaml.Unmarshal(targetData, &targetManifest); err != nil { return "", err }
+	if err := yaml.Unmarshal(targetData, &targetManifest); err != nil {
+		return "", err
+	}
 
 	switch options.Mode {
 	case RestoreRecover:
@@ -221,35 +233,51 @@ func Restore(ctx context.Context, archive Verified, destination store.Store, val
 	}
 	if options.Mode == RestoreMerge {
 		current, err := canonicalSnapshot(destination.Root())
-		if err != nil { return "", err }
+		if err != nil {
+			return "", err
+		}
 		delete(current, "workspace.yaml")
 		mergeIncoming := cloneFiles(incoming)
 		delete(mergeIncoming, "workspace.yaml")
 		merged, err := store.ReconcileCanonical(map[string][]byte{}, current, mergeIncoming)
-		if err != nil { return "", err }
+		if err != nil {
+			return "", err
+		}
 		merged["workspace.yaml"] = targetData
 		incoming = merged
 	}
 
 	revision, err := destination.Revision(ctx)
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 	manifest := targetManifest
 	coordinator := store.NewCoordinator(destination, validator, options.RuntimeDir)
 	tx, err := coordinator.Begin(ctx, "restore-"+manifest.WorkspaceID, revision)
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 
 	current, err := canonicalSnapshot(destination.Root())
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 	for path := range current {
 		if _, keep := incoming[path]; !keep {
-			if err := tx.Delete(path); err != nil { return "", err }
+			if err := tx.Delete(path); err != nil {
+				return "", err
+			}
 		}
 	}
 	paths := make([]string, 0, len(incoming))
-	for path := range incoming { paths = append(paths, path) }
+	for path := range incoming {
+		paths = append(paths, path)
+	}
 	sort.Strings(paths)
 	for _, path := range paths {
-		if err := tx.Put(path, incoming[path]); err != nil { return "", err }
+		if err := tx.Put(path, incoming[path]); err != nil {
+			return "", err
+		}
 	}
 	if err := os.RemoveAll(filepath.Join(tx.StageRoot(), "state")); err != nil {
 		return "", fmt.Errorf("discard stale derived state before restore rebuild: %w", err)
@@ -265,7 +293,9 @@ func Restore(ctx context.Context, archive Verified, destination store.Store, val
 func canonicalSnapshot(root string) (map[string][]byte, error) {
 	result := map[string][]byte{}
 	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 		if entry.IsDir() {
 			if entry.Name() == ".git" || strings.HasPrefix(entry.Name(), ".alp-") {
 				return filepath.SkipDir
@@ -273,13 +303,17 @@ func canonicalSnapshot(root string) (map[string][]byte, error) {
 			return nil
 		}
 		relative, err := filepath.Rel(root, path)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 		relative = filepath.ToSlash(relative)
 		if !store.IsCanonicalRevisionPath(relative) {
 			return nil
 		}
 		data, err := os.ReadFile(path)
-		if err != nil { return err }
+		if err != nil {
+			return err
+		}
 		result[relative] = data
 		return nil
 	})
@@ -287,24 +321,40 @@ func canonicalSnapshot(root string) (map[string][]byte, error) {
 }
 
 func writeArchive(destination string, manifest Manifest, files map[string][]byte) error {
-	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil { return err }
+	if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
+		return err
+	}
 	file, err := os.Create(destination)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	writer := zip.NewWriter(file)
 	closeAll := func(current error) error {
-		if err := writer.Close(); current == nil && err != nil { current = err }
-		if err := file.Close(); current == nil && err != nil { current = err }
+		if err := writer.Close(); current == nil && err != nil {
+			current = err
+		}
+		if err := file.Close(); current == nil && err != nil {
+			current = err
+		}
 		return current
 	}
 	manifestData, err := json.MarshalIndent(manifest, "", "  ")
-	if err != nil { return closeAll(err) }
+	if err != nil {
+		return closeAll(err)
+	}
 	manifestData = append(manifestData, '\n')
-	if err := writeZipEntry(writer, "manifest.json", manifestData, manifest.CreatedAt); err != nil { return closeAll(err) }
+	if err := writeZipEntry(writer, "manifest.json", manifestData, manifest.CreatedAt); err != nil {
+		return closeAll(err)
+	}
 	paths := make([]string, 0, len(files))
-	for path := range files { paths = append(paths, path) }
+	for path := range files {
+		paths = append(paths, path)
+	}
 	sort.Strings(paths)
 	for _, path := range paths {
-		if err := writeZipEntry(writer, path, files[path], manifest.CreatedAt); err != nil { return closeAll(err) }
+		if err := writeZipEntry(writer, path, files[path], manifest.CreatedAt); err != nil {
+			return closeAll(err)
+		}
 	}
 	return closeAll(nil)
 }
@@ -314,20 +364,26 @@ func writeZipEntry(writer *zip.Writer, path string, data []byte, timestamp time.
 	header.SetModTime(timestamp.UTC())
 	header.SetMode(0o644)
 	entry, err := writer.CreateHeader(header)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	_, err = entry.Write(data)
 	return err
 }
 
 func readZipFile(file *zip.File) ([]byte, error) {
 	reader, err := file.Open()
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	defer reader.Close()
 	return io.ReadAll(reader)
 }
 
 func safeArchivePath(path string) bool {
-	if path == "" || filepath.IsAbs(filepath.FromSlash(path)) { return false }
+	if path == "" || filepath.IsAbs(filepath.FromSlash(path)) {
+		return false
+	}
 	clean := filepath.ToSlash(filepath.Clean(filepath.FromSlash(path)))
 	return clean == path && clean != ".." && !strings.HasPrefix(clean, "../")
 }
@@ -335,14 +391,20 @@ func safeArchivePath(path string) bool {
 func writeSnapshot(root string, files map[string][]byte) error {
 	for path, data := range files {
 		target := filepath.Join(root, filepath.FromSlash(path))
-		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil { return err }
-		if err := os.WriteFile(target, data, 0o644); err != nil { return err }
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(target, data, 0o644); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func cloneFiles(files map[string][]byte) map[string][]byte {
 	result := make(map[string][]byte, len(files))
-	for path, data := range files { result[path] = append([]byte(nil), data...) }
+	for path, data := range files {
+		result[path] = append([]byte(nil), data...)
+	}
 	return result
 }

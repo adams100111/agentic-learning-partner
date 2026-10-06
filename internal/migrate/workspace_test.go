@@ -104,18 +104,28 @@ func TestApplyStagedMigratesV1LocalStoreToStableWorkspaceIdentity(t *testing.T) 
 		t.Fatal(err)
 	}
 	validator, err := workspace.NewValidator()
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	local, err := store.OpenLocal(root, validator)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	base, err := local.Revision(context.Background())
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	coordinator := store.NewCoordinator(local, validator, t.TempDir())
 	tx, err := coordinator.Begin(context.Background(), "migrate-local", base)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	migrator := NewWorkspaceMigrator(validator)
 	plan, err := migrator.ApplyStaged(tx.StageRoot())
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if plan.Current != 1 || plan.Target != 2 {
 		t.Fatalf("plan = %#v", plan)
 	}
@@ -123,7 +133,9 @@ func TestApplyStagedMigratesV1LocalStoreToStableWorkspaceIdentity(t *testing.T) 
 		t.Fatal(err)
 	}
 	manifest, err := workspace.ReadManifest(root)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if manifest.SchemaVersion != 2 || manifest.WorkspaceID == "" || manifest.LearnerID != "learner" {
 		t.Fatalf("manifest = %#v", manifest)
 	}
@@ -132,24 +144,38 @@ func TestApplyStagedMigratesV1LocalStoreToStableWorkspaceIdentity(t *testing.T) 
 func TestApplyStagedMigratesV1GitStoreAndCheckpointsIdentity(t *testing.T) {
 	root, _ := migrationWorkspace(t, 1)
 	validator, err := workspace.NewValidator()
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	gitStore, err := store.OpenGit(root, validator)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	base, err := gitStore.Revision(context.Background())
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	coordinator := store.NewCoordinator(gitStore, validator, t.TempDir())
 	tx, err := coordinator.Begin(context.Background(), "migrate-git", base)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	migrator := NewWorkspaceMigrator(validator)
-	if _, err := migrator.ApplyStaged(tx.StageRoot()); err != nil { t.Fatal(err) }
+	if _, err := migrator.ApplyStaged(tx.StageRoot()); err != nil {
+		t.Fatal(err)
+	}
 	next, err := tx.CheckpointWithMessage(context.Background(), false, "alp: migrate git workspace")
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if next == base {
 		t.Fatal("Git Store migration must advance the checkpoint revision")
 	}
 	manifest, err := workspace.ReadManifest(root)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if manifest.SchemaVersion != 2 || manifest.WorkspaceID == "" {
 		t.Fatalf("manifest = %#v", manifest)
 	}

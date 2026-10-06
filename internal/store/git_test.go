@@ -14,32 +14,28 @@ import (
 func TestGitStoreCommitsOnlyOwnedPaths(t *testing.T) {
 	root := t.TempDir()
 	initGitStoreRepo(t, root)
-	writeGitStoreFile(t, root, "workspace.yaml", "schemaVersion: 2
-workspaceId: ws_git
-learnerId: learner
-")
+	writeGitStoreFile(t, root, "workspace.yaml", "schemaVersion: 2\nworkspaceId: ws_git\nlearnerId: learner\n")
 	runGitStore(t, root, "add", "workspace.yaml")
 	runGitStore(t, root, "commit", "-m", "init")
-	writeGitStoreFile(t, root, "notes.txt", "do not commit
-")
+	writeGitStoreFile(t, root, "notes.txt", "do not commit\n")
 
 	validator, _ := workspace.NewValidator()
 	s, err := OpenGit(root, validator)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	base, _ := s.Revision(context.Background())
-	profile := []byte("schemaVersion: 1
-learner:
-  id: learner
-experience: {}
-goals: []
-preferences: {}
-")
+	profile := []byte("schemaVersion: 1\nlearner:\n  id: learner\nexperience: {}\ngoals: []\npreferences: {}\n")
 	next, err := s.Commit(context.Background(), base, ChangeSet{
-		Message: "learn: checkpoint",
+		Message:   "learn: checkpoint",
 		Mutations: []Mutation{{Path: "profile/profile.yaml", Data: profile}},
 	})
-	if err != nil { t.Fatal(err) }
-	if next == base { t.Fatal("git revision did not advance") }
+	if err != nil {
+		t.Fatal(err)
+	}
+	if next == base {
+		t.Fatal("git revision did not advance")
+	}
 
 	status := runGitStore(t, root, "status", "--porcelain")
 	if !strings.Contains(status, "?? notes.txt") {
@@ -54,10 +50,7 @@ preferences: {}
 func TestGitStoreRejectsNonOwnedMutation(t *testing.T) {
 	root := t.TempDir()
 	initGitStoreRepo(t, root)
-	writeGitStoreFile(t, root, "workspace.yaml", "schemaVersion: 2
-workspaceId: ws_git
-learnerId: learner
-")
+	writeGitStoreFile(t, root, "workspace.yaml", "schemaVersion: 2\nworkspaceId: ws_git\nlearnerId: learner\n")
 	runGitStore(t, root, "add", ".")
 	runGitStore(t, root, "commit", "-m", "init")
 	validator, _ := workspace.NewValidator()
@@ -72,10 +65,7 @@ learnerId: learner
 func TestCloneGitStoreUsesLocalCheckout(t *testing.T) {
 	source := t.TempDir()
 	initGitStoreRepo(t, source)
-	writeGitStoreFile(t, source, "workspace.yaml", "schemaVersion: 2
-workspaceId: ws_git
-learnerId: learner
-")
+	writeGitStoreFile(t, source, "workspace.yaml", "schemaVersion: 2\nworkspaceId: ws_git\nlearnerId: learner\n")
 	runGitStore(t, source, "add", ".")
 	runGitStore(t, source, "commit", "-m", "init")
 
@@ -84,7 +74,9 @@ learnerId: learner
 	dest := filepath.Join(t.TempDir(), "clone")
 	validator, _ := workspace.NewValidator()
 	s, err := CloneGit(context.Background(), bare, dest, "main", validator)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if s.Root() != dest {
 		t.Fatalf("root = %s", s.Root())
 	}
@@ -103,8 +95,12 @@ func initGitStoreRepo(t *testing.T, root string) {
 func writeGitStoreFile(t *testing.T, root, name, content string) {
 	t.Helper()
 	path := filepath.Join(root, filepath.FromSlash(name))
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil { t.Fatal(err) }
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil { t.Fatal(err) }
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func runGitStore(t *testing.T, root string, args ...string) string {
@@ -115,10 +111,13 @@ func runGitStore(t *testing.T, root string, args ...string) string {
 func runCommandGitStore(t *testing.T, dir, name string, args ...string) string {
 	t.Helper()
 	cmd := exec.Command(name, args...)
-	if dir != "" { cmd.Dir = dir }
+	if dir != "" {
+		cmd.Dir = dir
+	}
 	out, err := cmd.CombinedOutput()
-	if err != nil { t.Fatalf("%s %v: %v
-%s", name, args, err, out) }
+	if err != nil {
+		t.Fatalf("%s %v: %v\n%s", name, args, err, out)
+	}
 	return string(out)
 }
 
@@ -132,7 +131,9 @@ func TestInitializeGitCreatesOwnedInitialCheckpointOnly(t *testing.T) {
 	// Remove the unborn repository so InitializeGit exercises existing-git/no-HEAD behavior.
 	validator, _ := workspace.NewValidator()
 	s, err := InitializeGit(context.Background(), root, "main", "", validator)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if _, err := s.Revision(context.Background()); err != nil {
 		t.Fatalf("initialized store must have a revision: %v", err)
 	}

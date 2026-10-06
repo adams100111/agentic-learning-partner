@@ -26,27 +26,27 @@ const (
 )
 
 type Manager struct {
-	Store       store.Store
-	Validator   *workspace.Validator
-	RuntimeDir  string
-	Rebuild     func(root string) error
-	Now         func() time.Time
+	Store      store.Store
+	Validator  *workspace.Validator
+	RuntimeDir string
+	Rebuild    func(root string) error
+	Now        func() time.Time
 }
 
 type BeginOptions struct {
-	ID             string
-	Harness        string
-	DeviceID       string
-	Mode           SyncMode
-	RetainRecord   *bool
-	Sync           store.SyncOptions
+	ID           string
+	Harness      string
+	DeviceID     string
+	Mode         SyncMode
+	RetainRecord *bool
+	Sync         store.SyncOptions
 }
 
 type CloseInput struct {
-	Domains      []string
-	Evidence     []string
-	Assessments  []string
-	Summary      string
+	Domains     []string
+	Evidence    []string
+	Assessments []string
+	Summary     string
 }
 
 type Record struct {
@@ -86,21 +86,21 @@ type persistedSession struct {
 }
 
 type Session struct {
-	manager      *Manager
-	coordinator  *store.Coordinator
-	tx           *store.Transaction
-	id           string
-	harness      string
-	deviceID     string
-	mode         SyncMode
-	retainRecord bool
-	startedAt    time.Time
+	manager         *Manager
+	coordinator     *store.Coordinator
+	tx              *store.Transaction
+	id              string
+	harness         string
+	deviceID        string
+	mode            SyncMode
+	retainRecord    bool
+	startedAt       time.Time
 	baseRevision    store.Revision
 	initialRevision store.Revision
 	offline         bool
-	syncOptions  store.SyncOptions
-	closed       bool
-	pendingSync  bool
+	syncOptions     store.SyncOptions
+	closed          bool
+	pendingSync     bool
 }
 
 func (m *Manager) RecoverPendingSync(ctx context.Context, options store.SyncOptions) (store.SyncResult, error) {
@@ -247,25 +247,25 @@ func (m *Manager) Resume(ctx context.Context) (*Session, error) {
 		initial = tx.BaseRevision()
 	}
 	return &Session{
-		manager: m,
-		coordinator: coordinator,
-		tx: tx,
-		id: meta.ID,
-		harness: meta.Harness,
-		deviceID: meta.DeviceID,
-		mode: meta.Mode,
-		retainRecord: meta.RetainRecord,
-		startedAt: startedAt,
-		baseRevision: tx.BaseRevision(),
+		manager:         m,
+		coordinator:     coordinator,
+		tx:              tx,
+		id:              meta.ID,
+		harness:         meta.Harness,
+		deviceID:        meta.DeviceID,
+		mode:            meta.Mode,
+		retainRecord:    meta.RetainRecord,
+		startedAt:       startedAt,
+		baseRevision:    tx.BaseRevision(),
 		initialRevision: initial,
-		offline: meta.Offline,
-		syncOptions: store.SyncOptions{Remote: meta.Remote, Branch: meta.Branch, MaxRetries: meta.MaxRetries},
+		offline:         meta.Offline,
+		syncOptions:     store.SyncOptions{Remote: meta.Remote, Branch: meta.Branch, MaxRetries: meta.MaxRetries},
 	}, nil
 }
 
-func (s *Session) ID() string { return s.id }
+func (s *Session) ID() string                   { return s.id }
 func (s *Session) BaseRevision() store.Revision { return s.baseRevision }
-func (s *Session) Offline() bool { return s.offline }
+func (s *Session) Offline() bool                { return s.offline }
 
 func (s *Session) StageRoot() string {
 	if s.tx == nil {
@@ -291,7 +291,6 @@ func (s *Session) Abort() error {
 	}
 	return s.manager.deleteSessionMetadata(manifest.WorkspaceID)
 }
-
 
 func (s *Session) Put(path string, data []byte) error {
 	if s.closed {
@@ -377,18 +376,18 @@ func (s *Session) checkpoint(ctx context.Context, closing bool, input CloseInput
 	if closing && s.retainRecord {
 		record := Record{
 			SchemaVersion: 1,
-			ID: s.id,
-			StartedAt: s.startedAt.Format(time.RFC3339),
-			ClosedAt: s.now().Format(time.RFC3339),
-			Harness: s.harness,
-			DeviceID: s.deviceID,
-			BaseRevision: string(s.initialRevision),
-			SyncMode: s.mode,
-			Offline: s.offline,
-			Domains: uniqueSorted(input.Domains),
-			Evidence: uniqueSorted(input.Evidence),
-			Assessments: uniqueSorted(input.Assessments),
-			Summary: input.Summary,
+			ID:            s.id,
+			StartedAt:     s.startedAt.Format(time.RFC3339),
+			ClosedAt:      s.now().Format(time.RFC3339),
+			Harness:       s.harness,
+			DeviceID:      s.deviceID,
+			BaseRevision:  string(s.initialRevision),
+			SyncMode:      s.mode,
+			Offline:       s.offline,
+			Domains:       uniqueSorted(input.Domains),
+			Evidence:      uniqueSorted(input.Evidence),
+			Assessments:   uniqueSorted(input.Assessments),
+			Summary:       input.Summary,
 		}
 		data, err := yaml.Marshal(record)
 		if err != nil {
@@ -501,17 +500,17 @@ func (m *Manager) writeSessionMetadata(workspaceID string, session *Session) err
 		return err
 	}
 	meta := persistedSession{
-		ID: session.id,
-		Harness: session.harness,
-		DeviceID: session.deviceID,
-		Mode: session.mode,
-		RetainRecord: session.retainRecord,
-		StartedAt: session.startedAt.UTC().Format(time.RFC3339),
+		ID:              session.id,
+		Harness:         session.harness,
+		DeviceID:        session.deviceID,
+		Mode:            session.mode,
+		RetainRecord:    session.retainRecord,
+		StartedAt:       session.startedAt.UTC().Format(time.RFC3339),
 		InitialRevision: string(session.initialRevision),
-		Offline: session.offline,
-		Remote: session.syncOptions.Remote,
-		Branch: session.syncOptions.Branch,
-		MaxRetries: session.syncOptions.MaxRetries,
+		Offline:         session.offline,
+		Remote:          session.syncOptions.Remote,
+		Branch:          session.syncOptions.Branch,
+		MaxRetries:      session.syncOptions.MaxRetries,
 	}
 	data, err := json.MarshalIndent(meta, "", "  ")
 	if err != nil {

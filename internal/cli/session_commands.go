@@ -10,10 +10,10 @@ import (
 	"strings"
 
 	"github.com/adams100111/agentic-learning-partner/internal/device"
+	"github.com/adams100111/agentic-learning-partner/internal/lifecycle"
 	"github.com/adams100111/agentic-learning-partner/internal/session"
 	"github.com/adams100111/agentic-learning-partner/internal/state"
 	storepkg "github.com/adams100111/agentic-learning-partner/internal/store"
-	"github.com/adams100111/agentic-learning-partner/internal/lifecycle"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 	"go.yaml.in/yaml/v3"
 )
@@ -70,8 +70,8 @@ func (a App) runSession(args []string) int {
 		return 1
 	}
 	manager := &session.Manager{
-		Store: active,
-		Validator: validator,
+		Store:      active,
+		Validator:  validator,
 		RuntimeDir: runtimeDir,
 		Rebuild: func(root string) error {
 			_, err := (state.Store{Root: root, Validator: validator}).RebuildProjection()
@@ -97,11 +97,11 @@ func (a App) runSession(args []string) int {
 		}
 		retain := !*noRecord
 		started, err := manager.Begin(context.Background(), session.BeginOptions{
-			Harness: *harness,
-			DeviceID: id,
-			Mode: session.SyncMode(*mode),
+			Harness:      *harness,
+			DeviceID:     id,
+			Mode:         session.SyncMode(*mode),
 			RetainRecord: &retain,
-			Sync: storepkg.SyncOptions{Remote: *remote, Branch: *branchName},
+			Sync:         storepkg.SyncOptions{Remote: *remote, Branch: *branchName},
 		})
 		if err != nil {
 			fmt.Fprintln(a.ErrOut, err)
@@ -269,7 +269,7 @@ func discoverSessionCloseInput(root, stage, summary string) (session.CloseInput,
 	input := session.CloseInput{Summary: summary}
 	domains := map[string]struct{}{}
 	for _, group := range []struct {
-		dir string
+		dir    string
 		target *[]string
 	}{
 		{dir: "evidence", target: &input.Evidence},
@@ -293,7 +293,9 @@ func discoverSessionCloseInput(root, stage, summary string) (session.CloseInput,
 			if err != nil {
 				return session.CloseInput{}, err
 			}
-			var record struct{ Domain string `yaml:"domain"` }
+			var record struct {
+				Domain string `yaml:"domain"`
+			}
 			if err := yaml.Unmarshal(data, &record); err != nil {
 				return session.CloseInput{}, err
 			}

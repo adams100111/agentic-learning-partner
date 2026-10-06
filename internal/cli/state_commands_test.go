@@ -19,11 +19,17 @@ func TestEvidenceAddCheckpointsThroughLocalStore(t *testing.T) {
 		t.Fatal(err)
 	}
 	validator, err := workspace.NewValidator()
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	local, err := storepkg.OpenLocal(root, validator)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	before, err := local.Revision(context.Background())
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	input := filepath.Join(t.TempDir(), "evidence.yaml")
 	evidence := []byte(`schemaVersion: 1
@@ -32,7 +38,7 @@ recordedAt: 2026-10-06T12:00:00Z
 domain: go
 competencies:
   - go.runtime.context
-type: diagnostic
+type: explanation
 source:
   kind: diagnostic
   ref: acceptance-local
@@ -40,7 +46,9 @@ observation: Correctly explained request cancellation ownership.
 result: pass
 strength: moderate
 `)
-	if err := os.WriteFile(input, evidence, 0o644); err != nil { t.Fatal(err) }
+	if err := os.WriteFile(input, evidence, 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	var out bytes.Buffer
 	var errOut bytes.Buffer
@@ -52,7 +60,9 @@ strength: moderate
 		t.Fatalf("stdout = %q", out.String())
 	}
 	after, err := local.Revision(context.Background())
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if after == before {
 		t.Fatal("Local Store evidence checkpoint must advance workspace revision")
 	}
@@ -68,11 +78,17 @@ func TestSessionStagesEvidenceUntilSingleCloseCheckpoint(t *testing.T) {
 		t.Fatal(err)
 	}
 	validator, err := workspace.NewValidator()
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	local, err := storepkg.OpenLocal(root, validator)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	before, err := local.Revision(context.Background())
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var beginOut bytes.Buffer
 	var beginErr bytes.Buffer
@@ -88,7 +104,7 @@ recordedAt: 2026-10-06T12:00:00Z
 domain: go
 competencies:
   - go.runtime.context
-type: diagnostic
+type: explanation
 source:
   kind: diagnostic
   ref: acceptance-session
@@ -96,7 +112,9 @@ observation: Correctly explained cancellation ownership.
 result: pass
 strength: moderate
 `)
-	if err := os.WriteFile(input, evidence, 0o644); err != nil { t.Fatal(err) }
+	if err := os.WriteFile(input, evidence, 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	var evidenceOut bytes.Buffer
 	var evidenceErr bytes.Buffer
@@ -105,7 +123,9 @@ strength: moderate
 		t.Fatalf("evidence exit=%d stderr=%s", code, evidenceErr.String())
 	}
 	mid, err := local.Revision(context.Background())
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if mid != before {
 		t.Fatalf("active-session evidence must remain staged; before=%s mid=%s", before, mid)
 	}
@@ -120,7 +140,9 @@ strength: moderate
 		t.Fatalf("close exit=%d stderr=%s", code, closeErr.String())
 	}
 	after, err := local.Revision(context.Background())
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if after == before {
 		t.Fatal("session close must publish one Store checkpoint")
 	}
@@ -128,12 +150,16 @@ strength: moderate
 		t.Fatalf("evidence missing after session close: %v", err)
 	}
 	sessions, err := filepath.Glob(filepath.Join(root, "sessions", "sess_*.yaml"))
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(sessions) != 1 {
 		t.Fatalf("compact session records = %v", sessions)
 	}
 	sessionData, err := os.ReadFile(sessions[0])
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if !strings.Contains(string(sessionData), "ev_session_acceptance") || !strings.Contains(string(sessionData), "codex") {
 		t.Fatalf("session record missing evidence/harness provenance:\n%s", sessionData)
 	}
