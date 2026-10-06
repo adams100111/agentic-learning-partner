@@ -67,6 +67,8 @@ func (a App) Run(args []string) int {
 		return a.runAssessment(args[1:])
 	case "state":
 		return a.runState(args[1:])
+	case "session":
+		return a.runSession(args[1:])
 	case "plan":
 		return a.runPlan(args[1:])
 	case "diagnostic":
@@ -526,5 +528,5 @@ func (a App) resolveAndInspect(explicit string) (workspace.Resolution, workspace
 
 func (a App) usage() {
 	fmt.Fprintln(a.ErrOut, "usage: alp <command>")
-	fmt.Fprintln(a.ErrOut, "commands: validate, workspace init, workspace connect, workspace clone, workspace list, workspace use, workspace status, workspace sync, workspace export, workspace verify, workspace restore, workspace move, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, plan build, diagnostic")
+	fmt.Fprintln(a.ErrOut, "commands: validate, workspace init, workspace connect, workspace clone, workspace list, workspace use, workspace status, workspace sync, workspace export, workspace verify, workspace restore, workspace move, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, session begin, session status, session put, session delete, session close, session abort, session recover-sync, plan build, diagnostic")
 }
