@@ -64,3 +64,10 @@ Do not keep a separate harness-specific learner profile, competency cache, or as
 ## Credentials
 
 ALP does not store Git credentials. Workspace cloning/pushing uses the user's existing Git/GitHub authentication.
+
+
+## First real learning session
+
+After installation, do not hand-create evidence, assessments, competency projections, review queues, or learning plans.
+
+Run the first real session from an actual harness and follow `docs/FIRST_HARNESS_TEST.md`. The harness should inspect bootstrap profile/persona state, select the minimum high-information diagnostic, and let the ALP runtime create the first genuine learning-state artifacts from actual evidence.
