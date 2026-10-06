@@ -353,19 +353,22 @@ func (m Manager) migrateClonedGitWorkspace(ctx context.Context, active *store.Gi
 	if err != nil {
 		return err
 	}
-	migrator := migrate.NewWorkspaceMigrator(m.Validator)
-	migrator.Rebuild = m.Rebuild
-	if _, err := migrator.Apply(active.Root(), strings.TrimPrefix(string(before), "git:")); err != nil {
-		return err
-	}
-	data, err := os.ReadFile(filepath.Join(active.Root(), "workspace.yaml"))
+	coordinator := store.NewCoordinator(active, m.Validator, m.RuntimeDir)
+	tx, err := coordinator.Begin(ctx, fmt.Sprintf("migration-clone-%d", time.Now().UTC().UnixNano()), before)
 	if err != nil {
 		return err
 	}
-	_, err = active.Commit(ctx, before, store.ChangeSet{
-		Message: "alp: migrate workspace schema",
-		Mutations: []store.Mutation{{Path: "workspace.yaml", Data: data}},
-	})
+	migrator := migrate.NewWorkspaceMigrator(m.Validator)
+	migrator.Rebuild = m.Rebuild
+	plan, err := migrator.ApplyStaged(tx.StageRoot())
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	if plan.Empty() {
+		return tx.Rollback()
+	}
+	_, err = tx.CheckpointWithMessage(ctx, false, fmt.Sprintf("alp: migrate workspace schema %d to %d", plan.Current, plan.Target))
 	return err
 }
 
