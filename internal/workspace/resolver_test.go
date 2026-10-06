@@ -78,3 +78,36 @@ func TestResolverUsesEnvironmentThenUserConfig(t *testing.T) {
 		t.Fatalf("user config resolution = %#v", got)
 	}
 }
+
+func TestResolverUsesNamedWorkspace(t *testing.T) {
+	root := t.TempDir()
+	home := filepath.Join(root, "home")
+	configDir := filepath.Join(home, ".config", "alp")
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	workspacePath := filepath.Join(root, "personal")
+	config := `defaultWorkspace: personal
+workspaces:
+  personal:
+    provider: git
+    path: ` + workspacePath + `
+    syncMode: session
+    remote: origin
+    branch: main
+`
+	if err := os.WriteFile(filepath.Join(configDir, "config.yaml"), []byte(config), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	resolver := Resolver{
+		Getenv: func(string) string { return "" },
+		HomeDir: func() (string, error) { return home, nil },
+	}
+	got, err := resolver.Resolve("", root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "personal" || got.Path != workspacePath || got.Provider.Type != "git" {
+		t.Fatalf("named resolution = %#v", got)
+	}
+}
