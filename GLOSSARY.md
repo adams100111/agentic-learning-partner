@@ -102,6 +102,14 @@ Structured output of a Platform Validator: per-gate ID, status (pass/fail/warn/s
 
 The hierarchical scope of an authoring request: target skeleton → curriculum → unit → activity → patch. The default is the smallest justified intent.
 
+## Platform Account Link
+
+A learner-confirmed workspace record linking a platform user (`{platform instance, platform user ID}`) to the workspace learner. Activity imports are refused for platform users without a link; learners are never matched by email or name.
+
+## Curriculum Export
+
+A versioned, platform-produced description of a Learning Target's structure — declared-stable items, phases, mapping, and content hash — consumed by a Curriculum Reader. ALP never parses platform-native content directly.
+
 ## PyLearn
 
 ALP's primary reference integration and first validation environment, but not the only platform target. PyLearn is a source of learner activity, project evidence, and candidate course material; it is not an authoritative source for technical correctness. Its Reel MDX system is the first reference implementation of a platform-native authoring target.

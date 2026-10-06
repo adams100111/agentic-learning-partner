@@ -421,9 +421,17 @@ Q33, Q34 were explicitly accepted by the user (2026-10-07).
 - **Q33 Cross-repo mapping validation:** PyLearn lint (no ALP dependency) checks mapped IDs are declared-stable and exist. New PyLearn gate `gate:alp-mapping` runs `alp platform mapping validate --adapter pylearn` against the mapping's pinned pack version; required for ALP-authored targets and PRs touching the mapping file; `skipped` for unmapped courses; missing `alp` fails with an install hint.
 - **Q34 `go-alp` structure:** phases derived from the Curriculum Specification at target-skeleton authoring; PyLearn authoring skill emits `content/courses/go-alp.yaml`; phase IDs freeze once any unit in them is realized; later versions may add/insert phases but never renumber/rename realized ones; manual `go` course untouched.
 
+## Settled grill round 5
+
+Q36–Q38 were explicitly accepted by the user (2026-10-07), after spec #66 and tickets were drafted.
+
+- **Q36 Platform account link:** learner-confirmed workspace record linking `{platform instance, platform user ID}` → workspace `learnerId`; import refuses unlinked users; no email/name matching.
+- **Q37 Curriculum Reader:** platforms expose target structure via a versioned curriculum export (declared-stable items, phases, mapping, content hash); PyLearn provides `export:curriculum`; ALP never parses MDX or platform repos.
+- **Q38 Closed-loop synthetic activity:** seeded into a throwaway PyLearn libSQL DB through PyLearn's real persistence code, then exported with the real `export:activity`.
+
 ## Grill status
 
-Frontier empty after round 4, pending the user's confirmation of shared understanding. Next: `to-spec` → `to-tickets` → `implement-spec`.
+Grill closed. Spec: adams100111/agentic-learning-partner#66. Tickets: ALP #68–#75, PyLearn #43–#47 (sub-issues of #66 with native blocked-by edges). Next: `implement-spec`.
 
 ## Important cautions for the next agent
 
