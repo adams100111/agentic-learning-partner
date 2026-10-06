@@ -1,6 +1,8 @@
-# PyLearn Integration — First Use Case
+# PyLearn Integration — Primary Reference Use Case
 
 Repository: `adams100111/pylearn`
+
+> **Platform-adaptation design work:** PyLearn is ALP's primary reference platform, not the only target. The settled cross-platform architecture and verified current gaps are documented in [Platform Adaptation Architecture](../PLATFORM_ADAPTATION_ARCHITECTURE.md) and [PyLearn Reference Target](PYLEARN_REFERENCE_TARGET.md). A brand-new agent/session should resume the active design grill from [Platform Adaptation Grill Handoff](../HANDOFF_PLATFORM_ADAPTATION_GRILL.md).
 
 > **Authority boundary:** PyLearn is an integration/validation target and a source of learner evidence/candidate content. It is **not** ALP's technical source of truth. Version-sensitive claims and ecosystem recommendations must be re-verified against current upstream sources per [`../SOURCE_POLICY.md`](../SOURCE_POLICY.md).
 
