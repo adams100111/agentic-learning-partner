@@ -121,3 +121,23 @@ func runCommandGitStore(t *testing.T, dir, name string, args ...string) string {
 %s", name, args, err, out) }
 	return string(out)
 }
+
+func TestInitializeGitCreatesOwnedInitialCheckpointOnly(t *testing.T) {
+	root := t.TempDir()
+	writeGitStoreFile(t, root, "workspace.yaml", "schemaVersion: 2\nworkspaceId: ws_git\nlearnerId: learner\n")
+	writeGitStoreFile(t, root, "README.md", "unrelated\n")
+	runGitStore(t, root, "init", "-b", "main")
+	runGitStore(t, root, "config", "user.email", "alp@example.invalid")
+	runGitStore(t, root, "config", "user.name", "ALP Test")
+	// Remove the unborn repository so InitializeGit exercises existing-git/no-HEAD behavior.
+	validator, _ := workspace.NewValidator()
+	s, err := InitializeGit(context.Background(), root, "main", "", validator)
+	if err != nil { t.Fatal(err) }
+	if _, err := s.Revision(context.Background()); err != nil {
+		t.Fatalf("initialized store must have a revision: %v", err)
+	}
+	show := runGitStore(t, root, "show", "--name-only", "--format=", "HEAD")
+	if !strings.Contains(show, "workspace.yaml") || strings.Contains(show, "README.md") {
+		t.Fatalf("initial checkpoint paths = %q", show)
+	}
+}
