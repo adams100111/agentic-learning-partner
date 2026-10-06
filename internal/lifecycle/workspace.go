@@ -86,7 +86,7 @@ func (m Manager) Init(name, provider, path, learnerID, branch, remote string) (W
 	default:
 		return WorkspaceStatus{}, fmt.Errorf("unsupported store provider %q", provider)
 	}
-	if err := m.saveWorkspace(name, configured, true); err != nil {
+	if err := m.saveWorkspace(name, configured, false); err != nil {
 		return WorkspaceStatus{}, err
 	}
 	return m.Status(name)
@@ -115,7 +115,7 @@ func (m Manager) Clone(name, remote, path, branch string) (WorkspaceStatus, erro
 	config := workspace.ProviderConfig{
 		Type: "git", Path: absolute, SyncMode: "session", Remote: "origin", Branch: branch,
 	}
-	if err := m.saveWorkspace(name, config, true); err != nil {
+	if err := m.saveWorkspace(name, config, false); err != nil {
 		return WorkspaceStatus{}, err
 	}
 	return m.Status(name)
