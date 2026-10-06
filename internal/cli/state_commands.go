@@ -177,6 +177,13 @@ func mutationTransaction(active storepkg.Store, validator *workspace.Validator, 
 		if recoveryErr == nil {
 			switch recovery.Status {
 			case storepkg.RecoveryStaged:
+				sessionHandle := filepath.Join(runtimeDir, "sessions", manifest.WorkspaceID+".json")
+				if _, statErr := os.Stat(sessionHandle); statErr != nil {
+					if errors.Is(statErr, os.ErrNotExist) {
+						return nil, "", false, fmt.Errorf("workspace has an interrupted staged transaction; inspect/resume or discard recovery before new mutations")
+					}
+					return nil, "", false, statErr
+				}
 				tx, err := coordinator.Resume(manifest.WorkspaceID)
 				if err != nil {
 					return nil, "", false, err
