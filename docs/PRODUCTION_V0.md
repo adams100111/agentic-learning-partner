@@ -16,15 +16,20 @@ Production v0 is not complete until the following lifecycle works without manual
 - initialize a new learner workspace;
 - connect/clone an existing workspace;
 - configure and switch among named workspaces;
-- validate and migrate workspace state;
-- discover the active workspace predictably.
+- validate and migrate workspace state, including workspace identity migration;
+- discover the active workspace predictably;
+- convert between supported Store providers;
+- detect and recover interrupted setup/session operations.
 
 ### Store providers
 
 - Local Store is fully functional;
 - Git Store is fully functional;
-- required capabilities are explicit;
-- unsupported capability requests fail safely.
+- provider-independent Workspace Revision semantics are enforced;
+- provider capabilities are explicit;
+- unsupported capability requests fail safely;
+- one writer transaction per workspace/device is enforced;
+- staged transactions publish atomically.
 
 ### Git synchronization
 
@@ -34,9 +39,11 @@ Production v0 is not complete until the following lifecycle works without manual
 - explicit pull/push/sync commands;
 - optimistic remote revision checks;
 - append-only record reconciliation;
+- claim/field-level canonical document reconciliation where safe;
 - derived-state regeneration;
-- semantic profile/persona conflict handling;
 - interrupted-sync recovery;
+- dirty ALP-owned local edits are preserved semantically;
+- checkpoint commits contain only ALP-owned paths;
 - no unsafe Git operations exposed to agents.
 
 ### Security
@@ -53,6 +60,7 @@ Production v0 is not complete until the following lifecycle works without manual
 - provider-independent workspace export;
 - export integrity manifest/checksums;
 - verification before restore;
+- explicit recover/clone/merge restore modes;
 - restore into a supported provider;
 - workspace remains valid after restore/migration.
 
@@ -60,10 +68,18 @@ Production v0 is not complete until the following lifecycle works without manual
 
 - setup wizard inspects existing environment/state first;
 - new users can create a workspace;
-- existing users can connect their state;
+- existing users can connect their state without repeating profile onboarding;
 - Git remote creation may use a securely connected forge integration;
 - the wizard asks only unresolved user decisions;
-- deterministic CLI/runtime operations perform mutations.
+- deterministic CLI/runtime operations perform mutations;
+- selected safe session-sync policy does not require repetitive confirmations.
+
+### Session/device provenance
+
+- stable workspace ID distinct from learner ID;
+- machine-local opaque device identity;
+- compact canonical session records by default;
+- no raw chat transcripts stored by default.
 
 ### Multi-device / cross-harness acceptance
 
@@ -77,7 +93,33 @@ A production acceptance test must prove:
 6. concurrent independent append-only changes reconcile;
 7. canonical document conflicts stop or resolve according to policy;
 8. derived state is reproducible after reconciliation;
-9. interrupted session/sync can recover safely.
+9. interrupted session/sync can recover safely;
+10. offline session work checkpoints locally and later synchronizes;
+11. provider conversion/export/restore preserves canonical state.
+
+## Automated acceptance matrix
+
+Deterministic automated coverage uses:
+
+- Local Store;
+- local bare Git remotes;
+- independent clones representing devices;
+- concurrent push races;
+- offline remote behavior;
+- canonical conflicts;
+- interrupted transactions;
+- workspace migration;
+- provider conversion;
+- export/verify/restore.
+
+Release smoke testing additionally uses:
+
+- a real private GitHub remote;
+- Claude Code;
+- Codex;
+- device A/device B continuation.
+
+Ordinary automated test reliability must not depend on GitHub availability.
 
 ## Current status
 
