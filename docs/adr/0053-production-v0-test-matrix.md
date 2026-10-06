@@ -15,8 +15,10 @@ Production v0 uses two acceptance levels.
 Use Local Store and local bare Git remotes to test:
 
 - workspace initialization;
-- named workspace configuration;
-- provider capabilities;
+- clone/connect;
+- named workspace configuration and switching;
+- provider capabilities, including explicit capability failures;
+- session lifecycle and checkpointing;
 - optimistic revisions;
 - atomic transaction staging;
 - same-device writer locking;
@@ -35,9 +37,9 @@ Use Local Store and local bare Git remotes to test:
 Before production-v0 release, execute real workflows using:
 
 - a private GitHub remote;
-- Claude Code;
-- Codex;
-- two independent device/workspace clones.
+- current Claude Code plugin installation;
+- current Codex plugin installation;
+- two independent device/workspace clones, proving device A -> device B continuation.
 
 The smoke test proves cross-harness continuation without shared conversation memory.
 
@@ -47,5 +49,5 @@ Future provider sections for S3/WebDAV/remote API/PostgreSQL are informative unt
 
 - core tests remain fast and deterministic;
 - external integration failures do not destabilize ordinary correctness checks;
-- real release validation still proves actual GitHub/harness behavior;
+- real release validation still proves actual GitHub/harness behavior, so real ecosystem integration remains a release gate;
 - speculative future provider details do not become premature compatibility promises.

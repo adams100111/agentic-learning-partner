@@ -6,7 +6,7 @@
 
 Raw evidence does not deterministically imply a competency level. Two agents can interpret the same code/exercise evidence differently even if the projection algorithm itself is deterministic.
 
-Calling projection rebuild "deterministic" without persisting the semantic judgment would be false.
+Evidence itself can be recorded deterministically; mapping it to competency is the semantic step. Calling projection rebuild "deterministic" without persisting the semantic judgment would be false, and letting an agent reinterpret raw evidence during rebuild would be inconsistent with that claim.
 
 ## Decision
 
@@ -37,7 +37,8 @@ Evidence remains observational. Assessments remain judgments. Projections remain
 
 ## Consequences
 
-- different agents can disagree without silently corrupting state;
+- different agents can disagree without silently corrupting state, and each model's judgment remains auditable through its assessor/rubric provenance;
 - reassessment can supersede prior judgment without rewriting evidence;
+- rubrics can evolve without rewriting evidence;
 - projection rebuild becomes genuinely deterministic given canonical assessments;
-- we need assessment schemas and conflict-resolution rules.
+- we need assessment schemas, conflict-resolution rules, and an explicit projection policy.
