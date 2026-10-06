@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "platform": "pylearn",
+  "target": "go-alp",
+  "publishable": false,
+  "gates": [
+    {
+      "id": "lint:lessons",
+      "status": "pass",
+      "provenance": {"command": "bun run --cwd apps/web lint:lessons --json", "version": "pylearn@4f2a9c1", "exitCode": 0},
+      "artifacts": [{"ref": "apps/web/content/reel/go-alp-a1.mdx", "contentHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"}],
+      "diagnostics": []
+    },
+    {
+      "id": "gate:reels",
+      "status": "fail",
+      "provenance": {"command": "bun run gate:reels --json", "version": "pylearn@4f2a9c1", "exitCode": 1},
+      "artifacts": [{"ref": "apps/web/content/reel/go-alp-a1.mdx"}],
+      "diagnostics": [
+        {
+          "severity": "error",
+          "code": "narration-missing",
+          "message": "Narrated block has no audio.",
+          "item": {"platform": "pylearn", "target": "go-alp", "item": "go-alp-a1-modules#init"},
+          "artifact": "apps/web/content/reel/go-alp-a1.mdx"
+        }
+      ]
+    },
+    {
+      "id": "gate:alp-mapping",
+      "status": "skipped",
+      "reason": "target has no ALP mapping",
+      "provenance": {"command": "bun run gate:alp-mapping --json", "version": "pylearn@4f2a9c1"},
+      "artifacts": [],
+      "diagnostics": []
+    }
+  ]
+}
