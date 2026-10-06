@@ -94,3 +94,25 @@ func writeStoreFile(t *testing.T, root, name, content string) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil { t.Fatal(err) }
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil { t.Fatal(err) }
 }
+
+func TestLocalStoreRollsBackInvalidCheckpoint(t *testing.T) {
+	root := t.TempDir()
+	writeStoreFile(t, root, "workspace.yaml", "schemaVersion: 2\nworkspaceId: ws_test\nlearnerId: learner\n")
+	writeStoreFile(t, root, "profile/profile.yaml", "schemaVersion: 1\nlearner:\n  id: learner\nexperience: {}\ngoals: []\npreferences: {}\n")
+	validator, _ := workspace.NewValidator()
+	s, err := OpenLocal(root, validator)
+	if err != nil { t.Fatal(err) }
+	base, _ := s.Revision(context.Background())
+
+	_, err = s.Commit(context.Background(), base, ChangeSet{Mutations: []Mutation{{
+		Path: "profile/profile.yaml",
+		Data: []byte("schemaVersion: 1\nlearner: {}\nexperience: {}\ngoals: []\npreferences: {}\n"),
+	}}})
+	if err == nil { t.Fatal("expected invalid checkpoint") }
+
+	data, readErr := os.ReadFile(filepath.Join(root, "profile", "profile.yaml"))
+	if readErr != nil { t.Fatal(readErr) }
+	if !strings.Contains(string(data), "id: learner") {
+		t.Fatalf("invalid checkpoint was not rolled back:\n%s", data)
+	}
+}
