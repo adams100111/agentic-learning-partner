@@ -1,12 +1,12 @@
-# Handoff — Platform Adaptation / PyLearn Reference Integration Grill
+# Platform Adaptation Grill — Record (closed)
 
-## Purpose
+**Status:** closed 2026-10-07. This file is the decision record for Q1–Q38.
 
-This file is the complete handoff for a **brand-new agent/session**.
+- Spec: adams100111/agentic-learning-partner#66 (tickets are its sub-issues, with native blocked-by edges).
+- Hard-to-reverse decisions: ADR-0054 through ADR-0061.
+- Verified PyLearn facts and gap resolutions: `docs/integrations/PYLEARN_REFERENCE_TARGET.md`.
 
-Do not rely on prior conversation memory.
-
-The next agent should resume the actual Matt Pocock `grill-with-docs` workflow from the settled state below.
+The sections below preserve the original handoff and every round's settled decisions.
 
 ## Repositories
 
