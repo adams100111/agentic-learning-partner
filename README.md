@@ -15,15 +15,35 @@ It combines:
 - a deterministic Go CLI;
 - and shared packaging for OpenAI/Codex and Claude Code.
 
-## Current v0
+## Production-v0 candidate
 
-ALP v0 now provides an executable vertical slice rather than documentation only.
+ALP now contains the production-v0 candidate implementation. The core learning engine is joined by production Store providers, multi-device Git synchronization, staged session transactions, recovery, workspace lifecycle/onboarding, and provider-independent backup/restore.
+
+The release candidate still requires the real Claude Code ↔ Codex private-GitHub smoke in `docs/PRODUCTION_V0_RELEASE_SMOKE.md` before a production-v0 release tag is claimed.
 
 Core commands include:
 
     alp validate
-    alp workspace check
+    alp workspace init <name> ...
+    alp workspace connect <name> --path ...
+    alp workspace clone <name> <remote> ...
+    alp workspace list
+    alp workspace use <name>
+    alp workspace status [name]
+    alp workspace sync [name]
+    alp workspace export [name] --out workspace.alp
+    alp workspace verify workspace.alp
+    alp workspace restore <name> workspace.alp --mode recover|clone|merge
+    alp workspace move <name> --provider local|git --path ...
     alp workspace migrate --dry-run
+
+    alp session begin --harness <harness>
+    alp session status
+    alp session put --path <ALP_PATH> --file <FILE>
+    alp session close --summary "..."
+    alp session abort
+    alp session recover-sync
+
     alp domain list
     alp domain info go
 
@@ -90,7 +110,7 @@ PyLearn provides learner activity and candidate course material. It is not ALP's
 
 ## Verification
 
-The repository contains focused package tests plus an end-to-end v0 test covering:
+The repository contains focused package tests, production Store/session acceptance coverage, and an end-to-end learning test covering:
 
     PyLearn activity
       -> ALP evidence

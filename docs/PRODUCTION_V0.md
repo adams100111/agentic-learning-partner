@@ -123,4 +123,22 @@ Ordinary automated test reliability must not depend on GitHub availability.
 
 ## Current status
 
-The repository currently contains the ALP Core Foundation. It is not yet the production-v0 release under this definition.
+The production-v0 Store/session/onboarding implementation is now a **release candidate** on the production-v0 integration branch.
+
+Deterministic repository coverage exists for:
+
+- Local Store and Git Store;
+- staged transactions and one-writer locking;
+- semantic multi-device reconciliation;
+- bounded optimistic push retry;
+- offline checkpoint/pending-sync recovery;
+- interrupted staged transaction recovery;
+- workspace v1 -> v2 identity migration;
+- provider conversion;
+- deterministic .alp export/verify/restore;
+- named workspace lifecycle;
+- agentic setup workflow.
+
+GitHub Actions remains intentionally disabled while the repository owner's Actions quota is exhausted, so hosted CI is not claimed.
+
+The real external release smoke in `docs/PRODUCTION_V0_RELEASE_SMOKE.md` has **not been executed by this implementation environment**. Do not tag/claim production-v0 as release-validated until that real private-GitHub Claude Code ↔ Codex smoke is completed successfully.

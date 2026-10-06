@@ -142,3 +142,50 @@ func containsText(value, needle string) bool {
 	}
 	return false
 }
+
+func TestPersistedEagerSessionResumesAcrossManagerInstances(t *testing.T) {
+	ctx := context.Background()
+	root := t.TempDir()
+	runtimeDir := t.TempDir()
+	writeSessionFile(t, root, "workspace.yaml", "schemaVersion: 2\nworkspaceId: ws_eager_resume\nlearnerId: learner\n")
+	validator, _ := workspace.NewValidator()
+	local, err := store.OpenLocal(root, validator)
+	if err != nil { t.Fatal(err) }
+
+	managerA := &Manager{Store: local, Validator: validator, RuntimeDir: runtimeDir}
+	started, err := managerA.Begin(ctx, BeginOptions{ID: "sess_eager_resume", Mode: SyncEager})
+	if err != nil { t.Fatal(err) }
+	if err := started.Put("profile/profile.yaml", []byte("schemaVersion: 1\nlearner:\n  id: learner\nexperience: {}\ngoals: []\npreferences: {}\n")); err != nil {
+		t.Fatal(err)
+	}
+
+	managerB := &Manager{Store: local, Validator: validator, RuntimeDir: runtimeDir}
+	resumed, err := managerB.Resume(ctx)
+	if err != nil { t.Fatal(err) }
+	if resumed.ID() != "sess_eager_resume" {
+		t.Fatalf("resumed session id = %s", resumed.ID())
+	}
+	if _, err := resumed.Flush(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "profile", "profile.yaml")); err != nil {
+		t.Fatalf("eager flush did not publish checkpoint: %v", err)
+	}
+
+	managerC := &Manager{Store: local, Validator: validator, RuntimeDir: runtimeDir}
+	afterFlush, err := managerC.Resume(ctx)
+	if err != nil { t.Fatal(err) }
+	persona := []byte("schemaVersion: 1\nscope: global\ndomain: null\nteaching:\n  pace: senior-dense\n")
+	if err := afterFlush.Put("personas/global.yaml", persona); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := afterFlush.Close(ctx, CloseInput{Summary: "eager resume acceptance"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "personas", "global.yaml")); err != nil {
+		t.Fatalf("resumed eager session did not publish final changes: %v", err)
+	}
+	if _, err := managerC.Resume(ctx); !os.IsNotExist(err) {
+		t.Fatalf("closed session metadata should be removed, got %v", err)
+	}
+}

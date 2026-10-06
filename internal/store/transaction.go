@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -74,37 +76,41 @@ func (c *Coordinator) Begin(ctx context.Context, sessionID string, expected Revi
 	if err != nil {
 		return nil, err
 	}
-	if manifest.WorkspaceID == "" {
-		return nil, errors.New("workspace must be migrated to schema v2 before transactions")
+	workspaceKey := manifest.WorkspaceID
+	if workspaceKey == "" {
+		workspaceKey, err = legacyWorkspaceKey(c.store.Root())
+		if err != nil {
+			return nil, err
+		}
 	}
 	if err := os.MkdirAll(c.lockDir(), 0o700); err != nil {
 		return nil, err
 	}
 	lock := lockMetadata{
-		WorkspaceID: manifest.WorkspaceID,
+		WorkspaceID: workspaceKey,
 		SessionID: sessionID,
 		PID: os.Getpid(),
 		StartedAt: time.Now().UTC().Format(time.RFC3339),
 	}
-	if err := createExclusiveJSON(c.lockPath(manifest.WorkspaceID), lock); err != nil {
+	if err := createExclusiveJSON(c.lockPath(workspaceKey), lock); err != nil {
 		if errors.Is(err, os.ErrExist) {
-			return nil, fmt.Errorf("workspace %s already has a writer; inspect recovery before resolving the existing lock", manifest.WorkspaceID)
+			return nil, fmt.Errorf("workspace %s already has a writer; inspect recovery before resolving the existing lock", workspaceKey)
 		}
 		return nil, err
 	}
 
-	stageDir := filepath.Join(c.runtimeDir, "transactions", manifest.WorkspaceID, sessionID)
+	stageDir := filepath.Join(c.runtimeDir, "transactions", workspaceKey, sessionID)
 	if err := os.RemoveAll(stageDir); err != nil {
-		_ = os.Remove(c.lockPath(manifest.WorkspaceID))
+		_ = os.Remove(c.lockPath(workspaceKey))
 		return nil, err
 	}
 	stageWorkspace := filepath.Join(stageDir, "workspace")
 	if err := copyWorkspace(c.store.Root(), stageWorkspace); err != nil {
-		_ = os.Remove(c.lockPath(manifest.WorkspaceID))
+		_ = os.Remove(c.lockPath(workspaceKey))
 		return nil, err
 	}
 	recovery := Recovery{
-		WorkspaceID: manifest.WorkspaceID,
+		WorkspaceID: workspaceKey,
 		SessionID: sessionID,
 		BaseRevision: expected,
 		Status: RecoveryStaged,
@@ -113,7 +119,7 @@ func (c *Coordinator) Begin(ctx context.Context, sessionID string, expected Revi
 	}
 	if err := c.writeRecovery(recovery); err != nil {
 		_ = os.RemoveAll(stageDir)
-		_ = os.Remove(c.lockPath(manifest.WorkspaceID))
+		_ = os.Remove(c.lockPath(workspaceKey))
 		return nil, err
 	}
 	return &Transaction{coordinator: c, recovery: recovery, changes: map[string]Mutation{}}, nil
@@ -154,6 +160,17 @@ func (t *Transaction) Delete(path string) error {
 
 func (t *Transaction) Commit(ctx context.Context) (Revision, error) {
 	return t.CheckpointWithMessage(ctx, false, "")
+}
+
+func (t *Transaction) Rollback() error {
+	if t.coordinator == nil {
+		return nil
+	}
+	return t.coordinator.DiscardRecovery(t.recovery.WorkspaceID)
+}
+
+func (t *Transaction) BaseRevision() Revision {
+	return t.recovery.BaseRevision
 }
 
 func (t *Transaction) StageRoot() string {
@@ -283,8 +300,7 @@ func (t *Transaction) persistChanges() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, append(data, '
-'), 0o600)
+	return os.WriteFile(path, append(data, '\n'), 0o600)
 }
 
 func (c *Coordinator) Resume(workspaceID string) (*Transaction, error) {
@@ -387,8 +403,7 @@ func (c *Coordinator) writeRecovery(recovery Recovery) error {
 	}
 	name := temp.Name()
 	defer os.Remove(name)
-	if _, err := temp.Write(append(data, '
-')); err != nil {
+	if _, err := temp.Write(append(data, '\n')); err != nil {
 		temp.Close()
 		return err
 	}
@@ -403,6 +418,15 @@ func (c *Coordinator) journalDir() string { return filepath.Join(c.runtimeDir, "
 func (c *Coordinator) lockPath(id string) string { return filepath.Join(c.lockDir(), id+".lock") }
 func (c *Coordinator) journalPath(id string) string { return filepath.Join(c.journalDir(), id+".json") }
 
+func legacyWorkspaceKey(root string) (string, error) {
+	absolute, err := filepath.Abs(root)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256([]byte(filepath.Clean(absolute)))
+	return "legacy_" + hex.EncodeToString(sum[:16]), nil
+}
+
 func createExclusiveJSON(path string, value any) error {
 	data, err := json.MarshalIndent(value, "", "  ")
 	if err != nil {
@@ -413,8 +437,7 @@ func createExclusiveJSON(path string, value any) error {
 		return err
 	}
 	defer file.Close()
-	_, err = file.Write(append(data, '
-'))
+	_, err = file.Write(append(data, '\n'))
 	return err
 }
 

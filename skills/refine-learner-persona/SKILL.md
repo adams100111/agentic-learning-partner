@@ -9,6 +9,8 @@ Use this when the learner corrects ALP's understanding, asks why a teaching pref
 
 ## Workflow
 
+0. Use an active ALP session for durable persona/profile edits; do not edit synchronized canonical state outside the Store transaction path.
+
 1. Inspect current persona with `alp persona show --format markdown`.
 2. Read only the evidence/source material relevant to the disputed or unknown field.
 3. Distinguish:
@@ -19,6 +21,6 @@ Use this when the learner corrects ALP's understanding, asks why a teaching pref
 4. Apply explicit learner corrections directly with provenance and show the resulting change.
 5. For materially consequential inferred changes, propose the diff and obtain learner confirmation.
 6. Keep global facts in the global profile/persona and domain-only behavior in the domain persona.
-7. Run `alp validate` after changes.
+7. Stage accepted profile/persona updates with `alp session put`, then close the session and run `alp validate` after publication.
 
 Never use a one-off failure to rewrite a durable persona. Never use persona data to silently promote competency.

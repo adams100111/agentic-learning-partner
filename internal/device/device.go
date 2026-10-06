@@ -44,8 +44,7 @@ func LoadOrCreate(path string) (Info, error) {
 	if err != nil {
 		return Info{}, err
 	}
-	if err := os.WriteFile(path, append(encoded, '
-'), 0o600); err != nil {
+	if err := os.WriteFile(path, append(encoded, '\n'), 0o600); err != nil {
 		return Info{}, err
 	}
 	return info, nil
@@ -57,4 +56,12 @@ func randomID(prefix string) (string, error) {
 		return "", err
 	}
 	return prefix + "_" + hex.EncodeToString(bytes[:]), nil
+}
+
+func DefaultPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".local", "share", "alp", "device.json"), nil
 }

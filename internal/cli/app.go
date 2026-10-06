@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	contextbundle "github.com/adams100111/agentic-learning-partner/internal/context"
 	"github.com/adams100111/agentic-learning-partner/internal/domain"
+	"github.com/adams100111/agentic-learning-partner/internal/lifecycle"
 	"github.com/adams100111/agentic-learning-partner/internal/migrate"
 	"github.com/adams100111/agentic-learning-partner/internal/state"
 	storepkg "github.com/adams100111/agentic-learning-partner/internal/store"
@@ -65,6 +67,8 @@ func (a App) Run(args []string) int {
 		return a.runAssessment(args[1:])
 	case "state":
 		return a.runState(args[1:])
+	case "session":
+		return a.runSession(args[1:])
 	case "plan":
 		return a.runPlan(args[1:])
 	case "diagnostic":
@@ -409,14 +413,41 @@ func (a App) runWorkspaceMigrate(args []string) int {
 		return 0
 	}
 
-	plan, err := migrator.Apply(info.Path, info.Revision)
+	active, err := openStateStore(info.Path, validator)
 	if err != nil {
 		fmt.Fprintln(a.ErrOut, err)
 		return 1
 	}
+	revision, err := active.Revision(context.Background())
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return 1
+	}
+	runtimeDir, err := lifecycle.DefaultRuntimeDir()
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return 1
+	}
+	coordinator := storepkg.NewCoordinator(active, validator, runtimeDir)
+	tx, err := coordinator.Begin(context.Background(), fmt.Sprintf("migration-%d", time.Now().UTC().UnixNano()), revision)
+	if err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return 1
+	}
+	plan, err := migrator.ApplyStaged(tx.StageRoot())
+	if err != nil {
+		_ = tx.Rollback()
+		fmt.Fprintln(a.ErrOut, err)
+		return 1
+	}
 	if plan.Empty() {
+		_ = tx.Rollback()
 		fmt.Fprintln(a.Out, "workspace already uses the current schema")
 		return 0
+	}
+	if _, err := tx.CheckpointWithMessage(context.Background(), false, fmt.Sprintf("alp: migrate workspace schema %d to %d", plan.Current, plan.Target)); err != nil {
+		fmt.Fprintln(a.ErrOut, err)
+		return 1
 	}
 	fmt.Fprintf(a.Out, "migrated workspace from schema %d to %d\n", plan.Current, plan.Target)
 	return 0
@@ -497,5 +528,5 @@ func (a App) resolveAndInspect(explicit string) (workspace.Resolution, workspace
 
 func (a App) usage() {
 	fmt.Fprintln(a.ErrOut, "usage: alp <command>")
-	fmt.Fprintln(a.ErrOut, "commands: validate, workspace init, workspace connect, workspace clone, workspace list, workspace use, workspace status, workspace sync, workspace export, workspace verify, workspace restore, workspace move, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, plan build, diagnostic")
+	fmt.Fprintln(a.ErrOut, "commands: validate, workspace init, workspace connect, workspace clone, workspace list, workspace use, workspace status, workspace sync, workspace export, workspace verify, workspace restore, workspace move, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, session begin, session status, session put, session delete, session flush, session close, session abort, session recover-sync, plan build, diagnostic")
 }

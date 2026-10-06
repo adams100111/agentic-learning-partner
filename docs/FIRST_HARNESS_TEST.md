@@ -35,9 +35,16 @@ Configure the harness/project to resolve the learner workspace through one suppo
 
 Verify from the harness:
 
+    alp workspace status
     alp workspace check
     alp validate
     alp domain info go
+
+Begin the real learning transaction:
+
+    alp session begin --harness claude-code
+
+The agent should reuse this active session for evidence/assessment/profile mutations rather than creating one checkpoint per record.
 
 ## First session
 
@@ -58,7 +65,8 @@ Expected behavior:
 7. It writes targeted competency assessments.
 8. It rebuilds deterministic projections.
 9. It produces a learner-specific review/learning plan.
-10. It can explain the result with:
+10. It closes the logical learning transaction with `alp session close --summary "..."`, which validates, rebuilds, checkpoints once, and synchronizes according to workspace policy.
+11. It can explain the published result with:
    - `alp status`
    - `alp competency show <id>`
    - `alp evidence show <id>`
@@ -82,7 +90,11 @@ No harness-specific learner-state file is allowed.
 
 ## Cross-harness continuation
 
-Open the second harness against the same workspace.
+Open the second harness against a separate clone/checkout of the same Git Store workspace.
+
+Verify synchronization, then begin the continuation transaction:
+
+    alp session begin --harness codex
 
 Ask:
 
@@ -105,7 +117,8 @@ The test fails if any of the following occurs:
 - it creates a harness-specific shadow profile/state;
 - it repeats already-known bootstrap questions unnecessarily;
 - it treats historical prior exposure as demonstrated current competence;
-- it bypasses `alp` state mutation semantics;
+- it bypasses `alp` Store/session mutation semantics;
+- evidence/assessment commands publish separate checkpoints while an ALP session is active;
 - the second harness cannot continue from the first harness's persisted state;
 - generated projections cannot be rebuilt from canonical evidence/assessments.
 

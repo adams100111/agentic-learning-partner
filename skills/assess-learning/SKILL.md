@@ -9,6 +9,8 @@ Use this for diagnostics, code review, project checkpoints, debugging exercises,
 
 ## Workflow
 
+0. Use one active ALP session for the assessment round. Start it with `alp session begin --harness <harness>` when necessary; reuse an existing active session rather than creating per-record checkpoints.
+
 1. Resolve the target domain and competency IDs from the installed domain pack.
 2. Inspect only evidence needed for the assessment.
 3. Separate the observation from the judgment:
@@ -20,7 +22,7 @@ Use this for diagnostics, code review, project checkpoints, debugging exercises,
 7. Persist evidence with `alp evidence add --file ...`.
 8. Persist assessments with `alp assessment add --file ...`.
 9. Rebuild projections with `alp state rebuild`.
-10. Explain consequential changes with `alp competency show <id>`.
+10. Rebuild derived state with `alp state rebuild`, then close the logical learning transaction with `alp session close --summary "..."`. After close/sync, explain consequential changes with `alp competency show <id>`.
 
 Production-ready cannot be established unless the runtime/domain gate accepts the hard evidence requirements.
 
