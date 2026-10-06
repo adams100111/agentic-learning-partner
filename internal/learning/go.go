@@ -22,7 +22,7 @@ type GoPlanner struct {
 }
 
 func (p GoPlanner) Build(asOf time.Time, limit int) (ReviewQueue, Plan, error) {
-	if p.Registry.List() == nil {
+	if len(p.Registry.List()) == 0 {
 		p.Registry = domain.NewRegistry()
 	}
 	pack, err := p.Registry.Load("go")
@@ -40,13 +40,14 @@ func (p GoPlanner) Build(asOf time.Time, limit int) (ReviewQueue, Plan, error) {
 			byID[item.ID] = item
 		}
 	}
+	recentUsage := p.recentProjectUsage(asOf)
 
 	queue := ReviewQueue{SchemaVersion: 1, AsOf: asOf.UTC().Format(time.RFC3339)}
 	plan := Plan{SchemaVersion: 1, Domain: "go", AsOf: queue.AsOf}
 
 	for _, competency := range pack.Competencies {
 		current, known := byID[competency.ID]
-		priority, reasons, due := reviewPriority(competency, current, known, asOf)
+		priority, reasons, due := reviewPriority(competency, current, known, asOf, recentUsage[competency.ID])
 		if due {
 			queue.Items = append(queue.Items, ReviewItem{
 				Domain: "go", Competency: competency.ID, Priority: priority,
@@ -111,7 +112,7 @@ func (p GoPlanner) Diagnostic(limit int) (Diagnostic, error) {
 	return diagnostic, nil
 }
 
-func reviewPriority(competency domain.Competency, current state.ProjectedCompetency, known bool, asOf time.Time) (int, []string, bool) {
+func reviewPriority(competency domain.Competency, current state.ProjectedCompetency, known bool, asOf time.Time, recentProjectUse bool) (int, []string, bool) {
 	if !known {
 		return 8, []string{"no demonstrated competency assessment"}, true
 	}
@@ -152,19 +153,50 @@ func reviewPriority(competency domain.Competency, current state.ProjectedCompete
 	if current.LastVerified != "" {
 		if verified, err := time.Parse(time.RFC3339, current.LastVerified); err == nil {
 			budget := freshnessBudget(competency.FreshnessClass)
-			if asOf.Sub(verified) > budget {
+			if budget == 0 || asOf.Sub(verified) > budget {
 				score += 3
 				reasons = append(reasons, "evidence freshness budget exceeded")
 			}
 		}
 	}
+	if recentProjectUse && known && (current.Level == "strong" || current.Level == "production-ready") && !current.NeedsReassessment {
+		score -= 4
+		if score < 0 {
+			score = 0
+		}
+		reasons = append(reasons, "recent project use provides retrieval evidence")
+	}
 	return score, reasons, score > 0
+}
+
+func (p GoPlanner) recentProjectUsage(asOf time.Time) map[string]bool {
+	result := map[string]bool{}
+	data, err := os.ReadFile(filepath.Join(p.Root, "state", "current-project.yaml"))
+	if err != nil {
+		return result
+	}
+	var project struct {
+		Domain           string   `yaml:"domain"`
+		UsedCompetencies []string `yaml:"usedCompetencies"`
+		LastUsedAt       string   `yaml:"lastUsedAt"`
+	}
+	if yaml.Unmarshal(data, &project) != nil || project.Domain != "go" {
+		return result
+	}
+	lastUsed, err := time.Parse(time.RFC3339, project.LastUsedAt)
+	if err != nil || asOf.Sub(lastUsed) > 30*24*time.Hour {
+		return result
+	}
+	for _, id := range project.UsedCompetencies {
+		result[id] = true
+	}
+	return result
 }
 
 func freshnessBudget(class string) time.Duration {
 	switch class {
 	case "security-sensitive":
-		return 7 * 24 * time.Hour
+		return 0
 	case "operational-platform":
 		return 30 * 24 * time.Hour
 	case "ecosystem-choice":
