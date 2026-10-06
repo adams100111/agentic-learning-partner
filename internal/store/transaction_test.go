@@ -71,9 +71,13 @@ func TestInvalidStagedWorkspaceDoesNotPublishAndCanBeDiscarded(t *testing.T) {
 	if recovery.Status != RecoveryStaged || recovery.SessionID != "session-bad" {
 		t.Fatalf("recovery = %#v", recovery)
 	}
-	if err := coordinator.DiscardRecovery("ws_txn"); err != nil { t.Fatal(err) }
-	if _, err := coordinator.Begin(context.Background(), "session-next", base); err != nil {
-		t.Fatalf("discard should release writer lock: %v", err)
+	resumed, err := coordinator.Resume("ws_txn")
+	if err != nil { t.Fatal(err) }
+	valid := []byte("schemaVersion: 1\nlearner:\n  id: learner\nexperience: {}\ngoals: []\npreferences: {}\n")
+	if err := resumed.Put("profile/profile.yaml", valid); err != nil { t.Fatal(err) }
+	if _, err := resumed.Commit(context.Background()); err != nil { t.Fatal(err) }
+	if _, err := coordinator.Begin(context.Background(), "session-next", resumed.recovery.CheckpointRevision); err != nil {
+		t.Fatalf("completed recovery should release writer lock: %v", err)
 	}
 }
 
