@@ -97,6 +97,43 @@ func (m Manager) Init(ctx context.Context, name, provider, path, learnerID, bran
 	return m.Status(ctx, name)
 }
 
+func (m Manager) Connect(ctx context.Context, name, provider, path, branch, remote string, privacyAcknowledged bool) (WorkspaceStatus, error) {
+	if err := validateName(name); err != nil { return WorkspaceStatus{}, err }
+	if path == "" { return WorkspaceStatus{}, errors.New("workspace path is required") }
+	if provider == "" { provider = "local" }
+	absolute, err := filepath.Abs(path)
+	if err != nil { return WorkspaceStatus{}, err }
+
+	entry := workspace.WorkspaceConfig{Path: absolute, Provider: provider}
+	switch provider {
+	case "local":
+		active, err := store.OpenLocal(absolute, m.Validator)
+		if err != nil { return WorkspaceStatus{}, err }
+		manifest, err := workspace.ReadManifest(active.Root())
+		if err != nil { return WorkspaceStatus{}, err }
+		if manifest.SchemaVersion != workspace.CurrentSchemaVersion || manifest.WorkspaceID == "" {
+			return WorkspaceStatus{}, fmt.Errorf("existing Local Store uses workspace schema %d; migrate it to schema %d before connecting", manifest.SchemaVersion, workspace.CurrentSchemaVersion)
+		}
+		entry.SyncMode = "manual"
+	case "git":
+		if branch == "" { branch = "main" }
+		if remote != "" && !privacyAcknowledged {
+			return WorkspaceStatus{}, errors.New("Git remote privacy is not verified; explicit acknowledgement is required")
+		}
+		active, err := store.OpenGit(absolute, m.Validator)
+		if err != nil { return WorkspaceStatus{}, err }
+		if err := m.migrateClonedGitWorkspace(ctx, active); err != nil { return WorkspaceStatus{}, err }
+		entry.SyncMode = "session"
+		entry.Remote = "origin"
+		entry.Branch = branch
+		entry.PrivacyAck = privacyAcknowledged || remote == ""
+	default:
+		return WorkspaceStatus{}, fmt.Errorf("unsupported store provider %q", provider)
+	}
+	if err := m.addWorkspace(name, entry); err != nil { return WorkspaceStatus{}, err }
+	return m.Status(ctx, name)
+}
+
 func (m Manager) Clone(ctx context.Context, name, remote, path, branch string, privacyAcknowledged bool) (WorkspaceStatus, error) {
 	if err := validateName(name); err != nil { return WorkspaceStatus{}, err }
 	if strings.TrimSpace(remote) == "" { return WorkspaceStatus{}, errors.New("git remote is required") }
