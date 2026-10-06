@@ -32,14 +32,14 @@ func TestGitSyncReconcilesIndependentAppendOnlyRecords(t *testing.T) {
 	result, err := b.Sync(ctx, SyncOptions{})
 	if err != nil { t.Fatal(err) }
 	if result.Pending { t.Fatalf("sync pending: %#v", result) }
-	for _, name := range []string{"session-a.yaml", "session-b.yaml"} {
+	for _, name := range []string{"sess_a.yaml", "sess_b.yaml"} {
 		if _, err := os.Stat(filepath.Join(b.Root(), "sessions", name)); err != nil {
 			t.Fatalf("missing reconciled %s: %v", name, err)
 		}
 	}
 
 	if _, err := a.Sync(ctx, SyncOptions{}); err != nil { t.Fatal(err) }
-	for _, name := range []string{"session-a.yaml", "session-b.yaml"} {
+	for _, name := range []string{"sess_a.yaml", "sess_b.yaml"} {
 		if _, err := os.Stat(filepath.Join(a.Root(), "sessions", name)); err != nil {
 			t.Fatalf("device A missing %s after continuation sync: %v", name, err)
 		}
@@ -106,7 +106,7 @@ func TestGitSyncNetworkFailureLeavesCheckpointPending(t *testing.T) {
 	if !result.Pending {
 		t.Fatalf("expected pending sync, got %#v", result)
 	}
-	if _, err := os.Stat(filepath.Join(a.Root(), "sessions", "offline.yaml")); err != nil {
+	if _, err := os.Stat(filepath.Join(a.Root(), "sessions", "sess_offline.yaml")); err != nil {
 		t.Fatal("offline checkpoint was lost")
 	}
 }
@@ -187,4 +187,8 @@ func TestGitSyncMergesNonOverlappingProfileClaims(t *testing.T) {
 	if !strings.Contains(text, "go:") || !strings.Contains(text, "typescript:") {
 		t.Fatalf("non-overlapping learner claims were not merged:\n%s", text)
 	}
+}
+
+func validSyncSession(id string) []byte {
+	return []byte("schemaVersion: 1\nid: " + id + "\nstartedAt: 2026-10-06T00:00:00Z\nclosedAt: 2026-10-06T00:01:00Z\nbaseRevision: git:test\nsyncMode: session\n")
 }
