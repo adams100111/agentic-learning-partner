@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/adams100111/agentic-learning-partner/internal/lifecycle"
+	storepkg "github.com/adams100111/agentic-learning-partner/internal/store"
+	"github.com/adams100111/agentic-learning-partner/internal/store/gitstore"
+	localstore "github.com/adams100111/agentic-learning-partner/internal/store/local"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 	workspacearchive "github.com/adams100111/agentic-learning-partner/internal/workspacearchive"
 )
@@ -103,25 +106,50 @@ func (a App) runWorkspaceArchive(command string, args []string) int {
 			return 1
 		}
 		manager := lifecycle.New(*config, validator)
+		var target storepkg.Store
+		var providerConfig workspace.ProviderConfig
 		if workspacearchive.RestoreMode(*mode) == workspacearchive.RestoreClone {
 			if *path == "" {
 				fmt.Fprintln(a.ErrOut, "--path is required for clone restore")
 				return 2
 			}
-			if _, err := manager.Init(*name, *provider, *path, verified.Manifest.LearnerID, *branch, ""); err != nil {
+			absolute, err := filepath.Abs(*path)
+			if err != nil {
 				fmt.Fprintln(a.ErrOut, err)
 				return 1
 			}
-		}
-		target, _, err := manager.Open(*name)
-		if err != nil {
-			fmt.Fprintln(a.ErrOut, err)
-			return 1
+			switch *provider {
+			case "local":
+				target, err = localstore.Initialize(absolute, verified.Manifest.LearnerID, validate)
+				providerConfig = workspace.ProviderConfig{Type: "local", Path: absolute}
+			case "git":
+				target, err = gitstore.Initialize(absolute, verified.Manifest.LearnerID, *branch, validate)
+				providerConfig = workspace.ProviderConfig{Type: "git", Path: absolute, SyncMode: "session", Remote: "origin", Branch: *branch}
+			default:
+				err = fmt.Errorf("unsupported store provider %q", *provider)
+			}
+			if err != nil {
+				fmt.Fprintln(a.ErrOut, err)
+				return 1
+			}
+		} else {
+			var err error
+			target, _, err = manager.Open(*name)
+			if err != nil {
+				fmt.Fprintln(a.ErrOut, err)
+				return 1
+			}
 		}
 		checkpoint, err := workspacearchive.Restore(ctx, verified, target, workspacearchive.RestoreMode(*mode))
 		if err != nil {
 			fmt.Fprintln(a.ErrOut, err)
 			return 1
+		}
+		if workspacearchive.RestoreMode(*mode) == workspacearchive.RestoreClone {
+			if err := manager.Register(*name, providerConfig); err != nil {
+				fmt.Fprintln(a.ErrOut, err)
+				return 1
+			}
 		}
 		fmt.Fprintf(a.Out, "restored workspace: %s\nrevision: %s\n", *name, checkpoint.Revision)
 		return 0
