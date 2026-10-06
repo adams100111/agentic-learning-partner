@@ -1,6 +1,8 @@
-# ADR-0053: Fail explicitly on missing Store capabilities and keep unimplemented providers informative
+# ADR-0062: Fail explicitly on missing Store capabilities and keep unimplemented providers informative
 
 **Status:** Accepted
+
+Originally filed as a second ADR-0053; renumbered to ADR-0062 when duplicate ADR numbers were consolidated.
 
 ## Context
 
@@ -21,5 +23,5 @@ Descriptions of unimplemented S3-compatible, WebDAV, remote API, and PostgreSQL-
 ## Consequences
 
 - provider behavior is honest and inspectable;
-- workflows do not accidentally lose sync/history guarantees;
+- workflows do not accidentally lose sync/history guarantees; for example, Local Store never pretends to support synchronization/history;
 - future providers can evolve without violating speculative wire/storage formats.

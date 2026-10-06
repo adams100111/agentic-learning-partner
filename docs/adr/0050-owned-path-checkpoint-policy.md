@@ -24,9 +24,9 @@ Owned paths include canonical and generated ALP workspace paths such as:
 
 Git Store never uses blind whole-repository staging such as `git add -A`.
 
-Unrelated repository files remain outside ALP checkpoint scope.
+Unrelated repository files remain outside ALP checkpoint scope; unrelated dirty repository paths are never absorbed into ALP state.
 
-Human edits to ALP-owned canonical files are treated as uncheckpointed learner-state changes:
+Human edits to ALP-owned canonical files are treated as uncheckpointed learner-state changes. At session start:
 
 1. detect dirty owned paths;
 2. validate them;
@@ -41,4 +41,5 @@ Profile/persona reconciliation operates at semantic claim/field granularity wher
 - agents cannot accidentally commit unrelated repository contents;
 - advanced users retain the ability to edit canonical learner state directly;
 - semantic merge behavior can evolve with richer profile/persona schemas;
-- checkpoints remain scoped to ALP-owned state.
+- checkpoints remain scoped to ALP-owned state;
+- dedicated workspace repositories can still carry README/license/gitignore metadata, which stays outside checkpoint scope.

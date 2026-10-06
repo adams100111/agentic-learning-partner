@@ -14,7 +14,7 @@ Persist learner information only when it materially supports teaching, assessmen
 
 Platform adapters use allowlisted learning fields rather than raw-record dumps.
 
-Sensitive or unrelated information is excluded by default. Human-readable generated views expose only what is needed for the view.
+Secrets and credentials are excluded. Other sensitive or unrelated information is excluded by default. Human-readable generated views expose only what is needed for the view and avoid unnecessary raw sensitive provenance.
 
 ## Consequences
 
