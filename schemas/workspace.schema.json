@@ -2,21 +2,25 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentic-learning-partner.dev/schemas/workspace.schema.json",
   "title": "ALP Learner Workspace",
-  "type": "object",
-  "required": ["schemaVersion", "workspaceId", "learnerId"],
-  "properties": {
-    "schemaVersion": {
-      "type": "integer",
-      "const": 2
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["schemaVersion", "learnerId"],
+      "properties": {
+        "schemaVersion": {"type": "integer", "const": 1},
+        "learnerId": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
     },
-    "workspaceId": {
-      "type": "string",
-      "pattern": "^ws_[A-Za-z0-9_-]+$"
-    },
-    "learnerId": {
-      "type": "string",
-      "minLength": 1
+    {
+      "type": "object",
+      "required": ["schemaVersion", "workspaceId", "learnerId"],
+      "properties": {
+        "schemaVersion": {"type": "integer", "const": 2},
+        "workspaceId": {"type": "string", "pattern": "^ws_[A-Za-z0-9_-]+$"},
+        "learnerId": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
     }
-  },
-  "additionalProperties": false
+  ]
 }
