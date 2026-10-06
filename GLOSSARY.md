@@ -52,7 +52,7 @@ A concrete capability exposed by a Platform Adapter. Initial capability families
 
 ## Learning Target
 
-A platform-independent destination for a learner-facing learning experience. A target may be a course, track, workshop, lab series, project path, or another structured delivery surface. A platform-specific course ID is one implementation of a Learning Target, not a core ALP identity.
+A platform-independent destination for a learner-facing learning experience. A target may be a course, track, workshop, lab series, project path, or another structured delivery surface. A platform-specific course ID is one implementation of a Learning Target, not a core ALP identity. Targets are shared and learner-free; per-learner variation lives in Target Adaptation Projections and Accepted Adaptation Decisions (ADR-0061).
 
 ## Target Adaptation Projection
 
@@ -84,7 +84,7 @@ The relationship a mapped content item has to a competency: `teaches`, `reinforc
 
 ## Accepted Adaptation Decision
 
-A canonical, append-only record of an explicit adaptation choice (for example, an accepted skip) that must survive Target Adaptation Projection rebuilds. It is an input to the projection, not part of it. See ADR-0060.
+A canonical, append-only record of an explicit adaptation choice (for example, an accepted skip) that must survive Target Adaptation Projection rebuilds. It is an input to the projection, not part of it, and requires explicit learner confirmation; agents may only propose. See ADR-0060, ADR-0061.
 
 ## Synthetic Event Identity
 

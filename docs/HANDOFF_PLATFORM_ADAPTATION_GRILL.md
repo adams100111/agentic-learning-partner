@@ -402,17 +402,22 @@ Q13, Q15–Q24, Q26, Q27, Q29, Q30 were explicitly accepted by the user (2026-10
 
 Glossary gained: External Identity, Declared-Stable Identifier, Mapping Role, Accepted Adaptation Decision, Synthetic Event Identity, Realization Link, Platform Gate Result, Authoring Intent.
 
-## Next grill frontier (round 3) — NOT YET DECIDED
+## Settled grill round 3
 
-Recommendations are not accepted until the user agrees.
+Q14, Q25, Q28, Q31, Q35 were explicitly accepted by the user (2026-10-07).
 
-- **Q14 Target lifecycle:** per-learner, shared/template, or both? Rec: both; separate Learning Target identity from reusable curriculum identity; shared learner-free content (ADR-0060) can back many learner-specific targets/projections.
-- **Q25 Progressive regeneration:** rec: recompute projections broadly; regenerate content only when an evidence-linked adaptation materially changes an authored unit's spec; never churn on recompute alone.
-- **Q28 Closed-loop acceptance:** rec: full authoring-capable adapter must pass inspect → mapping validation → spec → native authoring branch → gates → activity export → idempotent import → warranted projection change → next adaptation; read-only adapters have a capability-specific bar.
-- **Q31 Accepted Adaptation Decision authority:** rec: learner-confirmed only; agents may propose.
-- **Q33 Cross-repo mapping validation:** rec: PyLearn gate invokes an ALP CLI mapping validator against the pinned pack; PyLearn lint checks stable-ID references locally.
-- **Q34 `go-alp` course structure:** rec: phases/grouping derived from the Curriculum Specification at target-skeleton authoring, emitted as the course declaration file.
-- **Q35 ALP CLI surface:** rec: generic `alp platform` command family dispatching by adapter capability (inspect, mapping validate, import, plan, validate-gates), not PyLearn-specific commands.
+- **Q14 Target lifecycle (ADR-0061):** Learning Targets are shared, learner-free platform identities; each learner has their own Target Adaptation Projection over a shared target. Realization Links live in the motivating learner's specs; other learners trace via platform mapping.
+- **Q25 Progressive regeneration:** recompute projections freely; new spec version / content PR only when an evidence-linked adaptation materially changes a realized unit's spec (competencies, prerequisites, adaptation mode, misconceptions, required evidence). No PR for cosmetic/no-op recomputes. Unrealized units are re-specified freely.
+- **Q28 Acceptance:** capability-tiered. Read-only: inspect, mapping validate, idempotent import (re-run → zero new evidence; unmapped reported). Authoring: + spec → branch → `publishable` Platform Gate Result → PR on a fresh target. Closed loop: scripted run where synthetic activity on the new unit changes the projection when warranted and the next adaptation derives from it. PyLearn `go-alp` must pass all three locally (no CI). Real Claude/Codex harness smoke reported separately, never assumed.
+- **Q31 Decision authority (ADR-0061):** Accepted Adaptation Decisions only with explicit learner confirmation; agents propose via Adaptation Proposals; records confirmer/time/basis projection revision; revocable by superseding record.
+- **Q35 ALP CLI:** generic `alp platform` family over an adapter registry, gated by declared capabilities: `inspect`, `mapping validate`, `import`, `plan` (spec + Authoring Plan), `gates record`; `--adapter <id> --target <id>`; deterministic JSON output. No platform-specific commands.
+
+ADR created: `docs/adr/0061-shared-targets-learner-projections.md`.
+
+## Next grill frontier (round 4) — NOT YET DECIDED
+
+- **Q33 Cross-repo mapping validation:** rec: PyLearn gate invokes `alp platform mapping validate` against a pinned domain-pack version; PyLearn lint independently checks that mapped IDs are declared-stable and exist.
+- **Q34 `go-alp` course structure:** rec: phases/grouping derived from the Curriculum Specification at target-skeleton authoring and emitted as the course declaration file (Q23); later curriculum versions may append phases but not renumber realized ones.
 
 ## Important cautions for the next agent
 
