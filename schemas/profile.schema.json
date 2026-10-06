@@ -11,6 +11,6 @@
     "goals": {"type":"array","items":{"type":"object","required":["id","statement"],"properties":{"id":{"type":"string"},"statement":{"type":"string"},"priority":{"enum":["low","medium","high","critical"]},"provenance":{"$ref":"#/$defs/provenance"}},"additionalProperties":false}},
     "preferences": {"type":"object","additionalProperties":true}
   },
-  "$defs": {"provenance":{"type":"object","required":["sourceType"],"properties":{"sourceType":{"enum":["learner-stated","observed","evaluated","imported","agent-inferred","agent-proposed"]},"sourceRef":{"type":"string"},"observedAt":{"type":"string","format":"date-time"},"confidence":{"enum":["low","medium","high"]}},"additionalProperties":false}},
+  "$defs": {"provenance":{"type":"object","required":["sourceType"],"properties":{"sourceType":{"enum":["learner-stated","observed","evaluated","imported","agent-inferred","agent-proposed"]},"intent":{"enum":["statement","correction"]},"sourceRef":{"type":"string"},"observedAt":{"type":"string","format":"date-time"},"confidence":{"enum":["low","medium","high"]}},"additionalProperties":false}},
   "additionalProperties": false
 }
