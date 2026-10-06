@@ -136,6 +136,17 @@ func (m *Manager) RecoverPendingSync(ctx context.Context, options store.SyncOpti
 	if err := coordinator.CompleteSync(manifest.WorkspaceID); err != nil {
 		return result, err
 	}
+	if meta, metaErr := m.readSessionMetadata(manifest.WorkspaceID); metaErr == nil {
+		revision, err := m.Store.Revision(ctx)
+		if err != nil {
+			return result, err
+		}
+		if _, err := coordinator.Begin(ctx, meta.ID, revision); err != nil {
+			return result, fmt.Errorf("resume eager session after synchronization: %w", err)
+		}
+	} else if !errors.Is(metaErr, os.ErrNotExist) {
+		return result, metaErr
+	}
 	return result, nil
 }
 
