@@ -86,6 +86,42 @@ type Session struct {
 	pendingSync  bool
 }
 
+func (m *Manager) RecoverPendingSync(ctx context.Context, options store.SyncOptions) (store.SyncResult, error) {
+	if m.Store == nil || m.Validator == nil {
+		return store.SyncResult{}, errors.New("store and validator are required")
+	}
+	if !m.Store.Capabilities().Has(store.CapabilitySync) {
+		return store.SyncResult{}, store.Require(m.Store, store.CapabilitySync)
+	}
+	manifest, err := workspace.ReadManifest(m.Store.Root())
+	if err != nil {
+		return store.SyncResult{}, err
+	}
+	coordinator := store.NewCoordinator(m.Store, m.Validator, m.RuntimeDir)
+	recovery, err := coordinator.InspectRecovery(manifest.WorkspaceID)
+	if err != nil {
+		return store.SyncResult{}, err
+	}
+	if recovery.Status != store.RecoverySyncPending {
+		return store.SyncResult{}, fmt.Errorf("workspace %s recovery is %s, not sync-pending", manifest.WorkspaceID, recovery.Status)
+	}
+	syncer, ok := m.Store.(store.Syncer)
+	if !ok {
+		return store.SyncResult{}, fmt.Errorf("store provider %q advertises sync but does not implement Syncer", m.Store.Provider())
+	}
+	result, err := syncer.Sync(ctx, options)
+	if err != nil {
+		return result, err
+	}
+	if result.Pending {
+		return result, nil
+	}
+	if err := coordinator.CompleteSync(manifest.WorkspaceID); err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
 func (m *Manager) Begin(ctx context.Context, options BeginOptions) (*Session, error) {
 	if m.Store == nil || m.Validator == nil {
 		return nil, errors.New("store and validator are required")
