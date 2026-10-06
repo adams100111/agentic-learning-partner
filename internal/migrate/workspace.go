@@ -1,6 +1,8 @@
 package migrate
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -14,7 +16,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-const CurrentWorkspaceSchema = 1
+const CurrentWorkspaceSchema = 2
 
 type Step struct {
 	From        int
@@ -47,7 +49,9 @@ type Migrator struct {
 func NewWorkspaceMigrator(validator *workspace.Validator) Migrator {
 	return Migrator{
 		TargetVersion: CurrentWorkspaceSchema,
-		Steps:         map[int]Step{},
+		Steps: map[int]Step{
+			1: {From: 1, To: 2, Description: "assign immutable workspace identity", Apply: migrateWorkspaceV1ToV2},
+		},
 		Validator:     validator,
 	}
 }
@@ -186,4 +190,31 @@ func SortedSteps(steps map[int]Step) []Step {
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].From < result[j].From })
 	return result
+}
+
+func migrateWorkspaceV1ToV2(root string) error {
+	path := filepath.Join(root, "workspace.yaml")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("read workspace manifest: %w", err)
+	}
+	var manifest map[string]any
+	if err := yaml.Unmarshal(data, &manifest); err != nil {
+		return fmt.Errorf("parse workspace manifest: %w", err)
+	}
+	if value, _ := manifest["workspaceId"].(string); value == "" {
+		var random [16]byte
+		if _, err := rand.Read(random[:]); err != nil {
+			return fmt.Errorf("generate workspace id: %w", err)
+		}
+		manifest["workspaceId"] = "ws_" + hex.EncodeToString(random[:])
+	}
+	output, err := yaml.Marshal(manifest)
+	if err != nil {
+		return fmt.Errorf("marshal workspace manifest: %w", err)
+	}
+	if err := os.WriteFile(path, output, 0o644); err != nil {
+		return fmt.Errorf("write workspace manifest: %w", err)
+	}
+	return nil
 }
