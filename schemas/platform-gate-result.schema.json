@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/platform-gate-result.schema.json",
+  "title": "ALP Platform Gate Result v1",
+  "description": "Structured output of a Platform Validator: one entry per platform quality gate plus an overall publishable flag. Commands, artifact refs, diagnostic codes and messages are platform-native strings ALP records but never interprets.",
+  "type": "object",
+  "required": ["schemaVersion", "platform", "target", "publishable", "gates"],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "platform": {"type": "string", "minLength": 1},
+    "target": {"type": "string", "minLength": 1, "description": "Opaque, platform-owned Learning Target ID."},
+    "publishable": {"type": "boolean", "description": "The platform's verdict that the checked realization may be published. Never true while any gate fails."},
+    "gates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/gate"}
+    }
+  },
+  "additionalProperties": false,
+  "if": {"properties": {"publishable": {"const": true}}, "required": ["publishable"]},
+  "then": {"properties": {"gates": {"items": {"properties": {"status": {"not": {"const": "fail"}}}}}}},
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "externalId": {
+      "description": "Namespaced, opaque platform identity (ADR-0057).",
+      "type": "object",
+      "required": ["platform", "target", "item"],
+      "properties": {
+        "platform": {"type": "string", "minLength": 1},
+        "target": {"type": "string", "minLength": 1},
+        "item": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "gate": {
+      "type": "object",
+      "required": ["id", "status", "provenance", "artifacts", "diagnostics"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1, "description": "Platform gate ID, unique within the result."},
+        "status": {"enum": ["pass", "fail", "warn", "skipped"]},
+        "reason": {"type": "string", "description": "Why the gate was skipped or warned, when the platform says."},
+        "provenance": {
+          "type": "object",
+          "required": ["command", "version"],
+          "properties": {
+            "command": {"type": "string", "minLength": 1, "description": "Platform-native command that ran the gate."},
+            "version": {"type": "string", "minLength": 1, "description": "Version of the platform/gate that produced the result."},
+            "exitCode": {"type": "integer"},
+            "startedAt": {"type": "string", "format": "date-time"},
+            "finishedAt": {"type": "string", "format": "date-time"}
+          },
+          "additionalProperties": false
+        },
+        "artifacts": {
+          "type": "array",
+          "description": "Platform artifacts the gate checked.",
+          "items": {
+            "type": "object",
+            "required": ["ref"],
+            "properties": {
+              "ref": {"type": "string", "minLength": 1},
+              "contentHash": {"$ref": "#/$defs/hash"}
+            },
+            "additionalProperties": false
+          }
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["severity", "message"],
+            "properties": {
+              "severity": {"enum": ["error", "warning", "info"]},
+              "code": {"type": "string", "minLength": 1},
+              "message": {"type": "string", "minLength": 1},
+              "item": {"$ref": "#/$defs/externalId"},
+              "artifact": {"type": "string", "minLength": 1},
+              "line": {"type": "integer", "minimum": 1}
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

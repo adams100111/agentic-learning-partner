@@ -12,6 +12,11 @@ Current v1 contracts:
 - `competency-taxonomy.schema.json`
 - `adaptation-proposal.schema.json`
 
+Platform adaptation contracts (spec #66, ADR-0054, ADR-0057):
+
+- `platform-curriculum-export.schema.json`: a platform's versioned description of its Learning Targets (declared-stable items, phases, mapping reference, content hash), read by `alp platform inspect --curriculum FILE` (Q37). PyLearn emits it with `export:curriculum`.
+- `platform-gate-result.schema.json`: a Platform Validator's per-gate results (status, provenance, artifacts, diagnostics) and overall `publishable` flag. An example lives in `testdata/`.
+
 Canonical learner files may be YAML; validation operates on the parsed data model.
 
 Schema changes follow semantic intent:
