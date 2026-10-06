@@ -9,6 +9,8 @@ Use this when the learner is new to ALP or explicitly asks for a fresh persona d
 
 ## Workflow
 
+0. When durable profile/persona changes will be written, use one ALP session so the bootstrap changes are staged and checkpointed atomically.
+
 1. Resolve and validate the learner workspace with `alp workspace check`.
 2. Inspect existing profile/persona files and relevant connected repositories/documents before asking questions.
 3. Read `docs/PERSONA_WIZARD.md` for the interview rounds and anti-overfitting rules.
@@ -22,7 +24,7 @@ Use this when the learner is new to ALP or explicitly asks for a fresh persona d
    - unresolved uncertainty.
 8. Show the material proposed profile/persona diff before persisting inferred consequential changes.
 9. Explicit learner corrections may be applied directly with provenance.
-10. Validate changed canonical files with `alp validate`.
+10. Stage durable profile/persona files through `alp session put --path <ALP_PATH> --file <FILE>`, validate the staged/final workspace, and close the setup session once the proposed bootstrap changes are accepted.
 
 Do not derive competency levels directly from persona answers. Demonstrated probes become evidence through the evidence contract.
 
