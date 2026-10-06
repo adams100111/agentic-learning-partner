@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -122,8 +121,10 @@ func TestConvertLocalToGitPreservesWorkspaceIdentity(t *testing.T) {
 	sourceRoot := makeArchiveWorkspace(t, "ws_convert", "learner")
 	source, _ := store.OpenLocal(sourceRoot, validator)
 	destination := filepath.Join(t.TempDir(), "git")
-	runArchiveCommand(t, "", "git", "config", "--global", "user.email", "alp-test@example.invalid")
-	runArchiveCommand(t, "", "git", "config", "--global", "user.name", "ALP Test")
+	t.Setenv("GIT_AUTHOR_NAME", "ALP Test")
+	t.Setenv("GIT_AUTHOR_EMAIL", "alp-test@example.invalid")
+	t.Setenv("GIT_COMMITTER_NAME", "ALP Test")
+	t.Setenv("GIT_COMMITTER_EMAIL", "alp-test@example.invalid")
 	target, err := ConvertToGit(ctx, source, validator, ConvertToGitOptions{
 		Destination: destination, Branch: "main", RuntimeDir: t.TempDir(),
 	})
@@ -150,11 +151,3 @@ func validArchiveProfile() []byte {
 	return []byte("schemaVersion: 1\nlearner:\n  id: learner\nexperience: {}\ngoals: []\npreferences: {}\n")
 }
 
-func runArchiveCommand(t *testing.T, dir, name string, args ...string) string {
-	t.Helper()
-	cmd := exec.Command(name, args...)
-	if dir != "" { cmd.Dir = dir }
-	out, err := cmd.CombinedOutput()
-	if err != nil { t.Fatalf("%s %v: %v\n%s", name, args, err, out) }
-	return string(out)
-}
