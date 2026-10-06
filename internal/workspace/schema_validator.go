@@ -91,6 +91,10 @@ var workspaceDocumentRules = []documentRule{
 	{Pattern: "assessments/*.json", Schema: "assessment.schema.json"},
 	{Pattern: "state/competencies.yaml", Schema: "projection.schema.json"},
 	{Pattern: "state/competencies.json", Schema: "projection.schema.json"},
+	{Pattern: "state/review-queue.yaml", Schema: "review-queue.schema.json"},
+	{Pattern: "state/review-queue.json", Schema: "review-queue.schema.json"},
+	{Pattern: "state/learning-plan.yaml", Schema: "learning-plan.schema.json"},
+	{Pattern: "state/learning-plan.json", Schema: "learning-plan.schema.json"},
 }
 
 func (v *Validator) ValidateWorkspace(root string) []ValidationIssue {
