@@ -109,6 +109,9 @@ func (s *Local) Commit(ctx context.Context, expected Revision, changes ChangeSet
 	defer cleanup()
 
 	for _, mutation := range changes.Mutations {
+		if !IsOwnedPath(mutation.Path) {
+			return "", fmt.Errorf("path %q is not ALP-owned", mutation.Path)
+		}
 		target, err := safePath(s.root, mutation.Path)
 		if err != nil {
 			return "", err
