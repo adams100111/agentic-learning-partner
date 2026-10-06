@@ -119,6 +119,8 @@ func TestCloneRestoreCreatesNewWorkspaceIdentity(t *testing.T) {
 }
 
 func TestConvertLocalStoreToGitPreservesWorkspaceIdentity(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
 	ctx := context.Background()
 	sourceRoot := filepath.Join(t.TempDir(), "source")
 	source, err := localstore.Initialize(sourceRoot, "learner", nil)
