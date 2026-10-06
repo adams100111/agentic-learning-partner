@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/adams100111/agentic-learning-partner/internal/workspace"
 )
 
 func TestPlanRequiresExplicitEveryStep(t *testing.T) {
@@ -91,5 +93,24 @@ func runMigrationGit(t *testing.T, dir string, args ...string) {
 	command := exec.Command("git", append([]string{"-C", dir}, args...)...)
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("git %v: %v\n%s", args, err, output)
+	}
+}
+
+func TestDefaultMigratorAddsWorkspaceIdentity(t *testing.T) {
+	root, revision := migrationWorkspace(t, 1)
+	validator, err := workspace.NewValidator()
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := NewWorkspaceMigrator(validator)
+	if _, err := m.Apply(root, revision); err != nil {
+		t.Fatal(err)
+	}
+	manifest, err := workspace.ReadManifest(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if manifest.SchemaVersion != 2 || !strings.HasPrefix(manifest.WorkspaceID, "ws_") || manifest.LearnerID != "test" {
+		t.Fatalf("manifest = %#v", manifest)
 	}
 }
