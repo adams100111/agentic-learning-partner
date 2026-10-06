@@ -59,19 +59,6 @@ type Bookmark struct {
 	ContentID string `yaml:"contentId" json:"contentId"`
 }
 
-type Mapping struct {
-	SchemaVersion int              `yaml:"schemaVersion" json:"schemaVersion"`
-	Platform      string           `yaml:"platform" json:"platform"`
-	Mappings      []ContentMapping `yaml:"mappings" json:"mappings"`
-}
-
-type ContentMapping struct {
-	ContentID    string   `yaml:"contentId" json:"contentId"`
-	Domain       string   `yaml:"domain" json:"domain"`
-	PackVersion  string   `yaml:"packVersion" json:"packVersion"`
-	Competencies []string `yaml:"competencies" json:"competencies"`
-}
-
 type DerivedSignal struct {
 	Kind      string
 	ContentID string

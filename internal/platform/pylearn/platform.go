@@ -13,6 +13,7 @@ var stableIdentifierKinds = []string{"lesson", "question", "quiz", "scene"}
 
 var _ platform.Adapter = Adapter{}
 var _ platform.CurriculumSource = Adapter{}
+var _ platform.ContentMappingValidator = Adapter{}
 
 func (Adapter) ID() string { return AdapterID }
 
@@ -32,5 +33,16 @@ func (a Adapter) ReadCurriculum(export []byte, target string) (platform.Curricul
 		Platform:    AdapterID,
 		Target:      target,
 		StableKinds: a.StableIdentifierKinds(),
+	})
+}
+
+// ValidateContentMapping validates a PyLearn-owned mapping (schema v2) for a
+// target against its curriculum export and ALP's domain packs.
+func (a Adapter) ValidateContentMapping(mapping []byte, name string, curriculum platform.Curriculum) (platform.MappingReport, error) {
+	return platform.ValidateMapping(mapping, name, platform.MappingSubject{
+		Platform:    AdapterID,
+		StableKinds: a.StableIdentifierKinds(),
+		Curriculum:  curriculum,
+		Packs:       a.Domains,
 	})
 }

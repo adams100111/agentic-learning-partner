@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/adams100111/agentic-learning-partner/internal/domain"
+	"github.com/adams100111/agentic-learning-partner/internal/platform"
 	"github.com/adams100111/agentic-learning-partner/internal/state"
 )
 
@@ -19,88 +20,77 @@ func NewAdapter() Adapter {
 	return Adapter{Domains: domain.NewRegistry()}
 }
 
-func (a Adapter) ValidateMapping(mapping Mapping) error {
-	if mapping.SchemaVersion != 1 {
-		return fmt.Errorf("unsupported platform mapping schemaVersion %d", mapping.SchemaVersion)
-	}
-	if mapping.Platform != "pylearn" {
-		return fmt.Errorf("expected platform %q, got %q", "pylearn", mapping.Platform)
-	}
-
-	seen := map[string]struct{}{}
-	for _, entry := range mapping.Mappings {
-		if _, duplicate := seen[entry.ContentID]; duplicate {
-			return fmt.Errorf("duplicate PyLearn mapping for content %q", entry.ContentID)
-		}
-		seen[entry.ContentID] = struct{}{}
-		if err := a.Domains.CheckCompatibility(entry.Domain, entry.PackVersion); err != nil {
-			return fmt.Errorf("content %q: %w", entry.ContentID, err)
-		}
-		pack, err := a.Domains.Load(entry.Domain)
-		if err != nil {
-			return err
-		}
-		for _, competency := range entry.Competencies {
-			if !pack.HasCompetency(competency) {
-				return fmt.Errorf("content %q maps unknown competency %q", entry.ContentID, competency)
-			}
-		}
-	}
-	return nil
-}
-
-func (a Adapter) Normalize(export Export, mapping Mapping, currentProfile map[string]any) (Result, error) {
+// Normalize turns a PyLearn export into evidence using a validated v2 content
+// mapping (see ValidateContentMapping). Every mapped competency contributes
+// its resolved current ID; role-graded evidence is introduced with import
+// (ADR-0058, ADR-0059).
+func (a Adapter) Normalize(export Export, mapping platform.MappingReport, currentProfile map[string]any) (Result, error) {
 	if export.SchemaVersion != 1 {
 		return Result{}, fmt.Errorf("unsupported PyLearn export schemaVersion %d", export.SchemaVersion)
 	}
-	if err := a.ValidateMapping(mapping); err != nil {
-		return Result{}, err
+	if !mapping.Valid {
+		return Result{}, fmt.Errorf("platform mapping is not valid (%d errors); run alp platform mapping validate", mapping.Summary.Errors)
 	}
 
-	byContent := make(map[string]ContentMapping, len(mapping.Mappings))
-	for _, entry := range mapping.Mappings {
-		byContent[entry.ContentID] = entry
+	type mappedDomain struct {
+		domain       string
+		competencies []string
+	}
+	byContent := make(map[string][]mappedDomain, len(mapping.Entries))
+	for _, entry := range mapping.Entries {
+		var domains []mappedDomain
+		for _, competency := range entry.Competencies {
+			index := -1
+			for i := range domains {
+				if domains[i].domain == competency.Domain {
+					index = i
+				}
+			}
+			if index < 0 {
+				domains = append(domains, mappedDomain{domain: competency.Domain})
+				index = len(domains) - 1
+			}
+			domains[index].competencies = append(domains[index].competencies, competency.ResolvedID)
+		}
+		byContent[entry.Item.Item] = domains
 	}
 
 	result := Result{}
 	seen := map[string]struct{}{}
-	add := func(kind, sourceID, contentID, observedAt, evidenceType, observation, outcome, strength, failureClass string) error {
-		entry, ok := byContent[contentID]
-		if !ok {
-			return nil
+	add := func(kind, sourceID, contentID, observedAt, evidenceType, observation, outcome, strength, failureClass string) {
+		for _, mapped := range byContent[contentID] {
+			stable := stableID(kind, sourceID, contentID, mapped.domain)
+			if _, duplicate := seen[stable]; duplicate {
+				continue
+			}
+			seen[stable] = struct{}{}
+			record := state.Evidence{
+				SchemaVersion: 1,
+				ID:            "ev_" + stable,
+				RecordedAt:    fallbackTimestamp(observedAt, export.ExportedAt),
+				Domain:        mapped.domain,
+				Competencies:  append([]string(nil), mapped.competencies...),
+				Type:          evidenceType,
+				Source: state.EvidenceSource{
+					Kind:      "platform",
+					Ref:       "pylearn:" + kind + ":" + sourceID,
+					ContentID: contentID,
+				},
+				Observation:  observation,
+				Result:       outcome,
+				Strength:     strength,
+				FailureClass: failureClass,
+				Metadata: map[string]any{
+					"platform": "pylearn",
+					"kind":     kind,
+				},
+			}
+			result.Evidence = append(result.Evidence, NormalizedEvidence{StableKey: stable, Record: record})
 		}
-		stable := stableID(kind, sourceID, contentID)
-		if _, duplicate := seen[stable]; duplicate {
-			return nil
-		}
-		seen[stable] = struct{}{}
-		record := state.Evidence{
-			SchemaVersion: 1,
-			ID:            "ev_" + stable,
-			RecordedAt:    fallbackTimestamp(observedAt, export.ExportedAt),
-			Domain:        entry.Domain,
-			Competencies:  append([]string(nil), entry.Competencies...),
-			Type:          evidenceType,
-			Source: state.EvidenceSource{
-				Kind:      "platform",
-				Ref:       "pylearn:" + kind + ":" + sourceID,
-				ContentID: contentID,
-			},
-			Observation:  observation,
-			Result:       outcome,
-			Strength:     strength,
-			FailureClass: failureClass,
-			Metadata: map[string]any{
-				"platform": "pylearn",
-				"kind":     kind,
-			},
-		}
-		result.Evidence = append(result.Evidence, NormalizedEvidence{StableKey: stable, Record: record})
-		return nil
 	}
 
 	for _, progress := range export.Progress {
-		_ = add("progress", progress.ID, progress.ContentID, progress.UpdatedAt, "platform-event",
+		add("progress", progress.ID, progress.ContentID, progress.UpdatedAt, "platform-event",
 			"PyLearn content progress is "+progress.Status+".", "neutral", "weak", "")
 	}
 	for _, attempt := range export.Attempts {
@@ -110,7 +100,7 @@ func (a Adapter) Normalize(export Export, mapping Mapping, currentProfile map[st
 			outcome, strength, failureClass = "pass", "moderate", ""
 			observation = "PyLearn exercise attempt passed its configured checks."
 		}
-		_ = add("attempt", attempt.ID, attempt.ContentID, attempt.CreatedAt, "exercise", observation, outcome, strength, failureClass)
+		add("attempt", attempt.ID, attempt.ContentID, attempt.CreatedAt, "exercise", observation, outcome, strength, failureClass)
 	}
 	for _, answer := range export.QuizAnswers {
 		outcome, observation := "fail", "PyLearn quiz answer was incorrect."
@@ -118,10 +108,10 @@ func (a Adapter) Normalize(export Export, mapping Mapping, currentProfile map[st
 		if answer.Correct {
 			outcome, observation, failureClass = "pass", "PyLearn quiz answer was correct.", ""
 		}
-		_ = add("quiz", answer.ID, answer.ContentID, answer.CreatedAt, "quiz", observation, outcome, "weak", failureClass)
+		add("quiz", answer.ID, answer.ContentID, answer.CreatedAt, "quiz", observation, outcome, "weak", failureClass)
 	}
 	for _, reflection := range export.Reflections {
-		_ = add("reflection", reflection.ID, reflection.ContentID, reflection.CreatedAt, "reflection",
+		add("reflection", reflection.ID, reflection.ContentID, reflection.CreatedAt, "reflection",
 			"PyLearn learner reflection: "+strings.TrimSpace(reflection.Text), "neutral", "weak", "")
 	}
 	for _, mastery := range export.ConceptMastery {
@@ -166,8 +156,8 @@ func DetectProfileConflicts(platform, current map[string]any) []ProfileConflict 
 	return conflicts
 }
 
-func stableID(kind, sourceID, contentID string) string {
-	sum := sha256.Sum256([]byte("pylearn|" + kind + "|" + sourceID + "|" + contentID))
+func stableID(kind, sourceID, contentID, domainName string) string {
+	sum := sha256.Sum256([]byte("pylearn|" + kind + "|" + sourceID + "|" + contentID + "|" + domainName))
 	return hex.EncodeToString(sum[:12])
 }
 

@@ -1,16 +1,37 @@
 package pylearn
 
-import "testing"
+import (
+	"strings"
+	"testing"
+
+	"github.com/adams100111/agentic-learning-partner/internal/platform"
+)
+
+func validatedMapping(t *testing.T, adapter Adapter, mapping string) platform.MappingReport {
+	t.Helper()
+	curriculum := platform.Curriculum{
+		Target: platform.ExternalID{Platform: AdapterID, Target: "go"},
+		Items:  []platform.Item{{Ref: platform.ExternalID{Platform: AdapterID, Target: "go", Item: "go-context"}, Kind: "lesson", Phase: "B"}},
+	}
+	report, err := adapter.ValidateContentMapping([]byte(mapping), "mapping.yaml", curriculum)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return report
+}
+
+const contextMapping = `schemaVersion: 2
+platform: pylearn
+target: go
+packs: [{domain: go, packVersion: ">=0.1.0 <0.2.0"}]
+entries:
+  - item: go-context
+    competencies: [{id: go.runtime.context, role: assesses}]
+`
 
 func TestNormalizeIsIdempotentAndKeepsMasteryDerived(t *testing.T) {
 	adapter := NewAdapter()
-	mapping := Mapping{
-		SchemaVersion: 1,
-		Platform:      "pylearn",
-		Mappings: []ContentMapping{
-			{ContentID: "go-context", Domain: "go", PackVersion: ">=0.1 <0.2", Competencies: []string{"go.runtime.context"}},
-		},
-	}
+	mapping := validatedMapping(t, adapter, contextMapping)
 	export := Export{
 		SchemaVersion: 1,
 		ExportedAt:    "2026-10-06T00:00:00Z",
@@ -29,22 +50,19 @@ func TestNormalizeIsIdempotentAndKeepsMasteryDerived(t *testing.T) {
 	if len(result.Evidence) != 1 {
 		t.Fatalf("evidence count = %d", len(result.Evidence))
 	}
+	if record := result.Evidence[0].Record; record.Domain != "go" || len(record.Competencies) != 1 || record.Competencies[0] != "go.runtime.context" {
+		t.Fatalf("evidence = %#v", record)
+	}
 	if len(result.DerivedSignals) != 1 || result.DerivedSignals[0].Kind != "concept-mastery-rollup" {
 		t.Fatalf("signals = %#v", result.DerivedSignals)
 	}
 }
 
-func TestMappingRejectsUnknownCompetency(t *testing.T) {
+func TestNormalizeRefusesInvalidMapping(t *testing.T) {
 	adapter := NewAdapter()
-	err := adapter.ValidateMapping(Mapping{
-		SchemaVersion: 1,
-		Platform:      "pylearn",
-		Mappings: []ContentMapping{
-			{ContentID: "bad", Domain: "go", PackVersion: ">=0.1 <0.2", Competencies: []string{"go.not.real"}},
-		},
-	})
-	if err == nil {
-		t.Fatal("expected unknown competency error")
+	mapping := validatedMapping(t, adapter, strings.Replace(contextMapping, "go.runtime.context", "go.not.real", 1))
+	if _, err := adapter.Normalize(Export{SchemaVersion: 1}, mapping, nil); err == nil {
+		t.Fatal("expected invalid mapping to be refused")
 	}
 }
 

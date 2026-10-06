@@ -76,3 +76,15 @@ func (r Registry) HasCompetency(domainName, id string) bool {
 	}
 	return pack.HasCompetency(id)
 }
+
+// NewRegistryFrom builds a registry over the given pack sources (domain name to
+// competencies YAML), for composition roots that supply packs other than the
+// built-in ones.
+func NewRegistryFrom(sources map[string][]byte) Registry {
+	loaders := make(map[string]func() ([]byte, error), len(sources))
+	for name, data := range sources {
+		data := append([]byte(nil), data...)
+		loaders[name] = func() ([]byte, error) { return data, nil }
+	}
+	return Registry{loaders: loaders}
+}

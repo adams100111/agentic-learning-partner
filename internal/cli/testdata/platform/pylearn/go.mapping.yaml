@@ -1,0 +1,33 @@
+# PyLearn-owned mapping (ADR-0017) for the `go` target, schema v2 (ADR-0058).
+schemaVersion: 2
+platform: pylearn
+target: go
+packs:
+  - domain: go
+    packVersion: ">=0.1.0 <0.2.0"
+entries:
+  - item: go-a1-first-delivery
+    competencies:
+      - id: go.language.packages-modules
+        role: teaches
+      - id: go.tooling.build-static-analysis
+        role: reinforces
+  - item: go-a1-first-delivery#build-delivery
+    competencies:
+      - id: go.language.packages-modules
+        role: reinforces
+  - item: go-module-basics
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.packages-modules
+        role: assesses
+  - item: go-b1-goroutines
+    competencies:
+      - id: go.concurrency.goroutines
+        role: teaches
+  - item: go-goroutine-lifetimes/leak
+    competencies:
+      - id: go.concurrency.goroutines
+        role: assesses
+      - id: go.concurrency.races-deadlocks-leaks
+        role: assesses
