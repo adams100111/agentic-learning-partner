@@ -36,14 +36,17 @@ func (a App) Run(args []string) int {
 	case "validate":
 		return a.runValidate(args[1:])
 	case "workspace":
-		if len(args) > 1 && args[1] == "check" {
+		if len(args) < 2 {
+			fmt.Fprintln(a.ErrOut, "usage: alp workspace <init|clone|list|use|status|acknowledge-privacy|check|migrate> [options]")
+			return 2
+		}
+		if args[1] == "check" {
 			return a.runWorkspaceCheck(args[2:])
 		}
-		if len(args) > 1 && args[1] == "migrate" {
+		if args[1] == "migrate" {
 			return a.runWorkspaceMigrate(args[2:])
 		}
-		fmt.Fprintln(a.ErrOut, "usage: alp workspace <check|migrate> [options]")
-		return 2
+		return a.runWorkspaceLifecycle(args[1], args[2:])
 	case "domain":
 		return a.runDomain(args[1:])
 	case "context":
@@ -477,5 +480,5 @@ func (a App) resolveAndInspect(explicit string) (workspace.Resolution, workspace
 
 func (a App) usage() {
 	fmt.Fprintln(a.ErrOut, "usage: alp <command>")
-	fmt.Fprintln(a.ErrOut, "commands: validate, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, plan build, diagnostic")
+	fmt.Fprintln(a.ErrOut, "commands: validate, workspace init, workspace clone, workspace list, workspace use, workspace status, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, plan build, diagnostic")
 }
