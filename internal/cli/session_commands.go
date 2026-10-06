@@ -27,7 +27,7 @@ func (a App) runSession(args []string) int {
 	flags := flag.NewFlagSet("session "+command, flag.ContinueOnError)
 	flags.SetOutput(a.ErrOut)
 	explicit := flags.String("workspace", "", "learner workspace path or configured name")
-	mode := flags.String("mode", "session", "sync mode: session, manual, or eager")
+	mode := flags.String("mode", "", "sync mode override: session, manual, or eager")
 	harness := flags.String("harness", "", "harness identifier")
 	deviceID := flags.String("device-id", "", "override machine-local device id")
 	noRecord := flags.Bool("no-retain-record", false, "do not retain compact canonical session record")
@@ -53,6 +53,16 @@ func (a App) runSession(args []string) int {
 	if err != nil {
 		fmt.Fprintln(a.ErrOut, err)
 		return 1
+	}
+	configuredMode, configuredRemote, configuredBranch := sessionConfiguredDefaults(*explicit, info.Path)
+	if *mode == "" {
+		*mode = configuredMode
+	}
+	if *remote == "" {
+		*remote = configuredRemote
+	}
+	if *branchName == "" {
+		*branchName = configuredBranch
 	}
 	runtimeDir, err := lifecycle.DefaultRuntimeDir()
 	if err != nil {
@@ -196,6 +206,46 @@ func (a App) runSession(args []string) int {
 		fmt.Fprintf(a.ErrOut, "unknown session command %q\n", command)
 		return 2
 	}
+}
+
+func sessionConfiguredDefaults(reference, root string) (mode, remote, branch string) {
+	mode = "session"
+	configPath, err := lifecycle.DefaultConfigPath()
+	if err != nil {
+		return mode, "", ""
+	}
+	config, err := workspace.LoadConfig(configPath)
+	if err != nil {
+		return mode, "", ""
+	}
+	choose := func(entry workspace.WorkspaceConfig) bool {
+		entryPath, err := filepath.Abs(entry.Path)
+		if err != nil || filepath.Clean(entryPath) != filepath.Clean(root) {
+			return false
+		}
+		if entry.SyncMode != "" {
+			mode = entry.SyncMode
+		}
+		remote = entry.Remote
+		branch = entry.Branch
+		return true
+	}
+	if reference != "" {
+		if entry, ok := config.Workspaces[reference]; ok && choose(entry) {
+			return mode, remote, branch
+		}
+	}
+	if config.DefaultWorkspace != "" {
+		if entry, ok := config.Workspaces[config.DefaultWorkspace]; ok && choose(entry) {
+			return mode, remote, branch
+		}
+	}
+	for _, entry := range config.Workspaces {
+		if choose(entry) {
+			return mode, remote, branch
+		}
+	}
+	return mode, "", ""
 }
 
 func discoverSessionCloseInput(root, stage, summary string) (session.CloseInput, error) {
