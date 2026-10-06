@@ -16,6 +16,7 @@ import (
 	"github.com/adams100111/agentic-learning-partner/internal/domain"
 	"github.com/adams100111/agentic-learning-partner/internal/gitexec"
 	"github.com/adams100111/agentic-learning-partner/internal/learning"
+	"github.com/adams100111/agentic-learning-partner/internal/platform"
 	"github.com/adams100111/agentic-learning-partner/internal/platform/pylearn"
 	"github.com/adams100111/agentic-learning-partner/internal/state"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
@@ -32,17 +33,19 @@ func TestV0ClosedLoopFromPlatformEvidenceToPlan(t *testing.T) {
 	}
 
 	adapter := pylearn.NewAdapter()
-	mapping := pylearn.Mapping{
-		SchemaVersion: 1,
-		Platform:      "pylearn",
-		Mappings: []pylearn.ContentMapping{
-			{
-				ContentID:    "go-context",
-				Domain:       "go",
-				PackVersion:  ">=0.1 <0.2",
-				Competencies: []string{"go.runtime.context"},
-			},
-		},
+	mapping, err := adapter.ValidateContentMapping([]byte(`schemaVersion: 2
+platform: pylearn
+target: go
+packs: [{domain: go, packVersion: ">=0.1.0 <0.2.0"}]
+entries:
+  - item: go-context
+    competencies: [{id: go.runtime.context, role: assesses}]
+`), "go.mapping.yaml", platform.Curriculum{
+		Target: platform.ExternalID{Platform: "pylearn", Target: "go"},
+		Items:  []platform.Item{{Ref: platform.ExternalID{Platform: "pylearn", Target: "go", Item: "go-context"}, Kind: "lesson", Phase: "B"}},
+	})
+	if err != nil || !mapping.Valid {
+		t.Fatalf("mapping = %+v, err = %v", mapping, err)
 	}
 	export := pylearn.Export{
 		SchemaVersion: 1,

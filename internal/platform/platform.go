@@ -51,6 +51,13 @@ type CurriculumSource interface {
 	ReadCurriculum(export []byte, target string) (Curriculum, error)
 }
 
+// ContentMappingValidator is implemented by adapters that declare
+// ContentMapper: it validates the platform-owned content mapping (ADR-0017,
+// ADR-0058) for one Learning Target against that target's curriculum.
+type ContentMappingValidator interface {
+	ValidateContentMapping(mapping []byte, name string, curriculum Curriculum) (MappingReport, error)
+}
+
 // Error is a platform contract failure with a stable machine-readable code.
 type Error struct {
 	Code       string     `json:"code"`

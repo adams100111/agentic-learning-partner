@@ -8,13 +8,16 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/adams100111/agentic-learning-partner/internal/platform"
 	"github.com/adams100111/agentic-learning-partner/internal/platform/pylearn"
 )
 
-const platformUsage = "usage: alp platform inspect --adapter ID --target ID --curriculum FILE"
+const platformUsage = "usage: alp platform inspect --adapter ID --target ID --curriculum FILE\n" +
+	"       alp platform mapping validate --adapter ID --target ID --curriculum FILE --mapping FILE"
 
 // defaultPlatforms is the composition root for built-in platform adapters.
 func defaultPlatforms() platform.Registry {
@@ -28,34 +31,51 @@ func (a App) platforms() platform.Registry {
 	return defaultPlatforms()
 }
 
-// platformCommand is one `alp platform` subcommand and the capability it needs.
+// platformCommand is one `alp platform` subcommand and the capabilities it
+// needs, in the order they are checked.
 type platformCommand struct {
-	capability platform.Capability
-	run        func(a App, adapter platform.Adapter, target string, flags platformFlags) int
+	capabilities []platform.Capability
+	run          func(a App, adapter platform.Adapter, target string, flags platformFlags) int
 }
 
 type platformFlags struct {
 	curriculum string
+	mapping    string
 }
 
+// platformCommands is keyed by the command words, e.g. "mapping validate".
 var platformCommands = map[string]platformCommand{
-	"inspect": {capability: platform.CurriculumReader, run: runPlatformInspect},
+	"inspect": {capabilities: []platform.Capability{platform.CurriculumReader}, run: runPlatformInspect},
+	// Mapping validation needs the curriculum: it is the only source of which
+	// items are declared-stable (ADR-0057).
+	"mapping validate": {capabilities: []platform.Capability{platform.ContentMapper, platform.CurriculumReader}, run: runPlatformMappingValidate},
 }
+
+// platformCommandGroups are first words that take a second command word.
+var platformCommandGroups = map[string]bool{"mapping": true}
 
 func (a App) runPlatform(args []string) int {
 	if len(args) == 0 {
 		return a.platformUsageError("a platform command is required")
 	}
-	command, ok := platformCommands[args[0]]
-	if !ok {
-		return a.platformUsageError(fmt.Sprintf("unknown platform command %q", args[0]))
+	name, rest := args[0], args[1:]
+	if platformCommandGroups[name] {
+		if len(rest) == 0 || strings.HasPrefix(rest[0], "-") {
+			return a.platformUsageError(fmt.Sprintf("platform %s requires a subcommand", name))
+		}
+		name, rest = name+" "+rest[0], rest[1:]
 	}
-	flags := flag.NewFlagSet("platform "+args[0], flag.ContinueOnError)
+	command, ok := platformCommands[name]
+	if !ok {
+		return a.platformUsageError(fmt.Sprintf("unknown platform command %q", name))
+	}
+	flags := flag.NewFlagSet("platform "+name, flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	adapterID := flags.String("adapter", "", "platform adapter ID")
 	target := flags.String("target", "", "platform Learning Target ID")
 	curriculum := flags.String("curriculum", "", "curriculum export file")
-	if err := flags.Parse(args[1:]); err != nil {
+	mapping := flags.String("mapping", "", "platform content mapping file")
+	if err := flags.Parse(rest); err != nil {
 		return a.platformUsageError(err.Error())
 	}
 	if flags.NArg() != 0 {
@@ -64,11 +84,15 @@ func (a App) runPlatform(args []string) int {
 	if *adapterID == "" || *target == "" {
 		return a.platformUsageError("--adapter and --target are required")
 	}
-	adapter, err := a.platforms().Require(*adapterID, command.capability)
-	if err != nil {
-		return a.platformFailure(err)
+	var adapter platform.Adapter
+	for _, capability := range command.capabilities {
+		required, err := a.platforms().Require(*adapterID, capability)
+		if err != nil {
+			return a.platformFailure(err)
+		}
+		adapter = required
 	}
-	return command.run(a, adapter, *target, platformFlags{curriculum: *curriculum})
+	return command.run(a, adapter, *target, platformFlags{curriculum: *curriculum, mapping: *mapping})
 }
 
 type inspectOutput struct {
@@ -97,21 +121,31 @@ type inspectItem struct {
 	Parent *platform.ExternalID `json:"parent,omitempty"`
 }
 
-func runPlatformInspect(a App, adapter platform.Adapter, target string, flags platformFlags) int {
+// readCurriculum reads the target from the --curriculum export; on failure it
+// has already written the error and returns the exit code.
+func (a App) readCurriculum(adapter platform.Adapter, target string, flags platformFlags) (platform.Curriculum, int, bool) {
 	if flags.curriculum == "" {
-		return a.platformUsageError("--curriculum is required: pass the platform's versioned curriculum export")
+		return platform.Curriculum{}, a.platformUsageError("--curriculum is required: pass the platform's versioned curriculum export"), false
 	}
 	reader, ok := adapter.(platform.CurriculumSource)
 	if !ok {
-		return a.platformFailure(fmt.Errorf("platform adapter %q declares %s but does not implement it", adapter.ID(), platform.CurriculumReader))
+		return platform.Curriculum{}, a.platformFailure(fmt.Errorf("platform adapter %q declares %s but does not implement it", adapter.ID(), platform.CurriculumReader)), false
 	}
 	data, err := os.ReadFile(flags.curriculum)
 	if err != nil {
-		return a.platformFailure(fmt.Errorf("read curriculum export: %w", err))
+		return platform.Curriculum{}, a.platformFailure(fmt.Errorf("read curriculum export: %w", err)), false
 	}
 	curriculum, err := reader.ReadCurriculum(data, target)
 	if err != nil {
-		return a.platformFailure(err)
+		return platform.Curriculum{}, a.platformFailure(err), false
+	}
+	return curriculum, 0, true
+}
+
+func runPlatformInspect(a App, adapter platform.Adapter, target string, flags platformFlags) int {
+	curriculum, code, ok := a.readCurriculum(adapter, target, flags)
+	if !ok {
+		return code
 	}
 
 	output := inspectOutput{
@@ -128,6 +162,64 @@ func runPlatformInspect(a App, adapter platform.Adapter, target string, flags pl
 	}
 	for _, item := range curriculum.Items {
 		output.Items = append(output.Items, inspectItem{Ref: item.Ref, Kind: item.Kind, Phase: item.Phase, Title: item.Title, Parent: item.Parent})
+	}
+	return a.writePlatformJSON(output, 0)
+}
+
+type mappingValidateOutput struct {
+	SchemaVersion    int                       `json:"schemaVersion"`
+	Adapter          string                    `json:"adapter"`
+	Target           platform.ExternalID       `json:"target"`
+	Mapping          platform.MappingSource    `json:"mapping"`
+	CurriculumExport inspectSource             `json:"curriculumExport"`
+	Packs            []platform.PackStatus     `json:"packs"`
+	Valid            bool                      `json:"valid"`
+	Summary          platform.MappingSummary   `json:"summary"`
+	Entries          []platform.MappedItem     `json:"entries"`
+	Problems         []platform.MappingProblem `json:"problems"`
+}
+
+func runPlatformMappingValidate(a App, adapter platform.Adapter, target string, flags platformFlags) int {
+	if flags.mapping == "" {
+		return a.platformUsageError("--mapping is required: pass the platform's content mapping file")
+	}
+	validator, ok := adapter.(platform.ContentMappingValidator)
+	if !ok {
+		return a.platformFailure(fmt.Errorf("platform adapter %q declares %s but does not implement it", adapter.ID(), platform.ContentMapper))
+	}
+	curriculum, code, ok := a.readCurriculum(adapter, target, flags)
+	if !ok {
+		return code
+	}
+	data, err := os.ReadFile(flags.mapping)
+	if err != nil {
+		return a.platformFailure(fmt.Errorf("read mapping: %w", err))
+	}
+	report, err := validator.ValidateContentMapping(data, filepath.Base(flags.mapping), curriculum)
+	if err != nil {
+		return a.platformFailure(err)
+	}
+	output := mappingValidateOutput{
+		SchemaVersion:    1,
+		Adapter:          adapter.ID(),
+		Target:           curriculum.Target,
+		CurriculumExport: inspectSource{SchemaVersion: curriculum.SchemaVersion, ContentHash: curriculum.ContentHash},
+		Mapping:          report.Mapping,
+		Packs:            report.Packs,
+		Valid:            report.Valid,
+		Summary:          report.Summary,
+		Entries:          report.Entries,
+		Problems:         report.Problems,
+	}
+	for _, problem := range report.Problems {
+		location := problem.Path
+		if location == "" {
+			location = "/"
+		}
+		fmt.Fprintf(a.ErrOut, "%s %s at %s: %s\n", problem.Severity, problem.Code, location, problem.Message)
+	}
+	if !report.Valid {
+		return a.writePlatformJSON(output, 1)
 	}
 	return a.writePlatformJSON(output, 0)
 }

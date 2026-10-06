@@ -133,7 +133,7 @@ func (v *Validator) validateFile(root, path, schemaName string) *ValidationIssue
 }
 
 func (v *Validator) ValidateDocument(schemaName, file string, data []byte) *ValidationIssue {
-	document, err := decodeDocument(file, data)
+	document, err := DecodeDocument(file, data)
 	if err != nil {
 		return &ValidationIssue{File: file, Reason: err.Error()}
 	}
@@ -156,7 +156,50 @@ func (v *Validator) ValidateDocument(schemaName, file string, data []byte) *Vali
 	return nil
 }
 
-func decodeDocument(path string, data []byte) (any, error) {
+// ValidateValue validates an already-decoded document against schemaName and
+// returns every failing leaf constraint, in schema evaluation order, rather
+// than only the first summary error.
+func (v *Validator) ValidateValue(schemaName, file string, document any) []ValidationIssue {
+	schema, ok := v.compiled[schemaName]
+	if !ok {
+		return []ValidationIssue{{File: file, Reason: "unknown schema " + schemaName}}
+	}
+	err := schema.Validate(document)
+	if err == nil {
+		return nil
+	}
+	var validationErr *jsonschema.ValidationError
+	if !errors.As(err, &validationErr) {
+		return []ValidationIssue{{File: file, Reason: err.Error()}}
+	}
+	var issues []ValidationIssue
+	var collect func(*jsonschema.ValidationError)
+	collect = func(node *jsonschema.ValidationError) {
+		if len(node.Causes) == 0 {
+			issues = append(issues, ValidationIssue{File: file, Path: pointer(node.InstanceLocation), Reason: leafReason(node)})
+			return
+		}
+		for _, cause := range node.Causes {
+			collect(cause)
+		}
+	}
+	collect(validationErr)
+	return issues
+}
+
+// leafReason renders a leaf validation error without its "at '<path>': "
+// prefix, since the path is reported separately.
+func leafReason(node *jsonschema.ValidationError) string {
+	text := node.Error()
+	if _, reason, found := strings.Cut(text, "': "); found && strings.HasPrefix(text, "at '") {
+		return reason
+	}
+	return text
+}
+
+// DecodeDocument parses JSON or YAML (chosen by extension) into the generic
+// JSON data model that schemas validate.
+func DecodeDocument(path string, data []byte) (any, error) {
 	var value any
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".json":
