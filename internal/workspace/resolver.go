@@ -59,7 +59,7 @@ func (r Resolver) Resolve(explicit, startDir string) (Resolution, error) {
 
 	name, provider, ok := config.Default()
 	if ok {
-		return resolveProvider(name, provider, filepath.Dir(configPath), "user config default")
+		return resolveProvider(name, provider, filepath.Dir(configPath), "user config")
 	}
 
 	return Resolution{}, fmt.Errorf("no ALP learner workspace configured under %s; pass --workspace, add .alp.yaml, set ALP_WORKSPACE, or configure a default workspace", home)
