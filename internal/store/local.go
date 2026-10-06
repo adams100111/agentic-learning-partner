@@ -214,7 +214,7 @@ func canonicalPaths(root string) ([]string, error) {
 			return err
 		}
 		relative = filepath.ToSlash(relative)
-		if isCanonicalRevisionPath(relative) {
+		if IsCanonicalRevisionPath(relative) {
 			paths = append(paths, relative)
 		}
 		return nil
@@ -223,7 +223,7 @@ func canonicalPaths(root string) ([]string, error) {
 	return paths, err
 }
 
-func isCanonicalRevisionPath(path string) bool {
+func IsCanonicalRevisionPath(path string) bool {
 	if path == "workspace.yaml" || path == "workspace.json" {
 		return true
 	}
@@ -249,4 +249,17 @@ func safePath(root, key string) (string, error) {
 		return "", fmt.Errorf("store path escapes workspace: %q", key)
 	}
 	return target, nil
+}
+
+func IsOwnedPath(path string) bool {
+	path = filepath.ToSlash(filepath.Clean(filepath.FromSlash(path)))
+	if path == "workspace.yaml" || path == "workspace.json" {
+		return true
+	}
+	for _, prefix := range []string{"profile/", "personas/", "evidence/", "assessments/", "sessions/", "state/"} {
+		if strings.HasPrefix(path, prefix) {
+			return true
+		}
+	}
+	return false
 }

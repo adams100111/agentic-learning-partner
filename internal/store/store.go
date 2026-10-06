@@ -32,7 +32,8 @@ type Mutation struct {
 }
 
 type ChangeSet struct {
-	Mutations []Mutation
+	Message   string     `json:"message,omitempty"`
+	Mutations []Mutation `json:"mutations"`
 }
 
 type Store interface {
