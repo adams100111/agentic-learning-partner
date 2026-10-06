@@ -1,19 +1,103 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentic-learning-partner.dev/schemas/pylearn-export.schema.json",
-  "title": "PyLearn ALP Export v1",
+  "title": "PyLearn ALP Activity Export v2",
+  "description": "Learner activity PyLearn emits with `export:activity` for one platform user since a cursor, read by `alp platform import --adapter pylearn` (ADR-0059). Activity is grouped by Learning Target (`targets` replaces the v1 `courses`). Every record names a declared-stable item and an event identity; PyLearn holds only latest-state rows, so identities are Synthetic Event Identities: `event.id` is the row key and `event.revision` a content hash of the record's evidence-relevant fields. Timestamps are never part of an identity. v1 exports are not accepted.",
   "type": "object",
-  "required": ["schemaVersion", "exportedAt"],
+  "required": ["schemaVersion", "platform", "instance", "exportedAt", "user", "cursor", "targets"],
   "properties": {
-    "schemaVersion": {"type": "integer", "const": 1},
+    "schemaVersion": {"type": "integer", "const": 2},
+    "platform": {"const": "pylearn"},
+    "instance": {"type": "string", "minLength": 1, "description": "Opaque identifier of the PyLearn deployment the activity comes from."},
     "exportedAt": {"type": "string", "format": "date-time"},
-    "learner": {"type": "object", "additionalProperties": true},
-    "progress": {"type": "array", "items": {"type": "object", "required": ["id", "contentId", "status"], "properties": {"id":{"type":"string"},"contentId":{"type":"string"},"status":{"type":"string"},"updatedAt":{"type":"string"}},"additionalProperties":true}},
-    "attempts": {"type": "array", "items": {"type": "object", "required": ["id", "contentId"], "properties": {"id":{"type":"string"},"contentId":{"type":"string"},"passed":{"type":"boolean"},"code":{"type":"string"},"failure":{"type":"string"},"stdout":{"type":"string"},"createdAt":{"type":"string"}},"additionalProperties":true}},
-    "conceptMastery": {"type": "array", "items": {"type": "object", "required": ["id", "contentId"], "properties": {"id":{"type":"string"},"contentId":{"type":"string"},"attempts":{"type":"integer"},"passes":{"type":"integer"},"failures":{"type":"integer"},"updatedAt":{"type":"string"}},"additionalProperties":true}},
-    "quizAnswers": {"type": "array", "items": {"type": "object", "required": ["id", "contentId"], "properties": {"id":{"type":"string"},"contentId":{"type":"string"},"correct":{"type":"boolean"},"createdAt":{"type":"string"}},"additionalProperties":true}},
-    "reflections": {"type": "array", "items": {"type": "object", "required": ["id", "contentId", "text"], "properties": {"id":{"type":"string"},"contentId":{"type":"string"},"text":{"type":"string"},"createdAt":{"type":"string"}},"additionalProperties":true}},
-    "bookmarks": {"type": "array", "items": {"type": "object", "required": ["id", "contentId"], "properties": {"id":{"type":"string"},"contentId":{"type":"string"}},"additionalProperties":true}}
+    "user": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1, "description": "Opaque PyLearn user ID. Names, emails and other user metadata are never exported; ALP resolves the learner only through a Platform Account Link."}
+      },
+      "additionalProperties": false
+    },
+    "cursor": {
+      "type": "object",
+      "required": ["since", "next"],
+      "properties": {
+        "since": {"type": ["string", "null"], "minLength": 1, "description": "The cursor this export continues from; null for a full snapshot."},
+        "next": {"type": "string", "minLength": 1, "description": "Opaque cursor to export since next time."}
+      },
+      "additionalProperties": false
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "records"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1, "description": "Learning Target ID, as in the curriculum export."},
+          "records": {"type": "array", "items": {"$ref": "#/$defs/record"}}
+        },
+        "additionalProperties": false
+      }
+    }
   },
-  "additionalProperties": true
+  "additionalProperties": false,
+  "$defs": {
+    "event": {
+      "type": "object",
+      "required": ["id", "revision", "synthetic"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1, "description": "Event identity. Synthetic: `<table>:<row key>`, stable for the row's lifetime."},
+        "revision": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$", "description": "Synthetic: sha256 of the canonical JSON (sorted keys, no whitespace) of the record's evidence-relevant fields. Unchanged rows keep their revision; changed rows get a new one."},
+        "synthetic": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "common": {
+      "type": "object",
+      "required": ["kind", "item", "event", "observedAt"],
+      "properties": {
+        "kind": {"enum": ["progress", "quiz-answer", "reflection", "attempt"]},
+        "item": {"type": "string", "minLength": 1, "description": "Declared-stable item ID from the curriculum export."},
+        "event": {"$ref": "#/$defs/event"},
+        "observedAt": {"type": "string", "format": "date-time", "description": "When the row last changed; orders revisions, never identifies them."}
+      }
+    },
+    "record": {
+      "allOf": [{"$ref": "#/$defs/common"}],
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {"const": "progress"},
+            "status": {"enum": ["unstarted", "in_progress", "completed"]}
+          },
+          "required": ["status"]
+        },
+        {
+          "properties": {
+            "kind": {"const": "quiz-answer"},
+            "picked": {"type": "integer", "minimum": 0},
+            "correct": {"type": "boolean"}
+          },
+          "required": ["picked", "correct"]
+        },
+        {
+          "properties": {
+            "kind": {"const": "reflection"},
+            "text": {"type": "string", "minLength": 1}
+          },
+          "required": ["text"]
+        },
+        {
+          "properties": {
+            "kind": {"const": "attempt"},
+            "variant": {"type": "string", "minLength": 1},
+            "status": {"enum": ["passed", "failed", "error"]},
+            "failure": {"type": "string"}
+          },
+          "required": ["variant", "status"]
+        }
+      ],
+      "unevaluatedProperties": false
+    }
+  }
 }

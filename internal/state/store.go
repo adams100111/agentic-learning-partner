@@ -237,6 +237,28 @@ func (s Store) validate(schemaName, file string, data []byte) error {
 	return nil
 }
 
+// ListEvidence returns every evidence record in the workspace, ordered by ID.
+func (s Store) ListEvidence() ([]Evidence, error) {
+	paths, err := filepath.Glob(filepath.Join(s.Root, "evidence", "*.yaml"))
+	if err != nil {
+		return nil, fmt.Errorf("list evidence: %w", err)
+	}
+	sort.Strings(paths)
+	result := make([]Evidence, 0, len(paths))
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("read %s: %w", path, err)
+		}
+		var record Evidence
+		if err := yaml.Unmarshal(data, &record); err != nil {
+			return nil, fmt.Errorf("parse %s: %w", path, err)
+		}
+		result = append(result, record)
+	}
+	return result, nil
+}
+
 func (s Store) loadEvidence(ids []string) ([]Evidence, error) {
 	result := make([]Evidence, 0, len(ids))
 	seen := map[string]struct{}{}

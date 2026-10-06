@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "platform": "pylearn",
+  "targets": [
+    {
+      "id": "go-alp",
+      "title": "Go (ALP)",
+      "contentHash": "sha256:5d1e7c0b9a8f6e4d2c0b8a6f4e2d0c8b6a4f2e0d8c6b4a2f0e8d6c4b2a0f8e6d",
+      "phases": [
+        {"id": "A", "title": "Runtime Foundations"}
+      ],
+      "items": [
+        {"id": "go-alp-a1-context", "kind": "lesson", "phase": "A", "title": "Context and Cancellation"},
+        {"id": "go-alp-a1-context#cancel-tree", "kind": "scene", "parent": "go-alp-a1-context"},
+        {"id": "go-alp-a1-context#quiz:context-cancellation", "kind": "quiz", "parent": "go-alp-a1-context"},
+        {"id": "go-alp-a1-context#quiz:context-cancellation/q1", "kind": "question", "parent": "go-alp-a1-context#quiz:context-cancellation"},
+        {"id": "go-alp-a1-context#quiz:context-cancellation/q2", "kind": "question", "parent": "go-alp-a1-context#quiz:context-cancellation"},
+        {"id": "go-alp-a2-goroutines", "kind": "lesson", "phase": "A", "title": "Goroutine Lifetimes"},
+        {"id": "go-alp-a2-goroutines#quiz:goroutine-leaks", "kind": "quiz", "parent": "go-alp-a2-goroutines"},
+        {"id": "go-alp-a2-goroutines#quiz:goroutine-leaks/q1", "kind": "question", "parent": "go-alp-a2-goroutines#quiz:goroutine-leaks"},
+        {"id": "go-alp-a3-generics", "kind": "lesson", "phase": "A", "title": "Generics"}
+      ],
+      "mapping": {
+        "ref": "content/alp/go-alp.mapping.yaml",
+        "contentHash": "sha256:7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d7c6b"
+      }
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 2,
+  "platform": "pylearn",
+  "instance": "pylearn-local",
+  "exportedAt": "2026-10-07T09:00:00Z",
+  "user": {"id": "usr_7f3a"},
+  "cursor": {"since": null, "next": "cursor-0001"},
+  "targets": [
+    {
+      "id": "go-alp",
+      "records": [
+        {
+          "kind": "progress",
+          "item": "go-alp-a1-context",
+          "event": {"id": "progress:go-alp-a1-context", "revision": "sha256:d0765f73cd5d1df39be353d538ea7c47a017d66a8bd001dc4707240dbb71e58c", "synthetic": true},
+          "observedAt": "2026-10-07T08:10:00Z",
+          "status": "completed"
+        },
+        {
+          "kind": "quiz-answer",
+          "item": "go-alp-a1-context#quiz:context-cancellation/q1",
+          "event": {"id": "quiz_answers:go-alp-a1-context#quiz:context-cancellation/q1", "revision": "sha256:90932ecd56d1a359359d74376f272fe8ce0433581f894c2d64acdfa8e57e09ba", "synthetic": true},
+          "observedAt": "2026-10-07T08:12:00Z",
+          "picked": 2,
+          "correct": true
+        },
+        {
+          "kind": "quiz-answer",
+          "item": "go-alp-a1-context#quiz:context-cancellation/q2",
+          "event": {"id": "quiz_answers:go-alp-a1-context#quiz:context-cancellation/q2", "revision": "sha256:417bb098606dbf78272226208d4749082d2344f0d27fe6790c41a018668df183", "synthetic": true},
+          "observedAt": "2026-10-07T08:13:00Z",
+          "picked": 0,
+          "correct": false
+        },
+        {
+          "kind": "quiz-answer",
+          "item": "go-alp-a2-goroutines#quiz:goroutine-leaks/q1",
+          "event": {"id": "quiz_answers:go-alp-a2-goroutines#quiz:goroutine-leaks/q1", "revision": "sha256:89930e329bf1c8e061d28a18a3bb5fa26beb16280f6c301b91ff0b66d6b802a5", "synthetic": true},
+          "observedAt": "2026-10-07T08:40:00Z",
+          "picked": 3,
+          "correct": true
+        },
+        {
+          "kind": "reflection",
+          "item": "go-alp-a2-goroutines",
+          "event": {"id": "reflections:go-alp-a2-goroutines", "revision": "sha256:18175734bf92c77a6f9ef4119aa4073f21a670a22210b502a14a8621d25d6234", "synthetic": true},
+          "observedAt": "2026-10-07T08:45:00Z",
+          "text": "Leaked goroutines block on unbuffered sends with no receiver."
+        },
+        {
+          "kind": "progress",
+          "item": "go-alp-a3-generics",
+          "event": {"id": "progress:go-alp-a3-generics", "revision": "sha256:3fa13837cf88f23b6cae530345e9487951dea0e1266e5fc419997a7e642330ba", "synthetic": true},
+          "observedAt": "2026-10-07T08:50:00Z",
+          "status": "in_progress"
+        },
+        {
+          "kind": "quiz-answer",
+          "item": "go-alp-a0-retired#quiz:legacy/q1",
+          "event": {"id": "quiz_answers:go-alp-a0-retired#quiz:legacy/q1", "revision": "sha256:cd275534ff50ba20aff151c6bf75f0e3fc6bad9f45e0442ff60987b7beb5cf6a", "synthetic": true},
+          "observedAt": "2026-10-07T07:00:00Z",
+          "picked": 1,
+          "correct": false
+        }
+      ]
+    }
+  ]
+}

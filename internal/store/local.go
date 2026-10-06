@@ -230,7 +230,7 @@ func IsCanonicalRevisionPath(path string) bool {
 	if path == "workspace.yaml" || path == "workspace.json" {
 		return true
 	}
-	for _, prefix := range []string{"profile/", "personas/", "evidence/", "assessments/", "sessions/"} {
+	for _, prefix := range []string{"profile/", "personas/", "evidence/", "assessments/", "sessions/", "platform-accounts/"} {
 		if strings.HasPrefix(path, prefix) {
 			return true
 		}
@@ -259,7 +259,7 @@ func IsOwnedPath(path string) bool {
 	if path == "workspace.yaml" || path == "workspace.json" {
 		return true
 	}
-	for _, prefix := range []string{"profile/", "personas/", "evidence/", "assessments/", "sessions/", "state/"} {
+	for _, prefix := range []string{"profile/", "personas/", "evidence/", "assessments/", "sessions/", "platform-accounts/", "state/"} {
 		if strings.HasPrefix(path, prefix) {
 			return true
 		}

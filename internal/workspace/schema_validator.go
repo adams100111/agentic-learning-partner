@@ -91,6 +91,8 @@ var workspaceDocumentRules = []documentRule{
 	{Pattern: "assessments/*.json", Schema: "assessment.schema.json"},
 	{Pattern: "sessions/*.yaml", Schema: "session.schema.json"},
 	{Pattern: "sessions/*.json", Schema: "session.schema.json"},
+	{Pattern: "platform-accounts/*.yaml", Schema: "platform-account-link.schema.json"},
+	{Pattern: "platform-accounts/*.json", Schema: "platform-account-link.schema.json"},
 	{Pattern: "state/competencies.yaml", Schema: "projection.schema.json"},
 	{Pattern: "state/competencies.json", Schema: "projection.schema.json"},
 	{Pattern: "state/review-queue.yaml", Schema: "review-queue.schema.json"},

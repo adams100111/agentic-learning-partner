@@ -17,7 +17,9 @@ import (
 )
 
 const platformUsage = "usage: alp platform inspect --adapter ID --target ID --curriculum FILE\n" +
-	"       alp platform mapping validate --adapter ID --target ID --curriculum FILE --mapping FILE"
+	"       alp platform mapping validate --adapter ID --target ID --curriculum FILE --mapping FILE\n" +
+	"       alp platform account link --adapter ID --instance ID --user ID --confirm [--workspace PATH]\n" +
+	"       alp platform import --adapter ID --target ID --curriculum FILE --mapping FILE --export FILE [--cursor CURSOR] [--workspace PATH]"
 
 // defaultPlatforms is the composition root for built-in platform adapters.
 func defaultPlatforms() platform.Registry {
@@ -35,12 +37,22 @@ func (a App) platforms() platform.Registry {
 // needs, in the order they are checked.
 type platformCommand struct {
 	capabilities []platform.Capability
-	run          func(a App, adapter platform.Adapter, target string, flags platformFlags) int
+	// targetless commands act on a platform account rather than a Learning
+	// Target, so they take no --target.
+	targetless bool
+	run        func(a App, adapter platform.Adapter, target string, flags platformFlags) int
 }
 
 type platformFlags struct {
 	curriculum string
 	mapping    string
+	export     string
+	cursor     string
+	cursorSet  bool
+	instance   string
+	user       string
+	confirm    bool
+	workspace  string
 }
 
 // platformCommands is keyed by the command words, e.g. "mapping validate".
@@ -49,10 +61,15 @@ var platformCommands = map[string]platformCommand{
 	// Mapping validation needs the curriculum: it is the only source of which
 	// items are declared-stable (ADR-0057).
 	"mapping validate": {capabilities: []platform.Capability{platform.ContentMapper, platform.CurriculumReader}, run: runPlatformMappingValidate},
+	// Account links exist only so activity can be imported for a learner.
+	"account link": {capabilities: []platform.Capability{platform.ActivitySource}, targetless: true, run: runPlatformAccountLink},
+	// Import grades activity through the target's mapping, which is validated
+	// against the curriculum export.
+	"import": {capabilities: []platform.Capability{platform.ActivitySource, platform.ContentMapper, platform.CurriculumReader}, run: runPlatformImport},
 }
 
 // platformCommandGroups are first words that take a second command word.
-var platformCommandGroups = map[string]bool{"mapping": true}
+var platformCommandGroups = map[string]bool{"mapping": true, "account": true}
 
 func (a App) runPlatform(args []string) int {
 	if len(args) == 0 {
@@ -75,13 +92,30 @@ func (a App) runPlatform(args []string) int {
 	target := flags.String("target", "", "platform Learning Target ID")
 	curriculum := flags.String("curriculum", "", "curriculum export file")
 	mapping := flags.String("mapping", "", "platform content mapping file")
+	export := flags.String("export", "", "platform activity export file")
+	cursor := flags.String("cursor", "", "activity cursor returned by the previous import")
+	instance := flags.String("instance", "", "platform instance ID")
+	user := flags.String("user", "", "platform user ID")
+	confirm := flags.Bool("confirm", false, "the learner confirms this platform account is theirs")
+	explicitWorkspace := flags.String("workspace", "", "learner workspace path")
 	if err := flags.Parse(rest); err != nil {
 		return a.platformUsageError(err.Error())
 	}
 	if flags.NArg() != 0 {
 		return a.platformUsageError(fmt.Sprintf("unexpected argument %q", flags.Arg(0)))
 	}
-	if *adapterID == "" || *target == "" {
+	cursorSet := false
+	flags.Visit(func(set *flag.Flag) {
+		if set.Name == "cursor" {
+			cursorSet = true
+		}
+	})
+	switch {
+	case command.targetless && *target != "":
+		return a.platformUsageError(fmt.Sprintf("platform %s takes no --target", name))
+	case command.targetless && *adapterID == "":
+		return a.platformUsageError("--adapter is required")
+	case !command.targetless && (*adapterID == "" || *target == ""):
 		return a.platformUsageError("--adapter and --target are required")
 	}
 	var adapter platform.Adapter
@@ -92,7 +126,10 @@ func (a App) runPlatform(args []string) int {
 		}
 		adapter = required
 	}
-	return command.run(a, adapter, *target, platformFlags{curriculum: *curriculum, mapping: *mapping})
+	return command.run(a, adapter, *target, platformFlags{
+		curriculum: *curriculum, mapping: *mapping, export: *export, cursor: *cursor, cursorSet: cursorSet,
+		instance: *instance, user: *user, confirm: *confirm, workspace: *explicitWorkspace,
+	})
 }
 
 type inspectOutput struct {
