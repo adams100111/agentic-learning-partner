@@ -79,8 +79,9 @@ type Session struct {
 	mode         SyncMode
 	retainRecord bool
 	startedAt    time.Time
-	baseRevision store.Revision
-	offline      bool
+	baseRevision    store.Revision
+	initialRevision store.Revision
+	offline         bool
 	syncOptions  store.SyncOptions
 	closed       bool
 	pendingSync  bool
@@ -179,7 +180,7 @@ func (m *Manager) Begin(ctx context.Context, options BeginOptions) (*Session, er
 		manager: m, coordinator: coordinator, tx: tx,
 		id: id, harness: options.Harness, deviceID: options.DeviceID,
 		mode: mode, retainRecord: retain, startedAt: now().UTC(),
-		baseRevision: base, offline: offline, syncOptions: options.Sync,
+		baseRevision: base, initialRevision: base, offline: offline, syncOptions: options.Sync,
 	}, nil
 }
 
@@ -263,7 +264,7 @@ func (s *Session) checkpoint(ctx context.Context, closing bool, input CloseInput
 			ClosedAt: s.now().Format(time.RFC3339),
 			Harness: s.harness,
 			DeviceID: s.deviceID,
-			BaseRevision: string(s.baseRevision),
+			BaseRevision: string(s.initialRevision),
 			SyncMode: s.mode,
 			Offline: s.offline,
 			Domains: uniqueSorted(input.Domains),
