@@ -60,6 +60,10 @@ func (a App) Run(args []string) int {
 		return a.runAssessment(args[1:])
 	case "state":
 		return a.runState(args[1:])
+	case "plan":
+		return a.runPlan(args[1:])
+	case "diagnostic":
+		return a.runDiagnostic(args[1:])
 	default:
 		fmt.Fprintf(a.ErrOut, "unknown command %q\n", args[0])
 		a.usage()
@@ -473,5 +477,5 @@ func (a App) resolveAndInspect(explicit string) (workspace.Resolution, workspace
 
 func (a App) usage() {
 	fmt.Fprintln(a.ErrOut, "usage: alp <command>")
-	fmt.Fprintln(a.ErrOut, "commands: validate, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild")
+	fmt.Fprintln(a.ErrOut, "commands: validate, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, plan build, diagnostic")
 }
