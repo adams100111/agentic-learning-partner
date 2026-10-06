@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/platform-curriculum-export.schema.json",
+  "title": "ALP Platform Curriculum Export v1",
+  "description": "Platform-produced description of one or more Learning Targets' structure, consumed by a Curriculum Reader (Q37). Every item is a declared-stable platform identifier; ALP treats all IDs and kinds as opaque strings and never parses platform-native content.",
+  "type": "object",
+  "required": ["schemaVersion", "platform", "targets"],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "platform": {"type": "string", "minLength": 1, "description": "Platform identifier; must match the reading adapter."},
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/target"}
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "target": {
+      "type": "object",
+      "required": ["id", "contentHash", "phases", "items"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1, "description": "Opaque, platform-owned Learning Target ID."},
+        "title": {"type": "string"},
+        "contentHash": {"$ref": "#/$defs/hash", "description": "Platform-computed hash of the target's content; changes whenever content changes."},
+        "phases": {
+          "type": "array",
+          "description": "Ordered groupings of the target's items.",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "title": {"type": "string"}
+            },
+            "additionalProperties": false
+          }
+        },
+        "items": {
+          "type": "array",
+          "description": "Declared-stable items in curriculum order. A child item references a parent declared earlier; a top-level item names its phase.",
+          "items": {
+            "type": "object",
+            "required": ["id", "kind"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1, "description": "Opaque item ID, unique within the target."},
+              "kind": {"type": "string", "minLength": 1, "description": "Platform item kind; must be one the adapter declares stable."},
+              "phase": {"type": "string", "minLength": 1},
+              "parent": {"type": "string", "minLength": 1},
+              "title": {"type": "string"}
+            },
+            "additionalProperties": false
+          }
+        },
+        "mapping": {
+          "description": "Platform-owned content-to-competency mapping for this target; absent when the target is unmapped.",
+          "type": "object",
+          "required": ["ref", "contentHash"],
+          "properties": {
+            "ref": {"type": "string", "minLength": 1},
+            "contentHash": {"$ref": "#/$defs/hash"}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

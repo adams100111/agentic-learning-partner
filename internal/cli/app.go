@@ -13,6 +13,7 @@ import (
 	"github.com/adams100111/agentic-learning-partner/internal/domain"
 	"github.com/adams100111/agentic-learning-partner/internal/lifecycle"
 	"github.com/adams100111/agentic-learning-partner/internal/migrate"
+	"github.com/adams100111/agentic-learning-partner/internal/platform"
 	"github.com/adams100111/agentic-learning-partner/internal/state"
 	storepkg "github.com/adams100111/agentic-learning-partner/internal/store"
 	"github.com/adams100111/agentic-learning-partner/internal/view"
@@ -24,6 +25,8 @@ type App struct {
 	Out    io.Writer
 	ErrOut io.Writer
 	Getwd  func() (string, error)
+	// Platforms overrides the built-in platform adapter registry when set.
+	Platforms *platform.Registry
 }
 
 func New() App {
@@ -73,6 +76,8 @@ func (a App) Run(args []string) int {
 		return a.runPlan(args[1:])
 	case "diagnostic":
 		return a.runDiagnostic(args[1:])
+	case "platform":
+		return a.runPlatform(args[1:])
 	default:
 		fmt.Fprintf(a.ErrOut, "unknown command %q\n", args[0])
 		a.usage()
@@ -528,5 +533,5 @@ func (a App) resolveAndInspect(explicit string) (workspace.Resolution, workspace
 
 func (a App) usage() {
 	fmt.Fprintln(a.ErrOut, "usage: alp <command>")
-	fmt.Fprintln(a.ErrOut, "commands: validate, workspace init, workspace connect, workspace clone, workspace list, workspace use, workspace status, workspace sync, workspace export, workspace verify, workspace restore, workspace move, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, session begin, session status, session put, session delete, session flush, session close, session abort, session recover-sync, plan build, diagnostic")
+	fmt.Fprintln(a.ErrOut, "commands: validate, workspace init, workspace connect, workspace clone, workspace list, workspace use, workspace status, workspace sync, workspace export, workspace verify, workspace restore, workspace move, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, session begin, session status, session put, session delete, session flush, session close, session abort, session recover-sync, plan build, diagnostic, platform inspect")
 }
