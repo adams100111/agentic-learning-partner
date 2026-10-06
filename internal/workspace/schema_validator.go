@@ -89,6 +89,12 @@ var workspaceDocumentRules = []documentRule{
 	{Pattern: "evidence/*.json", Schema: "evidence.schema.json"},
 	{Pattern: "assessments/*.yaml", Schema: "assessment.schema.json"},
 	{Pattern: "assessments/*.json", Schema: "assessment.schema.json"},
+	{Pattern: "state/competencies.yaml", Schema: "projection.schema.json"},
+	{Pattern: "state/competencies.json", Schema: "projection.schema.json"},
+	{Pattern: "state/review-queue.yaml", Schema: "review-queue.schema.json"},
+	{Pattern: "state/review-queue.json", Schema: "review-queue.schema.json"},
+	{Pattern: "state/learning-plan.yaml", Schema: "learning-plan.schema.json"},
+	{Pattern: "state/learning-plan.json", Schema: "learning-plan.schema.json"},
 }
 
 func (v *Validator) ValidateWorkspace(root string) []ValidationIssue {
@@ -121,26 +127,29 @@ func (v *Validator) validateFile(root, path, schemaName string) *ValidationIssue
 	if err != nil {
 		return &ValidationIssue{File: relative(root, path), Reason: err.Error()}
 	}
+	return v.ValidateDocument(schemaName, relative(root, path), data)
+}
 
-	document, err := decodeDocument(path, data)
+func (v *Validator) ValidateDocument(schemaName, file string, data []byte) *ValidationIssue {
+	document, err := decodeDocument(file, data)
 	if err != nil {
-		return &ValidationIssue{File: relative(root, path), Reason: err.Error()}
+		return &ValidationIssue{File: file, Reason: err.Error()}
 	}
 
 	schema, ok := v.compiled[schemaName]
 	if !ok {
-		return &ValidationIssue{File: relative(root, path), Reason: "unknown schema " + schemaName}
+		return &ValidationIssue{File: file, Reason: "unknown schema " + schemaName}
 	}
 	if err := schema.Validate(document); err != nil {
 		var validationErr *jsonschema.ValidationError
 		if errors.As(err, &validationErr) {
 			return &ValidationIssue{
-				File:   relative(root, path),
+				File:   file,
 				Path:   pointer(validationErr.InstanceLocation),
 				Reason: validationErr.Error(),
 			}
 		}
-		return &ValidationIssue{File: relative(root, path), Reason: err.Error()}
+		return &ValidationIssue{File: file, Reason: err.Error()}
 	}
 	return nil
 }

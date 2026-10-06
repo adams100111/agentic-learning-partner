@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/platform-mapping.schema.json",
+  "title": "ALP Platform Content Mapping",
+  "type": "object",
+  "required": ["schemaVersion", "platform", "mappings"],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "platform": {"type": "string", "minLength": 1},
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["contentId", "domain", "packVersion", "competencies"],
+        "properties": {
+          "contentId": {"type": "string", "minLength": 1},
+          "domain": {"type": "string", "minLength": 1},
+          "packVersion": {"type": "string", "minLength": 1},
+          "competencies": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/pylearn-export.schema.json",
+  "title": "PyLearn ALP Export v1",
+  "type": "object",
+  "required": ["schemaVersion", "exportedAt"],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "exportedAt": {"type": "string", "format": "date-time"},
+    "learner": {"type": "object", "additionalProperties": true},
+    "progress": {"type": "array", "items": {"type": "object", "required": ["id", "contentId", "status"], "properties": {"id":{"type":"string"},"contentId":{"type":"string"},"status":{"type":"string"},"updatedAt":{"type":"string"}},"additionalProperties":true}},
+    "attempts": {"type": "array", "items": {"type": "object", "required": ["id", "contentId"], "properties": {"id":{"type":"string"},"contentId":{"type":"string"},"passed":{"type":"boolean"},"code":{"type":"string"},"failure":{"type":"string"},"stdout":{"type":"string"},"createdAt":{"type":"string"}},"additionalProperties":true}},
+    "conceptMastery": {"type": "array", "items": {"type": "object", "required": ["id", "contentId"], "properties": {"id":{"type":"string"},"contentId":{"type":"string"},"attempts":{"type":"integer"},"passes":{"type":"integer"},"failures":{"type":"integer"},"updatedAt":{"type":"string"}},"additionalProperties":true}},
+    "quizAnswers": {"type": "array", "items": {"type": "object", "required": ["id", "contentId"], "properties": {"id":{"type":"string"},"contentId":{"type":"string"},"correct":{"type":"boolean"},"createdAt":{"type":"string"}},"additionalProperties":true}},
+    "reflections": {"type": "array", "items": {"type": "object", "required": ["id", "contentId", "text"], "properties": {"id":{"type":"string"},"contentId":{"type":"string"},"text":{"type":"string"},"createdAt":{"type":"string"}},"additionalProperties":true}},
+    "bookmarks": {"type": "array", "items": {"type": "object", "required": ["id", "contentId"], "properties": {"id":{"type":"string"},"contentId":{"type":"string"}},"additionalProperties":true}}
+  },
+  "additionalProperties": true
+}
