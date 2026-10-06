@@ -74,3 +74,32 @@ A durable semantic judgment about what one or more evidence records demonstrate 
 ## Workspace Revision
 
 The canonical Git revision/commit that an ALP state mutation was computed against. It supports optimistic concurrency across multiple agents.
+
+
+## Store
+
+The persistence boundary through which ALP reads and mutates one learner workspace. Store semantics are provider-independent; provider-specific transport or synchronization behavior does not belong in the core learning model.
+
+## Store Provider
+
+An implementation of ALP workspace persistence capabilities. Providers may support different capabilities such as revisions, history, synchronization, offline access, or atomic checkpoints.
+
+## Git Store
+
+The production Git-backed Store Provider. A Git Store uses a local working tree as the runtime workspace, Git commits as durable revisions/checkpoints, and an ordinary Git remote for multi-device synchronization.
+
+## Local Store
+
+A local-filesystem Store Provider with no remote synchronization requirement. It uses the same learner-state contracts as other providers and is suitable for offline/private/local-only use.
+
+## Sync
+
+The provider-mediated process that reconciles local and remote learner workspace state while preserving ALP canonical-state invariants and rebuilding derived state when needed.
+
+## Checkpoint
+
+A durable Store revision representing one logical ALP state transaction, typically a completed learning/session mutation set rather than each individual record append.
+
+## Production v0
+
+The first production-ready ALP release line. Pre-1.0 denotes evolving compatibility guarantees, not reduced implementation quality or an MVP/prototype standard.
