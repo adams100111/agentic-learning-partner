@@ -204,6 +204,46 @@ func (t *Transaction) persistChanges() error {
 '), 0o600)
 }
 
+func (c *Coordinator) Resume(workspaceID string) (*Transaction, error) {
+	recovery, err := c.InspectRecovery(workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	if recovery.Status != RecoveryStaged || recovery.StageDir == "" {
+		return nil, fmt.Errorf("workspace %s has no resumable staged transaction", workspaceID)
+	}
+	if _, err := os.Stat(c.lockPath(workspaceID)); err != nil {
+		return nil, fmt.Errorf("recovery lock is missing: %w", err)
+	}
+	data, err := os.ReadFile(filepath.Join(recovery.StageDir, "changes.json"))
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+	changes := map[string]Mutation{}
+	if len(data) > 0 {
+		var set ChangeSet
+		if err := json.Unmarshal(data, &set); err != nil {
+			return nil, fmt.Errorf("parse staged changes: %w", err)
+		}
+		for _, mutation := range set.Mutations {
+			changes[mutation.Path] = mutation
+		}
+	}
+	return &Transaction{coordinator: c, recovery: recovery, changes: changes}, nil
+}
+
+func (c *Coordinator) InspectLock(workspaceID string) (map[string]any, error) {
+	data, err := os.ReadFile(c.lockPath(workspaceID))
+	if err != nil {
+		return nil, err
+	}
+	var metadata map[string]any
+	if err := json.Unmarshal(data, &metadata); err != nil {
+		return nil, err
+	}
+	return metadata, nil
+}
+
 func (c *Coordinator) InspectRecovery(workspaceID string) (Recovery, error) {
 	data, err := os.ReadFile(c.journalPath(workspaceID))
 	if err != nil {
