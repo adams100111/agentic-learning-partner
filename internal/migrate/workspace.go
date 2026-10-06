@@ -14,7 +14,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-const CurrentWorkspaceSchema = 1
+const CurrentWorkspaceSchema = workspace.CurrentSchemaVersion
 
 type Step struct {
 	From        int
@@ -47,8 +47,34 @@ type Migrator struct {
 func NewWorkspaceMigrator(validator *workspace.Validator) Migrator {
 	return Migrator{
 		TargetVersion: CurrentWorkspaceSchema,
-		Steps:         map[int]Step{},
-		Validator:     validator,
+		Steps: map[int]Step{
+			1: {
+				From: 1,
+				To: 2,
+				Description: "add immutable provider-independent workspaceId",
+				Apply: func(root string) error {
+					data, err := os.ReadFile(filepath.Join(root, "workspace.yaml"))
+					if err != nil {
+						return err
+					}
+					var manifest map[string]any
+					if err := yaml.Unmarshal(data, &manifest); err != nil {
+						return err
+					}
+					id, err := workspace.NewWorkspaceID()
+					if err != nil {
+						return err
+					}
+					manifest["workspaceId"] = id
+					output, err := yaml.Marshal(manifest)
+					if err != nil {
+						return err
+					}
+					return os.WriteFile(filepath.Join(root, "workspace.yaml"), output, 0o644)
+				},
+			},
+		},
+		Validator: validator,
 	}
 }
 
