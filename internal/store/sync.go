@@ -284,7 +284,7 @@ func (s *Git) snapshotAt(revision string) (map[string][]byte, error) {
 		return nil, err
 	}
 	snapshot := map[string][]byte{}
-	for _, path := range strings.Split(raw, " ") {
+	for _, path := range strings.Split(raw, "\x00") {
 		if path == "" || !IsOwnedPath(path) {
 			continue
 		}
@@ -412,7 +412,7 @@ func (s *Git) nonOwnedCommittedChanges(base, revision string) ([]string, error) 
 		return nil, err
 	}
 	var result []string
-	for _, path := range strings.Split(raw, " ") {
+	for _, path := range strings.Split(raw, "\x00") {
 		if path != "" && !IsOwnedPath(path) {
 			result = append(result, path)
 		}
