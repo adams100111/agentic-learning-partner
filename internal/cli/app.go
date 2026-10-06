@@ -37,7 +37,7 @@ func (a App) Run(args []string) int {
 		return a.runValidate(args[1:])
 	case "workspace":
 		if len(args) < 2 {
-			fmt.Fprintln(a.ErrOut, "usage: alp workspace <init|clone|list|use|status|acknowledge-privacy|check|migrate> [options]")
+			fmt.Fprintln(a.ErrOut, "usage: alp workspace <init|clone|list|use|status|acknowledge-privacy|export|verify|restore|move|check|migrate> [options]")
 			return 2
 		}
 		if args[1] == "check" {
@@ -45,6 +45,9 @@ func (a App) Run(args []string) int {
 		}
 		if args[1] == "migrate" {
 			return a.runWorkspaceMigrate(args[2:])
+		}
+		if args[1] == "export" || args[1] == "verify" || args[1] == "restore" || args[1] == "move" {
+			return a.runWorkspaceArchive(args[1], args[2:])
 		}
 		return a.runWorkspaceLifecycle(args[1], args[2:])
 	case "domain":
