@@ -19,7 +19,7 @@ A session record may contain:
 - harness identifier;
 - opaque device ID;
 - base Workspace Revision;
-- checkpoint Workspace Revision;
+- checkpoint correlation/session ID; the resulting checkpoint revision is resolved from Store history/recovery metadata rather than embedded self-referentially;
 - domains/competencies touched;
 - evidence IDs;
 - assessment IDs;
