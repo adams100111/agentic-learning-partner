@@ -80,7 +80,8 @@ func reconcileSnapshots(base, local, remote map[string][]byte) (map[string][]byt
 func isAppendOnlyPath(path string) bool {
 	return strings.HasPrefix(path, "evidence/") ||
 		strings.HasPrefix(path, "assessments/") ||
-		strings.HasPrefix(path, "sessions/")
+		strings.HasPrefix(path, "sessions/") ||
+		strings.HasPrefix(path, "platform-accounts/")
 }
 
 func reconcileAppendOnly(path string, base []byte, baseOK bool, local []byte, localOK bool, remote []byte, remoteOK bool) ([]byte, bool, error) {

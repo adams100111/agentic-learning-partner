@@ -76,6 +76,7 @@ Personal learner state belongs in a separate private ALP workspace, such as:
     ├── personas/
     ├── evidence/
     ├── assessments/
+    ├── platform-accounts/
     └── state/
 
 ALP never treats harness chat memory as canonical learner state.

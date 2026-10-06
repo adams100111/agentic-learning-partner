@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/platform-account-link.schema.json",
+  "title": "ALP Platform Account Link",
+  "description": "A learner-confirmed, append-only workspace record (platform-accounts/<id>.yaml) linking a platform user, identified only by {platform, platform instance, platform user ID}, to the workspace learnerId (spec #66 Q36). Activity imports are refused for platform users without a link; learners are never matched by email or name.",
+  "type": "object",
+  "required": ["schemaVersion", "id", "recordedAt", "platform", "instance", "platformUserId", "learnerId", "confirmation"],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "id": {
+      "type": "string",
+      "pattern": "^pal_[a-f0-9]{24}$",
+      "description": "Deterministic: derived from platform, instance and platform user ID, so one platform account has one link record."
+    },
+    "recordedAt": {"type": "string", "format": "date-time"},
+    "platform": {"type": "string", "minLength": 1, "description": "Platform adapter ID."},
+    "instance": {"type": "string", "minLength": 1, "description": "Opaque, platform-owned instance identifier, as stated by the platform's activity export."},
+    "platformUserId": {"type": "string", "minLength": 1, "description": "Opaque, platform-owned user ID. Never an email address or display name."},
+    "learnerId": {"type": "string", "minLength": 1, "description": "The workspace learnerId this platform account belongs to."},
+    "confirmation": {
+      "type": "object",
+      "required": ["confirmedBy", "confirmedAt"],
+      "properties": {
+        "confirmedBy": {"const": "learner", "description": "Only the learner can confirm a link; agents may not link accounts on their own."},
+        "confirmedAt": {"type": "string", "format": "date-time"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

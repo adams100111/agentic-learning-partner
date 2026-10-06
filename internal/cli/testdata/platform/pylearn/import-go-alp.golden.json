@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "adapter": "pylearn",
+  "target": {
+    "platform": "pylearn",
+    "target": "go-alp"
+  },
+  "account": {
+    "instance": "pylearn-local",
+    "platformUserId": "usr_7f3a",
+    "learnerId": "ada",
+    "link": "pal_517ac0de0e3806554bec5de3"
+  },
+  "curriculumExport": {
+    "schemaVersion": 1,
+    "contentHash": "sha256:5d1e7c0b9a8f6e4d2c0b8a6f4e2d0c8b6a4f2e0d8c6b4a2f0e8d6c4b2a0f8e6d"
+  },
+  "mapping": {
+    "schemaVersion": 2,
+    "contentHash": "sha256:d0726d5916a9faeebdee23b797a395852c4b25b7ed6d0e76e926d31a0027b00a"
+  },
+  "cursor": {
+    "since": null,
+    "next": "cursor-0001"
+  },
+  "counts": {
+    "records": 7,
+    "imported": 5,
+    "skipped": 0,
+    "superseded": 0,
+    "unmapped": 2
+  },
+  "records": [
+    {
+      "item": "go-alp-a0-retired#quiz:legacy/q1",
+      "kind": "quiz-answer",
+      "event": {
+        "id": "quiz_answers:go-alp-a0-retired#quiz:legacy/q1",
+        "revision": "sha256:cd275534ff50ba20aff151c6bf75f0e3fc6bad9f45e0442ff60987b7beb5cf6a",
+        "synthetic": true
+      },
+      "outcome": "unmapped",
+      "reason": "not-in-curriculum",
+      "evidence": []
+    },
+    {
+      "item": "go-alp-a1-context",
+      "kind": "progress",
+      "event": {
+        "id": "progress:go-alp-a1-context",
+        "revision": "sha256:d0765f73cd5d1df39be353d538ea7c47a017d66a8bd001dc4707240dbb71e58c",
+        "synthetic": true
+      },
+      "outcome": "imported",
+      "mappedItem": "go-alp-a1-context",
+      "evidence": [
+        "ev_001e1ed6483dcd63c44b9f135cedf48e"
+      ]
+    },
+    {
+      "item": "go-alp-a1-context#quiz:context-cancellation/q1",
+      "kind": "quiz-answer",
+      "event": {
+        "id": "quiz_answers:go-alp-a1-context#quiz:context-cancellation/q1",
+        "revision": "sha256:90932ecd56d1a359359d74376f272fe8ce0433581f894c2d64acdfa8e57e09ba",
+        "synthetic": true
+      },
+      "outcome": "imported",
+      "mappedItem": "go-alp-a1-context#quiz:context-cancellation",
+      "evidence": [
+        "ev_dd5ed722136623a300b1cca2f6834c5d"
+      ]
+    },
+    {
+      "item": "go-alp-a1-context#quiz:context-cancellation/q2",
+      "kind": "quiz-answer",
+      "event": {
+        "id": "quiz_answers:go-alp-a1-context#quiz:context-cancellation/q2",
+        "revision": "sha256:417bb098606dbf78272226208d4749082d2344f0d27fe6790c41a018668df183",
+        "synthetic": true
+      },
+      "outcome": "imported",
+      "mappedItem": "go-alp-a1-context#quiz:context-cancellation",
+      "evidence": [
+        "ev_a30004478ad43c1d76dbc7f156f44d0b"
+      ]
+    },
+    {
+      "item": "go-alp-a2-goroutines",
+      "kind": "reflection",
+      "event": {
+        "id": "reflections:go-alp-a2-goroutines",
+        "revision": "sha256:18175734bf92c77a6f9ef4119aa4073f21a670a22210b502a14a8621d25d6234",
+        "synthetic": true
+      },
+      "outcome": "imported",
+      "mappedItem": "go-alp-a2-goroutines",
+      "evidence": [
+        "ev_6c0486732c00c2a46a2fe1533ecb235c"
+      ]
+    },
+    {
+      "item": "go-alp-a2-goroutines#quiz:goroutine-leaks/q1",
+      "kind": "quiz-answer",
+      "event": {
+        "id": "quiz_answers:go-alp-a2-goroutines#quiz:goroutine-leaks/q1",
+        "revision": "sha256:89930e329bf1c8e061d28a18a3bb5fa26beb16280f6c301b91ff0b66d6b802a5",
+        "synthetic": true
+      },
+      "outcome": "imported",
+      "mappedItem": "go-alp-a2-goroutines#quiz:goroutine-leaks",
+      "evidence": [
+        "ev_c35fd4a1db7dd38c280cf748b379e34f",
+        "ev_2e7ee6779485a4de5b7a90f96516ece4"
+      ]
+    },
+    {
+      "item": "go-alp-a3-generics",
+      "kind": "progress",
+      "event": {
+        "id": "progress:go-alp-a3-generics",
+        "revision": "sha256:3fa13837cf88f23b6cae530345e9487951dea0e1266e5fc419997a7e642330ba",
+        "synthetic": true
+      },
+      "outcome": "unmapped",
+      "reason": "not-mapped",
+      "evidence": []
+    }
+  ]
+}

@@ -64,3 +64,20 @@ Competencies resolve through the domain pack's migrations:
 | unknown, no migration | `unknown-competency` error |
 
 Other error codes: `unreadable-mapping`, `unsupported-mapping-version`, `schema`, `platform-mismatch`, `target-mismatch`, `duplicate-pack`, `unknown-domain-pack`, `invalid-pack-version-range`, `pack-version-out-of-range`, `competency-not-resolved` (its pack is unavailable or out of range), `unstable-identifier`, `duplicate-item`, `undeclared-domain`, `duplicate-competency`, `invalid-pack-migration`. Schema errors stop validation before semantic checks; all other problems are reported together.
+
+## Evidence grading on import: `alp platform import`
+
+`alp platform import` (ADR-0059) applies the validated mapping to activity. An activity record's item is looked up in the mapping; if the item itself is not mapped, its nearest mapped ancestor in the curriculum export (`parent` chain, for example question → quiz → lesson) is used. Records on items that are not mapped, or not in the curriculum export at all, are reported as `unmapped` (`not-mapped` / `not-in-curriculum`) and never dropped.
+
+The adapter's signal-kind policy says what a record shows before roles apply: an evidence type, result, base strength, and whether the signal can be assessed at all (an answered question or a checked exercise can; navigation progress and reflections cannot). Each mapped competency then gets an evidence grade:
+
+| Mapping Role | Assessable signal | Not assessable |
+|---|---|---|
+| `teaches` | exposure | exposure |
+| `reinforces` | practice | practice |
+| `assesses` | **assessment** | practice |
+
+- **assessment** evidence keeps the signal's type, result, failure classification and strength, with strength capped by the entry's `strengthCeiling`.
+- **exposure** and **practice** evidence is recorded as `platform-event`, result `neutral`, strength `weak`: it never claims an outcome. The observed result is kept in `metadata.activity.observedResult`.
+
+One evidence record is written per competency domain and grade, so assessment and exposure/practice competencies never share a record. The grade and the roles are recorded in `metadata.evidenceGrade` and `metadata.mappingRoles`.
