@@ -12,24 +12,48 @@ ALP resolves the learner workspace in this order:
 
 ALP must never silently create learner state inside the engine/plugin repository.
 
+## Named workspaces
+
+Production v0 supports multiple named workspaces on one device while preserving one learner per workspace.
+
+Machine-local configuration conceptually follows:
+
+```yaml
+defaultWorkspace: personal
+
+workspaces:
+  personal:
+    path: ~/.local/share/alp/workspaces/personal
+    provider: git
+  research:
+    path: ~/.local/share/alp/workspaces/research
+    provider: local
+```
+
+Most users may configure only one workspace.
+
+Workspace registry, checkout paths, selected remote, selected branch, and other machine-specific provider settings belong to local ALP configuration rather than synchronized learner state.
+
 ## Project-local pointer
 
 A project-local `.alp.yaml` may contain only non-secret integration configuration, for example:
 
 ```yaml
-workspace: ~/dev/agentic-learning-state
+workspace: personal
 platform: pylearn
 ```
+
+It may point to a named workspace or supported explicit path according to CLI resolution rules.
 
 It must not duplicate learner profile or competency state.
 
 ## One workspace = one learner
 
-For v1, one learner workspace represents exactly one learner.
+One learner workspace represents exactly one learner.
 
-This keeps identity, privacy, Git history, and context selection simple.
+Multiple workspaces do not create multi-user state inside a workspace.
 
-Multi-user hosted persistence is a separate future architecture.
+Hosted multi-user persistence is a separate architecture.
 
 ## Derived state
 
@@ -43,3 +67,12 @@ These files are caches only:
 - generated Markdown summaries.
 
 On conflict, regenerate them from canonical inputs instead of hand-merging.
+
+## Git remote privacy
+
+When an ALP/forge integration creates a Git remote, production setup requires that remote to be private.
+
+When connecting an existing remote:
+
+- if repository visibility can be queried securely, warn/block public remotes unless the user explicitly overrides;
+- if visibility cannot be determined (for example a generic SSH server), explain that privacy cannot be verified and require explicit acknowledgement once during connection.
