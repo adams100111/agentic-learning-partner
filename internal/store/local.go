@@ -46,6 +46,7 @@ func (s *Local) Capabilities() Capabilities {
 	return Capabilities{
 		CapabilityPersistence:           true,
 		CapabilityOptimisticConcurrency: true,
+		CapabilityAtomicCheckpoint:      true,
 		CapabilityRevisions:             true,
 		CapabilityOffline:               true,
 	}
@@ -133,19 +134,63 @@ func (s *Local) Commit(ctx context.Context, expected Revision, changes ChangeSet
 		stagedFiles = append(stagedFiles, staged{target: target, temp: temp.Name()})
 	}
 
+	type previous struct {
+		path   string
+		data   []byte
+		mode   os.FileMode
+		exists bool
+	}
+	var history []previous
+	rollback := func() {
+		for index := len(history) - 1; index >= 0; index-- {
+			item := history[index]
+			if !item.exists {
+				_ = os.Remove(item.path)
+				continue
+			}
+			_ = os.MkdirAll(filepath.Dir(item.path), 0o755)
+			temp, err := os.CreateTemp(filepath.Dir(item.path), ".alp-rollback-*")
+			if err != nil {
+				continue
+			}
+			_, _ = temp.Write(item.data)
+			_ = temp.Chmod(item.mode)
+			_ = temp.Close()
+			_ = os.Rename(temp.Name(), item.path)
+		}
+	}
+
 	for _, item := range stagedFiles {
+		prior := previous{path: item.target}
+		if info, err := os.Stat(item.target); err == nil {
+			prior.exists = true
+			prior.mode = info.Mode().Perm()
+			prior.data, err = os.ReadFile(item.target)
+			if err != nil {
+				rollback()
+				return "", err
+			}
+		} else if !errors.Is(err, os.ErrNotExist) {
+			rollback()
+			return "", err
+		}
+		history = append(history, prior)
+
 		if item.remove {
 			if err := os.Remove(item.target); err != nil && !errors.Is(err, os.ErrNotExist) {
+				rollback()
 				return "", err
 			}
 			continue
 		}
 		if err := os.Rename(item.temp, item.target); err != nil {
+			rollback()
 			return "", err
 		}
 		item.temp = ""
 	}
 	if issues := s.validator.ValidateWorkspace(s.root); len(issues) > 0 {
+		rollback()
 		return "", fmt.Errorf("committed workspace is invalid: %s", issues[0].Error())
 	}
 	return s.Revision(ctx)
