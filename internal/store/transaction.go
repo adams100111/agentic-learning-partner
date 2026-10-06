@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -74,14 +76,18 @@ func (c *Coordinator) Begin(ctx context.Context, sessionID string, expected Revi
 	if err != nil {
 		return nil, err
 	}
-	if manifest.WorkspaceID == "" {
-		return nil, errors.New("workspace must be migrated to schema v2 before transactions")
+	workspaceKey := manifest.WorkspaceID
+	if workspaceKey == "" {
+		workspaceKey, err = legacyWorkspaceKey(c.store.Root())
+		if err != nil {
+			return nil, err
+		}
 	}
 	if err := os.MkdirAll(c.lockDir(), 0o700); err != nil {
 		return nil, err
 	}
 	lock := lockMetadata{
-		WorkspaceID: manifest.WorkspaceID,
+		WorkspaceID: workspaceKey,
 		SessionID: sessionID,
 		PID: os.Getpid(),
 		StartedAt: time.Now().UTC().Format(time.RFC3339),
@@ -93,9 +99,9 @@ func (c *Coordinator) Begin(ctx context.Context, sessionID string, expected Revi
 		return nil, err
 	}
 
-	stageDir := filepath.Join(c.runtimeDir, "transactions", manifest.WorkspaceID, sessionID)
+	stageDir := filepath.Join(c.runtimeDir, "transactions", workspaceKey, sessionID)
 	if err := os.RemoveAll(stageDir); err != nil {
-		_ = os.Remove(c.lockPath(manifest.WorkspaceID))
+		_ = os.Remove(c.lockPath(workspaceKey))
 		return nil, err
 	}
 	stageWorkspace := filepath.Join(stageDir, "workspace")
@@ -104,7 +110,7 @@ func (c *Coordinator) Begin(ctx context.Context, sessionID string, expected Revi
 		return nil, err
 	}
 	recovery := Recovery{
-		WorkspaceID: manifest.WorkspaceID,
+		WorkspaceID: workspaceKey,
 		SessionID: sessionID,
 		BaseRevision: expected,
 		Status: RecoveryStaged,
@@ -409,6 +415,15 @@ func (c *Coordinator) lockDir() string    { return filepath.Join(c.runtimeDir, "
 func (c *Coordinator) journalDir() string { return filepath.Join(c.runtimeDir, "journals") }
 func (c *Coordinator) lockPath(id string) string { return filepath.Join(c.lockDir(), id+".lock") }
 func (c *Coordinator) journalPath(id string) string { return filepath.Join(c.journalDir(), id+".json") }
+
+func legacyWorkspaceKey(root string) (string, error) {
+	absolute, err := filepath.Abs(root)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256([]byte(filepath.Clean(absolute)))
+	return "legacy_" + hex.EncodeToString(sum[:16]), nil
+}
 
 func createExclusiveJSON(path string, value any) error {
 	data, err := json.MarshalIndent(value, "", "  ")
