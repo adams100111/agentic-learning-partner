@@ -9,17 +9,39 @@ No harness owns learner truth.
 
 ## CLI
 
-During development from this repository:
+Install the latest release (macOS and Linux, arm64 and amd64; no sudo, no CI, no `go` toolchain needed):
 
-    go install ./cmd/alp
+    curl -fsSL https://raw.githubusercontent.com/adams100111/agentic-learning-partner/main/scripts/get.sh | bash
 
-For a tagged public release:
+The installer downloads the release archive for your OS/architecture, verifies it against the release's `SHA256SUMS` (refusing to install on a mismatch), and installs `alp` to `~/.local/bin` (override with `ALP_INSTALL_DIR`). It warns if that directory is not on your `PATH`. Set `GITHUB_TOKEN` or `GH_TOKEN` only if you hit GitHub API rate limits while resolving the latest version.
 
-    go install github.com/adams100111/agentic-learning-partner/cmd/alp@<version>
+Pin a specific version:
+
+    curl -fsSL https://raw.githubusercontent.com/adams100111/agentic-learning-partner/main/scripts/get.sh | bash -s -- v0.1.0
+
+Upgrade by re-running the same command; it is idempotent and replaces the existing binary.
 
 Verify:
 
+    alp version
+    alp version --json
     alp domain info go
+
+Uninstall:
+
+    rm ~/.local/bin/alp
+
+Your learner workspace is separate and is not touched.
+
+### Development
+
+To build from a checkout instead of a release (version reports `dev`):
+
+    go install ./cmd/alp
+
+### Releasing (maintainers)
+
+Releases are cut locally with `scripts/release.sh <vX.Y.Z>`; there is no CI. Bump the version in `plugin.json`, `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`, merge to `main`, then run it from a clean, up-to-date `main`. It vets and tests, cross-compiles the four targets into `dist/`, uploads to a draft GitHub Release, verifies the downloaded assets against `SHA256SUMS`, then tags and publishes. Use `--dry-run` to build and checksum without tagging or publishing.
 
 ## Learner workspace
 
@@ -65,7 +87,7 @@ Use the normal current Codex/OpenAI plugin installation or local marketplace wor
 
 Claude Code packaging is provided by `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` plus the same root `skills/` directory (all skills are auto-discovered from `skills/`).
 
-Install from the GitHub marketplace:
+Install from the GitHub marketplace (the repository is public; no authentication is needed):
 
     claude plugin marketplace add adams100111/agentic-learning-partner
     claude plugin install agentic-learning-partner@agentic-learning-partner

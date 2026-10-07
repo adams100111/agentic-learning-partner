@@ -6,6 +6,8 @@
     package = pkgs.go_1_27;
   };
 
+  packages = [ pkgs.shellcheck ];
+
   git-hooks.hooks = {
     gofmt.enable = true;
 
