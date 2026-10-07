@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/adams100111/agentic-learning-partner/internal/platform"
@@ -14,8 +15,12 @@ import (
 
 // seedAssessment records one accepted assessment (and the evidence it cites)
 // through the ordinary CLI, so plan tests start from real learner state.
-func seedAssessment(t *testing.T, root, competency, level, confidence, recordedAt string) {
+func seedAssessment(t *testing.T, root, competency, level, confidence, recordedAt string, gaps ...string) {
 	t.Helper()
+	judgment := "{level: " + level + "}"
+	if len(gaps) != 0 {
+		judgment = "{level: " + level + ", gaps: [" + strings.Join(gaps, ", ") + "]}"
+	}
 	dir := t.TempDir()
 	slug := fmt.Sprintf("%x", []byte(competency+recordedAt))
 	evidence := filepath.Join(dir, "evidence.yaml")
@@ -44,7 +49,7 @@ competency: `+competency+`
 evidence: [ev_seed_`+slug+`]
 rubric: {id: go-competency, version: "1"}
 assessor: {type: human, id: plan-fixture}
-judgment: {level: `+level+`}
+judgment: `+judgment+`
 confidence: `+confidence+`
 rationale: Seeded for target adaptation planning.
 status: accepted
@@ -184,8 +189,9 @@ func TestPlatformPlanRebuildsIdenticallyFromSameCanonicalInputs(t *testing.T) {
 		t.Fatal(err)
 	}
 	second := planTarget(t, root)
-	if second.code != 0 || !bytes.Equal(first.stdout, second.stdout) {
-		t.Fatalf("rebuild differs:\nfirst  %s\nsecond %s\nstderr %s", first.stdout, second.stdout, second.stderr)
+	rebuiltBody := requirePlan(t, second)
+	if !reflect.DeepEqual(projectionOf(t, rebuiltBody), projectionOf(t, body)) || rebuiltBody["path"] != body["path"] {
+		t.Fatalf("rebuild differs:\nfirst  %s\nsecond %s", first.stdout, second.stdout)
 	}
 	rebuilt, err := os.ReadFile(path)
 	if err != nil {

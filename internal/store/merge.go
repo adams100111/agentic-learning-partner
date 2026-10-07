@@ -82,7 +82,9 @@ func isAppendOnlyPath(path string) bool {
 		strings.HasPrefix(path, "assessments/") ||
 		strings.HasPrefix(path, "sessions/") ||
 		strings.HasPrefix(path, "platform-accounts/") ||
-		strings.HasPrefix(path, "adaptation-decisions/")
+		strings.HasPrefix(path, "adaptation-decisions/") ||
+		strings.HasPrefix(path, "specifications/") ||
+		strings.HasPrefix(path, "authoring-plans/")
 }
 
 func reconcileAppendOnly(path string, base []byte, baseOK bool, local []byte, localOK bool, remote []byte, remoteOK bool) ([]byte, bool, error) {

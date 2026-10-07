@@ -14,14 +14,24 @@ var stableIdentifierKinds = []string{"lesson", "question", "quiz", "scene"}
 var _ platform.Adapter = Adapter{}
 var _ platform.CurriculumSource = Adapter{}
 var _ platform.ContentMappingValidator = Adapter{}
+var _ platform.AuthoringTargetDeclaration = Adapter{}
+
+// AuthoringSkillName is the PyLearn repo-local skill that realizes ALP
+// Curriculum and Learning Unit Specifications as PyLearn-native content and
+// runs PyLearn's own gates (ADR-0056, Q24). ALP only dispatches to it.
+const AuthoringSkillName = "pylearn-alp-authoring"
 
 func (Adapter) ID() string { return AdapterID }
 
 // Capabilities declares what the PyLearn adapter supports today. Authoring
-// and validation are not declared until they are implemented.
+// Target is declared because PyLearn names its authoring target skill;
+// validation is not declared until it is implemented.
 func (Adapter) Capabilities() []platform.Capability {
-	return []platform.Capability{platform.ActivitySource, platform.CurriculumReader, platform.ContentMapper}
+	return []platform.Capability{platform.ActivitySource, platform.CurriculumReader, platform.ContentMapper, platform.AuthoringTarget}
 }
+
+// AuthoringSkill names the platform-declared authoring target skill.
+func (Adapter) AuthoringSkill() string { return AuthoringSkillName }
 
 func (Adapter) StableIdentifierKinds() []string {
 	return append([]string(nil), stableIdentifierKinds...)

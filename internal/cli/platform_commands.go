@@ -20,7 +20,7 @@ const platformUsage = "usage: alp platform inspect --adapter ID --target ID --cu
 	"       alp platform mapping validate --adapter ID --target ID --curriculum FILE --mapping FILE\n" +
 	"       alp platform account link --adapter ID --instance ID --user ID --confirm [--workspace PATH]\n" +
 	"       alp platform import --adapter ID --target ID --curriculum FILE --mapping FILE --export FILE [--cursor CURSOR] [--workspace PATH]\n" +
-	"       alp platform plan --adapter ID --target ID --curriculum FILE --mapping FILE [--constraints FILE] [--workspace PATH]\n" +
+	"       alp platform plan --adapter ID --target ID --curriculum FILE --mapping FILE [--constraints FILE] [--intent target-skeleton|curriculum|unit|activity|patch] [--unit ID] [--workspace PATH]\n" +
 	"       alp platform decision accept --adapter ID --target ID --curriculum FILE --mapping FILE [--constraints FILE] --unit ITEM --mode skip|challenge|skim|full --basis REVISION --confirm [--reason TEXT] [--workspace PATH]\n" +
 	"       alp platform decision revoke --adapter ID --target ID --curriculum FILE --mapping FILE [--constraints FILE] --decision ID --basis REVISION --confirm [--reason TEXT] [--workspace PATH]"
 
@@ -63,6 +63,8 @@ type platformFlags struct {
 	basis       string
 	decision    string
 	reason      string
+	// Authoring flags.
+	intent string
 }
 
 // platformCommands is keyed by the command words, e.g. "mapping validate".
@@ -76,10 +78,10 @@ var platformCommands = map[string]platformCommand{
 	// Import grades activity through the target's mapping, which is validated
 	// against the curriculum export.
 	"import": {capabilities: []platform.Capability{platform.ActivitySource, platform.ContentMapper, platform.CurriculumReader}, run: runPlatformImport},
-	// Planning projects learner state onto the target's mapped curriculum.
-	// Authoring (Curriculum/Learning Unit Specifications, Authoring Plans) is
-	// layered on plan and will additionally require Authoring Target.
-	"plan": {capabilities: []platform.Capability{platform.ContentMapper, platform.CurriculumReader}, run: runPlatformPlan},
+	// Planning projects learner state onto the target's mapped curriculum and
+	// derives Curriculum/Learning Unit Specifications and an Authoring Plan
+	// realized by the platform-declared authoring target skill.
+	"plan": {capabilities: []platform.Capability{platform.ContentMapper, platform.CurriculumReader, platform.AuthoringTarget}, run: runPlatformPlan},
 	// Decisions are confirmed against the projection plan rebuilds, so they
 	// need the same inputs.
 	"decision accept": {capabilities: []platform.Capability{platform.ContentMapper, platform.CurriculumReader}, run: runPlatformDecisionAccept},
@@ -121,6 +123,7 @@ func (a App) runPlatform(args []string) int {
 	basis := flags.String("basis", "", "Target Adaptation Projection revision the learner confirmed against")
 	decisionID := flags.String("decision", "", "Accepted Adaptation Decision ID")
 	reason := flags.String("reason", "", "the learner's reason for the decision")
+	intent := flags.String("intent", "", "Authoring Intent: target-skeleton, curriculum, unit, activity or patch")
 	explicitWorkspace := flags.String("workspace", "", "learner workspace path")
 	if err := flags.Parse(rest); err != nil {
 		return a.platformUsageError(err.Error())
@@ -154,6 +157,7 @@ func (a App) runPlatform(args []string) int {
 		curriculum: *curriculum, mapping: *mapping, export: *export, cursor: *cursor, cursorSet: cursorSet,
 		instance: *instance, user: *user, confirm: *confirm, workspace: *explicitWorkspace,
 		constraints: *constraints, unit: *unit, mode: *mode, basis: *basis, decision: *decisionID, reason: *reason,
+		intent: *intent,
 	})
 }
 

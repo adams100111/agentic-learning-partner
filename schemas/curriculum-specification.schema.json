@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/curriculum-specification.schema.json",
+  "title": "ALP Curriculum Specification",
+  "description": "One immutable version (specifications/curricula/<id>-v<version>.json) of a learner's platform-neutral Curriculum Specification for a shared Learning Target (ADR-0056, ADR-0060), written by alp platform plan: the target goal, the groups and the unit graph as Learning Unit Specification versions in sequence order. A new version is written only when the goal, groups or referenced unit versions change.",
+  "type": "object",
+  "required": ["schemaVersion", "id", "version", "contentHash", "learnerId", "target", "provenance", "authoringIntent", "goal", "groups", "units", "sequence"],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "id": {"type": "string", "pattern": "^cspec_[0-9a-f]{24}$"},
+    "version": {"type": "integer", "minimum": 1},
+    "contentHash": {"$ref": "learning-unit-specification.schema.json#/$defs/hash"},
+    "supersedes": {"$ref": "learning-unit-specification.schema.json#/$defs/versionRef"},
+    "change": {"$ref": "learning-unit-specification.schema.json#/$defs/change"},
+    "learnerId": {"type": "string", "minLength": 1},
+    "target": {"$ref": "learning-unit-specification.schema.json#/$defs/externalId"},
+    "provenance": {"$ref": "learning-unit-specification.schema.json#/$defs/provenance"},
+    "authoringIntent": {"enum": ["target-skeleton", "unit", "activity", "patch", "none"], "description": "The smallest Authoring Intent the target justified when the version was created; target-skeleton for a target with no content yet."},
+    "title": {"type": "string"},
+    "goal": {"type": "array", "items": {"$ref": "learning-unit-specification.schema.json#/$defs/competencyRef"}},
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "units"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "title": {"type": "string"},
+          "platformPhase": {"type": "string", "minLength": 1},
+          "units": {"type": "array", "items": {"$ref": "learning-unit-specification.schema.json#/$defs/unitSpecId"}, "minItems": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "version", "contentHash", "title", "group", "mode"],
+        "properties": {
+          "id": {"$ref": "learning-unit-specification.schema.json#/$defs/unitSpecId"},
+          "version": {"type": "integer", "minimum": 1},
+          "contentHash": {"$ref": "learning-unit-specification.schema.json#/$defs/hash"},
+          "title": {"type": "string"},
+          "group": {"type": "string", "minLength": 1},
+          "mode": {"$ref": "learning-unit-specification.schema.json#/$defs/mode"},
+          "platformItem": {"$ref": "learning-unit-specification.schema.json#/$defs/externalId"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "sequence": {"type": "array", "items": {"$ref": "learning-unit-specification.schema.json#/$defs/unitSpecId"}, "uniqueItems": true}
+  },
+  "additionalProperties": false
+}

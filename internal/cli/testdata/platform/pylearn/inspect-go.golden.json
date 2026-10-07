@@ -9,7 +9,8 @@
   "capabilities": [
     "activity-source",
     "curriculum-reader",
-    "content-mapper"
+    "content-mapper",
+    "authoring-target"
   ],
   "stableIdentifierKinds": [
     "lesson",
