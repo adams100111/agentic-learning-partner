@@ -2,7 +2,7 @@
 # Install the ALP CLI from a GitHub Release.
 #
 #   curl -fsSL https://raw.githubusercontent.com/adams100111/agentic-learning-partner/main/scripts/get.sh | bash
-#   ... | bash -s -- v0.1.0        # pin a version
+#   ... | bash -s -- v0.1.1        # pin a version (use the tag URL, not main)
 #
 # env: ALP_INSTALL_DIR     install dir (default: $HOME/.local/bin)
 #      GITHUB_TOKEN/GH_TOKEN  optional; only sent to api.github.com to avoid

@@ -7,6 +7,8 @@ description: Discover a learner's durable profile and teaching persona through a
 
 Use this when the learner is new to ALP or explicitly asks for a fresh persona discovery.
 
+Prerequisite: the `alp` CLI must match the plugin version. When `alp` is missing or errors, follow `docs/CLI_PREREQUISITE.md` in the plugin root first.
+
 ## Workflow
 
 0. When durable profile/persona changes will be written, use one ALP session so the bootstrap changes are staged and checkpointed atomically.

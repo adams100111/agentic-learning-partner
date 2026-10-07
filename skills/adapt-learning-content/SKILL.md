@@ -7,6 +7,8 @@ description: Propose evidence-linked changes to learning content while separatin
 
 Use this when existing content is mismatched to the learner, technically stale, or structurally weak.
 
+Prerequisite: the `alp` CLI must match the plugin version. When `alp` is missing or errors, follow `docs/CLI_PREREQUISITE.md` in the plugin root first.
+
 ## Workflow
 
 1. Classify the cause:

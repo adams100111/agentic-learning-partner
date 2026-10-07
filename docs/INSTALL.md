@@ -7,17 +7,36 @@ ALP has two pieces:
 
 No harness owns learner truth.
 
-## CLI
+## Quick start (Claude Code)
+
+    claude plugin marketplace add adams100111/agentic-learning-partner
+    claude plugin install agentic-learning-partner@agentic-learning-partner
+
+That is all. On the next session start the plugin's `SessionStart` hook installs the `alp` CLI at exactly the plugin's version (macOS and Linux, arm64 and amd64; no sudo, no `go` toolchain). When `alp` already reports that version the hook exits silently without touching the network. After `claude plugin marketplace update`, the next session upgrades the CLI to match.
+
+The hook runs the plugin's own `scripts/get.sh` pinned to the plugin's tag, so the CLI and the skills always come from the same release. It never blocks a session: on failure it prints the manual command below and carries on.
+
+- Opt out: set `ALP_SKIP_CLI_INSTALL=1`. The `setup-learning-workspace` skill then reports a missing or mismatched CLI instead.
+- Install location: `~/.local/bin`, or `ALP_INSTALL_DIR`. The hook warns once if it is not on your `PATH`.
+- A locally built `alp` (`go install`, version `dev`) is never replaced.
+
+Troubleshooting:
+
+- `alp: command not found` after the first session: add `~/.local/bin` to `PATH` (the hook says so once), or restart the shell.
+- The hook failed (offline, no `curl`, rate limit): run the manual command below, or set `GITHUB_TOKEN` and restart the session.
+- Check what ran: `alp version --json` should report `v` plus the version in `.claude-plugin/plugin.json`.
+
+## CLI (manual, or without Claude Code)
 
 Install the latest release (macOS and Linux, arm64 and amd64; no sudo, no CI, no `go` toolchain needed):
 
     curl -fsSL https://raw.githubusercontent.com/adams100111/agentic-learning-partner/main/scripts/get.sh | bash
 
+Prefer pinning to a tag, which is what the plugin does (script and binary from the same release):
+
+    curl -fsSL https://raw.githubusercontent.com/adams100111/agentic-learning-partner/v0.1.1/scripts/get.sh | bash -s -- v0.1.1
+
 The installer downloads the release archive for your OS/architecture, verifies it against the release's `SHA256SUMS` (refusing to install on a mismatch), and installs `alp` to `~/.local/bin` (override with `ALP_INSTALL_DIR`). It warns if that directory is not on your `PATH`. Set `GITHUB_TOKEN` or `GH_TOKEN` only if you hit GitHub API rate limits while resolving the latest version.
-
-Pin a specific version:
-
-    curl -fsSL https://raw.githubusercontent.com/adams100111/agentic-learning-partner/main/scripts/get.sh | bash -s -- v0.1.0
 
 Upgrade by re-running the same command; it is idempotent and replaces the existing binary.
 
@@ -83,11 +102,13 @@ The repository root is a portable Agent Plugins package with `plugin.json` and `
 
 Use the normal current Codex/OpenAI plugin installation or local marketplace workflow for a local plugin directory.
 
+Codex reads the same `hooks/hooks.json` from a plugin root and sets `CLAUDE_PLUGIN_ROOT` for plugin hooks, so the SessionStart installer is expected to run there too, subject to Codex's own hook trust/enablement (not verified end to end here). Where it does not run, the skills follow `docs/CLI_PREREQUISITE.md` and the manual command above covers it.
+
 ## Claude Code
 
 Claude Code packaging is provided by `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` plus the same root `skills/` directory (all skills are auto-discovered from `skills/`).
 
-Install from the GitHub marketplace (the repository is public; no authentication is needed):
+Install from the GitHub marketplace (the repository is public; no authentication is needed; this is the quick start above):
 
     claude plugin marketplace add adams100111/agentic-learning-partner
     claude plugin install agentic-learning-partner@agentic-learning-partner

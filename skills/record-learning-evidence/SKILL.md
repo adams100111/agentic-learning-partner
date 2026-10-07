@@ -7,6 +7,8 @@ description: Convert a learning observation or project artifact into a minimal, 
 
 Use this when a learning activity, project change, diagnostic answer, platform event, or learner self-report should become durable evidence.
 
+Prerequisite: the `alp` CLI must match the plugin version. When `alp` is missing or errors, follow `docs/CLI_PREREQUISITE.md` in the plugin root first.
+
 ## Workflow
 
 0. Prefer an active ALP learning session. Check with `alp session status`; when no session is active and this evidence belongs to an interactive learning workflow, start one with `alp session begin --harness <harness>`. Do not open/close a separate session for every evidence record.

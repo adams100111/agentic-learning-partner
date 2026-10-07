@@ -7,6 +7,8 @@ description: Create the next learner-specific plan from current competency state
 
 Use this to decide what the learner should do next.
 
+Prerequisite: the `alp` CLI must match the plugin version. When `alp` is missing or errors, follow `docs/CLI_PREREQUISITE.md` in the plugin root first.
+
 ## Workflow
 
 1. Build compact context with `alp context build --task plan-learning --domain <domain>`.

@@ -7,6 +7,8 @@ description: Realize an ALP Authoring Plan on a learning platform — hand the p
 
 A thin conductor. ALP says *what* a unit must teach (an Authoring Plan); the platform's own **authoring target skill** decides *how* in the platform's native format and proves it with the platform's own gates. You resolve that skill from the platform's declaration, hand it the plan, and record what came back. Platform authoring knowledge lives in that skill; everything ALP knows comes from `alp platform` JSON.
 
+Prerequisite: the `alp` CLI must match the plugin version. When `alp` is missing or errors, follow `docs/CLI_PREREQUISITE.md` in the plugin root first.
+
 ## Inputs
 
 - `--adapter ID` and `--target ID`: the platform adapter and its Learning Target.
