@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/target-constraints.schema.json",
+  "title": "ALP Target Constraints",
+  "description": "Platform-neutral limits on how a shared Learning Target may be adapted, an input to the Target Adaptation Projection (ADR-0060). Without constraints every adaptation mode is allowed.",
+  "type": "object",
+  "required": ["schemaVersion", "platform", "target", "allowedModes"],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "platform": {"type": "string", "minLength": 1},
+    "target": {"type": "string", "minLength": 1},
+    "allowedModes": {
+      "type": "array",
+      "items": {"enum": ["skip", "challenge", "skim", "full"]},
+      "uniqueItems": true,
+      "contains": {"const": "full"},
+      "description": "Modes a unit may take. full is always required so every unit has an allowed mode."
+    },
+    "requiredUnits": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true,
+      "description": "Declared-stable unit item IDs that may never be skipped."
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/target-adaptation-projection.schema.json",
+  "title": "ALP Target Adaptation Projection",
+  "description": "A generated, rebuildable workspace file (state/target-adaptations/<id>.json): one learner's adaptation of one shared Learning Target (ADR-0060, ADR-0061). Built only from learner competency state, the target's curriculum export and mapping, domain packs, target constraints and Accepted Adaptation Decisions. It is not evidence and never a second competency state (ADR-0055): competency statuses cite the assessment they were read from. revision is a content hash, so the same inputs reproduce it byte for byte.",
+  "type": "object",
+  "required": ["schemaVersion", "id", "revision", "learnerId", "target", "inputs", "units", "sequence", "reinforcement", "gaps"],
+  "$defs": {
+    "externalId": {
+      "type": "object",
+      "required": ["platform", "target"],
+      "properties": {
+        "platform": {"type": "string", "minLength": 1},
+        "target": {"type": "string", "minLength": 1},
+        "item": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "sourceRef": {
+      "type": "object",
+      "required": ["schemaVersion", "contentHash"],
+      "properties": {
+        "schemaVersion": {"type": "integer"},
+        "contentHash": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "mode": {"enum": ["skip", "challenge", "skim", "full"]},
+    "status": {"enum": ["demonstrated", "unconfirmed", "functional", "rusty", "unassessed"]}
+  },
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "id": {"type": "string", "pattern": "^tap_[a-f0-9]{24}$"},
+    "revision": {"type": "string", "pattern": "^tapr_[a-f0-9]{24}$"},
+    "learnerId": {"type": "string", "minLength": 1},
+    "target": {"$ref": "#/$defs/externalId"},
+    "inputs": {
+      "type": "object",
+      "required": ["curriculum", "mapping", "packs", "constraints", "decisions"],
+      "properties": {
+        "curriculum": {"$ref": "#/$defs/sourceRef"},
+        "mapping": {
+          "type": "object",
+          "required": ["contentHash"],
+          "properties": {"schemaVersion": {"type": "integer"}, "contentHash": {"type": "string", "minLength": 1}},
+          "additionalProperties": false
+        },
+        "packs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["domain", "version"],
+            "properties": {"domain": {"type": "string"}, "version": {"type": "string"}},
+            "additionalProperties": false
+          }
+        },
+        "constraints": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sourceRef"}]},
+        "decisions": {"type": "array", "items": {"type": "string", "pattern": "^aad_"}, "uniqueItems": true}
+      },
+      "additionalProperties": false
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["item", "phase", "competencies", "proposedMode", "mode", "rationale"],
+        "properties": {
+          "item": {"$ref": "#/$defs/externalId"},
+          "phase": {"type": "string", "minLength": 1},
+          "title": {"type": "string"},
+          "competencies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "domain", "roles", "status"],
+              "properties": {
+                "id": {"type": "string", "minLength": 1},
+                "domain": {"type": "string", "minLength": 1},
+                "roles": {"type": "array", "items": {"enum": ["teaches", "reinforces", "assesses"]}, "minItems": 1, "uniqueItems": true},
+                "status": {"$ref": "#/$defs/status"},
+                "level": {"enum": ["unknown", "rusty", "functional", "strong", "production-ready"]},
+                "confidence": {"enum": ["low", "medium", "high"]},
+                "assessmentId": {"type": "string", "pattern": "^asmt_"}
+              },
+              "additionalProperties": false
+            }
+          },
+          "proposedMode": {"$ref": "#/$defs/mode"},
+          "mode": {"$ref": "#/$defs/mode"},
+          "rationale": {"type": "string", "minLength": 1},
+          "decision": {
+            "type": "object",
+            "required": ["id", "mode", "applied"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^aad_"},
+              "mode": {"$ref": "#/$defs/mode"},
+              "applied": {"type": "boolean"},
+              "reason": {"type": "string"}
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "sequence": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "reinforcement": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["competency", "domain", "reason", "items"],
+        "properties": {
+          "competency": {"type": "string", "minLength": 1},
+          "domain": {"type": "string", "minLength": 1},
+          "reason": {"enum": ["rusty", "unconfirmed", "assessment-gaps"]},
+          "items": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["competency", "domain", "status", "requiredBy"],
+        "properties": {
+          "competency": {"type": "string", "minLength": 1},
+          "domain": {"type": "string", "minLength": 1},
+          "status": {"enum": ["unassessed", "rusty"]},
+          "requiredBy": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

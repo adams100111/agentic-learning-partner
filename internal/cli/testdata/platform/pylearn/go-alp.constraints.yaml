@@ -1,0 +1,8 @@
+# Target constraints for go-alp (platform-neutral; schemas/target-constraints.schema.json).
+schemaVersion: 1
+platform: pylearn
+target: go-alp
+# Units are never skimmed in this target.
+allowedModes: [skip, challenge, full]
+# The context unit is never skipped.
+requiredUnits: [go-alp-a1-context]

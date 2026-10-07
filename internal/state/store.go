@@ -124,7 +124,31 @@ func (s Store) AppendAssessment(expectedRevision string, assessment Assessment) 
 	return assessment, nil
 }
 
+// RebuildProjection recomputes the competency projection from canonical
+// assessments and writes it to state/competencies.yaml.
 func (s Store) RebuildProjection() (Projection, error) {
+	projection, err := s.CompetencyProjection()
+	if err != nil {
+		return Projection{}, err
+	}
+	data, err := yaml.Marshal(projection)
+	if err != nil {
+		return Projection{}, fmt.Errorf("marshal projection: %w", err)
+	}
+	if err := s.validate("projection.schema.json", "state/competencies.yaml", data); err != nil {
+		return Projection{}, err
+	}
+	if err := writeGenerated(filepath.Join(s.Root, "state", "competencies.yaml"), data); err != nil {
+		return Projection{}, err
+	}
+	return projection, nil
+}
+
+// CompetencyProjection computes the learner × domain competency projection
+// from canonical assessments without writing anything. It is the one
+// competency state (ADR-0055); derived views read it rather than judging
+// competency themselves.
+func (s Store) CompetencyProjection() (Projection, error) {
 	assessments, err := s.loadAssessments()
 	if err != nil {
 		return Projection{}, err
@@ -190,16 +214,6 @@ func (s Store) RebuildProjection() (Projection, error) {
 	sort.Slice(projection.Competencies, func(i, j int) bool {
 		return projection.Competencies[i].ID < projection.Competencies[j].ID
 	})
-	data, err := yaml.Marshal(projection)
-	if err != nil {
-		return Projection{}, fmt.Errorf("marshal projection: %w", err)
-	}
-	if err := s.validate("projection.schema.json", "state/competencies.yaml", data); err != nil {
-		return Projection{}, err
-	}
-	if err := writeGenerated(filepath.Join(s.Root, "state", "competencies.yaml"), data); err != nil {
-		return Projection{}, err
-	}
 	return projection, nil
 }
 
