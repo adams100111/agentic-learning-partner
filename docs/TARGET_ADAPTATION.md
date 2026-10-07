@@ -11,7 +11,7 @@ alp platform plan --adapter pylearn --target go-alp \
   [--intent target-skeleton|curriculum|unit|activity|patch] [--unit UNIT] [--workspace PATH]
 ```
 
-`plan` requires the Curriculum Reader, Content Mapper and Authoring Target capabilities and refuses an invalid mapping. It writes the learner's projection to `state/target-adaptations/<id>.json` (`schemas/target-adaptation-projection.schema.json`), reconciles the Curriculum and Learning Unit Specifications and records an Authoring Plan (see below), all in one Store transaction, and prints deterministic JSON: `{schemaVersion, adapter, target, path, projection, specifications, authoring, authoringPlan}`.
+`plan` requires the Curriculum Reader, Content Mapper and Authoring Target capabilities and refuses an invalid mapping. It writes the learner's projection to `state/target-adaptations/<id>.json` (`schemas/target-adaptation-projection.schema.json`), reconciles the Curriculum and Learning Unit Specifications and records an Authoring Plan (see below), all in one Store transaction, and prints deterministic JSON: `{schemaVersion, adapter, target, path, projection, specifications, authoring, authoringPlan}`. `specifications.persona` reports the persona documents that shaped unit teaching and the documented defaults that stood in for missing ones (see [Teaching shape](#teaching-shape)).
 
 The projection is a pure function of its canonical inputs, all recorded under `inputs`:
 
@@ -89,13 +89,33 @@ IDs are ALP-owned (ADR-0057): `cspec_…` is derived from `{platform, target}`; 
 
 | Field | Content |
 |---|---|
-| `provenance` | `learnerStateRevision` (`lsr_…`, a hash of the competency projection), `projectionRevision`, the target snapshot (`curriculum`, `mapping`, `constraints` content hashes), domain `packs` and the `sources` they were verified against |
+| `provenance` | `learnerStateRevision` (`lsr_…`, a hash of the competency projection), `projectionRevision`, the target snapshot (`curriculum`, `mapping`, `constraints` content hashes), domain `packs` and the `sources` they were verified against, and `personas`: the `profile`, `global` and `domains` persona documents (path and `sha256:` content hash; `null` or absent when missing) |
 | `authoringIntent` | the smallest intent the unit justified: `unit` (proposed, not skipped), `activity` (existing, not skipped, and something it requires evidence for is assessed by nothing in its item tree), or `none` |
 | `unit` | `platformItem` (absent for a proposed unit) and `group` |
-| `teaching` | learner-free teaching intent: `title`, `objectives`, `competencies` with Mapping Roles, `prerequisites`, `dependsOn` (unit spec IDs), `requiredEvidence` (assessment-grade, `minimumLevel: functional`, for each taught or assessed competency unless skipped), and `claims` |
-| `adaptation` | private learner basis: effective and proposed `mode`, applied `decision`, `rationale`, competency statuses citing assessments, and `misconceptions` (assessment-recorded gaps) |
+| `teaching` | learner-free teaching intent: `title`, `objectives`, `competencies` with Mapping Roles, `prerequisites`, `dependsOn` (unit spec IDs), `requiredEvidence` (assessment-grade, `minimumLevel: functional`, for each taught or assessed competency unless skipped), `claims`, and the persona-derived `shape` |
+| `adaptation` | private learner basis: effective and proposed `mode`, applied `decision`, `rationale`, competency statuses citing assessments, `misconceptions` (assessment-recorded gaps), and the private `persona` basis of the teaching shape |
 
 `claims` come from pack freshness classes: `version-sensitive-language-runtime`, `operational-platform` and `security-sensitive` are version-sensitive and source-required; `ecosystem-choice` is source-required; `stable-concept` declares no claim. The authoring target re-verifies these at authoring time and records source provenance (Q27).
+
+### Teaching shape
+
+Personalization shapes examples, analogies and difficulty even in shared content (ADR-0060, Q26). Each unit specification's `teaching.shape` is derived deterministically from the learner's Learner Profile (`profile/profile.yaml`), Global Persona (`personas/global.yaml`) and the Domain Persona of each of the unit's domains (`personas/domains/<domain>.yaml`):
+
+| `teaching.shape` field | Derivation | Default when nothing sets it |
+|---|---|---|
+| `pace` | the Domain Persona's `teaching.pace`, else the Global Persona's, else the profile's `preferences.teachingPace` | `standard` |
+| `activityTypes` | Global then Domain Persona `teaching.preferredActivityTypes`, deduplicated in order | `[]` |
+| `avoid`, `emphasis` | Global then Domain Persona `teaching.avoid` / `teaching.emphasis` | `[]` |
+| `feedback` | Global then Domain Persona `teaching.feedback`, then the profile's `preferences.feedbackStyle` | `[]` |
+| `analogies` | one entry per unit competency: `{domain, competency, basis, concepts, sources}` (below) | `basis: none`, no sources |
+
+**Analogy sources.** A persona's `analogyPolicy.semanticOverrides` are keyed by concept. A concept matches a competency when it names (allowing a plural) a segment of the competency ID after the domain, the leaf of one of its pack `sharedScaffolds`, or a hyphen-separated part of either (`go.runtime.context` has `context`, and `cancellation` through `shared.concurrency.cancellation`). The Domain Persona's overrides come first and shadow the Global Persona's for the same concept; within a layer, concepts are in name order. `sources` are the matching overrides' `prefer` stacks in order, restricted to analogy sources the profile lists: an `experience` key (`typescript`) or a framework under one (`dotnet` under `csharp`). `concepts` names the overrides that contributed a source and `basis` is `semantic-override`. When no override contributes, the default priority applies (`basis: default-priority`): the most specific `analogyPolicy.defaultPriority`, else the profile's stacks by `relativeRank`, again restricted to listed stacks. With no profile, or no listed stack, `basis` is `none`.
+
+**Private persona basis** (`adaptation.persona`): `risks` (every risk of the unit's Global and Domain Personas, each with the unit `concepts` it names, so general risks name none), `analogyReasons` (the persona's `reason` for each applied override and the layer it came from), and `sourceExperience` (the profile stack, `level` and `relativeRank` behind each analogy source).
+
+**Public and private (ADR-0060).** `teaching.shape` holds only analogy stacks and teaching constraints, so it is teaching intent and appears in the Authoring Plan's `public.units[*].teachingIntent`. Learner identity, experience levels and ranks, risks, override reasons and the persona/profile documents never do.
+
+**Missing personas** are not a failure. A missing profile or persona layer is skipped and the defaults in the table apply. `plan` reports `specifications.persona`: `documents` (each path, `domain` for a Domain Persona, `present`, and `contentHash` when present) and `defaults` (each `{domain, field, value, reason}` applied, for example `pace` → `standard`, `analogies` → `none` when the profile lists no stacks, or `analogyPolicy.defaultPriority` → the profile's stacks by rank when no persona sets one). A present document must be schema-valid.
 
 The curriculum specification records the same provenance plus `goal`, `groups`, `units` (each unit spec ID, version, hash, title, group, mode) and the `sequence` of units that are not skipped. Its `authoringIntent` is `target-skeleton` for a target with no content, otherwise the smallest intent any unit justifies.
 
@@ -103,7 +123,7 @@ Specifications contain no platform-native rendering concepts.
 
 ### Regeneration policy
 
-Projections are recomputed freely. A new unit specification version is written only when a **material** field changes: competencies (IDs and roles), prerequisites, adaptation mode, misconceptions, or required evidence. Anything else (titles, objectives, claims, provenance, a new projection revision from evidence that changes nothing material) keeps the stored version, which `plan` reports as `unchanged`. A new version carries `supersedes: {version, contentHash}` and `change: {materialFields, evidenceLinked}`, where `evidenceLinked` is true when the learner state revision changed with it. The curriculum specification is re-versioned only when its goal, groups or referenced unit versions change.
+Projections are recomputed freely. A new unit specification version is written only when a **material** field changes: competencies (IDs and roles), prerequisites, adaptation mode, misconceptions, required evidence, or the teaching shape (`teachingShape`: `teaching.shape` plus the private `risks`). Anything else (titles, objectives, claims, provenance including persona document hashes, override reasons, experience levels, a new projection revision from evidence that changes nothing material) keeps the stored version, which `plan` reports as `unchanged`. So a persona or profile edit is a material change only when it changes the derived teaching shape; it is not evidence-linked. A version created before teaching shapes has none, so the next `plan` writes a new version with `materialFields: [teachingShape]`. A new version carries `supersedes: {version, contentHash}` and `change: {materialFields, evidenceLinked}`, where `evidenceLinked` is true when the learner state revision changed with it. The curriculum specification is re-versioned only when its goal, groups or referenced unit versions change.
 
 Once a unit is realized (Realization Links, ticket #73), a material change will also have to be evidence-linked before it produces a new version and so a content change; until then units are unrealized and are re-specified freely.
 
@@ -123,8 +143,15 @@ Intents, largest to smallest: `target-skeleton` → `curriculum` → `unit` → 
 
 ### Public face
 
-Only `authoringPlan.public` may appear in platform content, branches or PRs (ADR-0060): `intent`, the curriculum citation (`id`, `version`, `contentHash`, `title`, `goal`, `groups` with unit IDs, titles and platform items) and, per unit in scope, its citation, `platformItem`, `group` and `teachingIntent` (exactly the spec's `teaching`). It carries no learner ID, evidence, assessment, status, misconception, adaptation mode, rationale or justification.
+Only `authoringPlan.public` may appear in platform content, branches or PRs (ADR-0060): `intent`, the curriculum citation (`id`, `version`, `contentHash`, `title`, `goal`, `groups` with unit IDs, titles and platform items) and, per unit in scope, its citation, `platformItem`, `group` and `teachingIntent` (exactly the spec's `teaching`, including its persona-derived `shape`). It carries no learner ID, evidence, assessment, status, misconception, adaptation mode, rationale, justification, risk, experience level or persona text.
 
 ### What the authoring target skill receives
 
-The orchestration skill hands the platform's authoring skill the Authoring Plan JSON (`authoringPlan` from `plan`, or the recorded file). The skill realizes `public.units[*].teachingIntent` (and, for `target-skeleton`, `public.curriculum.groups`) natively, re-verifies every `claims` entry, and cites spec ID/version/hash in its PR. It may read the full unit specifications in the learner workspace (for example `adaptation.misconceptions` and `adaptation.mode` to shape difficulty and examples) but must never copy them, or anything else outside `public`, into content or PRs.
+The orchestration skill hands the platform's authoring skill the Authoring Plan JSON (`authoringPlan` from `plan`, or the recorded file). The skill realizes `public.units[*].teachingIntent` (and, for `target-skeleton`, `public.curriculum.groups`) natively, re-verifies every `claims` entry, and cites spec ID/version/hash in its PR.
+
+The authoring skill (PyLearn: `pylearn-alp-authoring`) must apply `teachingIntent.shape` when it writes content:
+
+- `analogies`: for each competency, draw analogies and transfer contrasts from `sources` in order (the first is the strongest scaffold). With `basis: semantic-override`, `concepts` names what the scaffold is for (for example `context` → `.NET CancellationToken`); contrast where the source's semantics differ, never translate mechanically. With `basis: none`, use no cross-stack analogies.
+- `pace` sets density and difficulty (`senior-dense`: no beginner restatement, dense examples; `gentle`: more scaffolding); `activityTypes` picks the exercise forms (prefer the earlier ones); `avoid` lists forms and framings the content must not use; `emphasis` lists themes the content must foreground; `feedback` sets the voice of hints, explanations and grading feedback.
+
+Shared content is authored once for every learner, so the shape biases choices (examples, analogies, difficulty, exercise mix) without per-learner variants. It may read the full unit specifications in the learner workspace (for example `adaptation.misconceptions` and `adaptation.mode` to shape difficulty and examples, or `adaptation.persona.risks` to design exercises that surface them) but must never copy them, or anything else outside `public`, into content or PRs.
