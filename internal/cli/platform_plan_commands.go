@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/adams100111/agentic-learning-partner/internal/domain"
 	"github.com/adams100111/agentic-learning-partner/internal/platform"
 	"github.com/adams100111/agentic-learning-partner/internal/state"
 )
@@ -33,27 +32,13 @@ func (a App) readAdaptationInputs(adapter platform.Adapter, target string, flags
 	if flags.mapping == "" {
 		return adaptationInputs{}, a.platformUsageError("--mapping is required: pass the platform's content mapping file"), false
 	}
-	mapper, ok := adapter.(platform.ContentMappingValidator)
-	if !ok {
-		return adaptationInputs{}, a.platformFailure(fmt.Errorf("platform adapter %q declares %s but does not implement it", adapter.ID(), platform.ContentMapper)), false
-	}
 	curriculum, code, ok := a.readCurriculum(adapter, target, flags)
 	if !ok {
 		return adaptationInputs{}, code, false
 	}
-	data, err := os.ReadFile(flags.mapping)
-	if err != nil {
-		return adaptationInputs{}, a.platformFailure(fmt.Errorf("read mapping: %w", err)), false
-	}
-	mapping, err := mapper.ValidateContentMapping(data, filepath.Base(flags.mapping), curriculum)
-	if err != nil {
-		return adaptationInputs{}, a.platformFailure(err), false
-	}
-	if !mapping.Valid {
-		return adaptationInputs{}, a.platformFailure(&platform.Error{
-			Code: platform.CodeInvalidMapping, Adapter: adapter.ID(), Target: target,
-			Message: fmt.Sprintf("platform mapping %s is not valid (%d errors); run alp platform mapping validate", filepath.Base(flags.mapping), mapping.Summary.Errors),
-		}), false
+	mapping, code, ok := a.readValidMapping(adapter, target, flags, curriculum)
+	if !ok {
+		return adaptationInputs{}, code, false
 	}
 	inputs := adaptationInputs{curriculum: curriculum, mapping: mapping}
 	if flags.constraints != "" {
@@ -85,7 +70,7 @@ func projectTarget(ws platformWorkspace, inputs adaptationInputs) (platform.Targ
 		LearnerID:    ws.learnerID,
 		Curriculum:   inputs.curriculum,
 		Mapping:      inputs.mapping,
-		Packs:        domain.NewRegistry(),
+		Packs:        ws.packs,
 		LearnerState: learnerState,
 		Constraints:  inputs.constraints,
 		Decisions:    decisions,

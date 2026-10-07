@@ -79,7 +79,11 @@ func (r Registry) HasCompetency(domainName, id string) bool {
 
 // NewRegistryFrom builds a registry over the given pack sources (domain name to
 // competencies YAML), for composition roots that supply packs other than the
-// built-in ones.
+// built-in ones, such as a Platform Adapter's Domains (pylearn.Adapter).
+// Today only tests use it, to exercise a pack version that is not embedded
+// (mapping migration validation). It stays in this package because Registry
+// is opaque: Go has no cross-package test-only exports, so a separate test
+// helper package would still need an exported constructor here.
 func NewRegistryFrom(sources map[string][]byte) Registry {
 	loaders := make(map[string]func() ([]byte, error), len(sources))
 	for name, data := range sources {

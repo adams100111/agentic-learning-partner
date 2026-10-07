@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 
-	"github.com/adams100111/agentic-learning-partner/internal/domain"
 	"github.com/adams100111/agentic-learning-partner/internal/platform"
 	"github.com/adams100111/agentic-learning-partner/internal/state"
 )
@@ -81,7 +80,7 @@ func specifyTarget(ws platformWorkspace, adapter platform.Adapter, inputs adapta
 		Projection:   projection,
 		Curriculum:   inputs.curriculum,
 		Mapping:      inputs.mapping,
-		Packs:        domain.NewRegistry(),
+		Packs:        ws.packs,
 		LearnerState: learnerState,
 		Constraints:  inputs.constraints,
 		Persona:      persona,

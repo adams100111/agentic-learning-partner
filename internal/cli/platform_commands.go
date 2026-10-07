@@ -257,6 +257,43 @@ func (a App) readCurriculum(adapter platform.Adapter, target string, flags platf
 	return curriculum, 0, true
 }
 
+// readMapping reads the --mapping file and validates it against the
+// curriculum export. On failure it has already written the error.
+func (a App) readMapping(adapter platform.Adapter, flags platformFlags, curriculum platform.Curriculum) (platform.MappingReport, int, bool) {
+	if flags.mapping == "" {
+		return platform.MappingReport{}, a.platformUsageError("--mapping is required: pass the platform's content mapping file"), false
+	}
+	validator, ok := adapter.(platform.ContentMappingValidator)
+	if !ok {
+		return platform.MappingReport{}, a.platformFailure(fmt.Errorf("platform adapter %q declares %s but does not implement it", adapter.ID(), platform.ContentMapper)), false
+	}
+	data, err := os.ReadFile(flags.mapping)
+	if err != nil {
+		return platform.MappingReport{}, a.platformFailure(fmt.Errorf("read mapping: %w", err)), false
+	}
+	report, err := validator.ValidateContentMapping(data, filepath.Base(flags.mapping), curriculum)
+	if err != nil {
+		return platform.MappingReport{}, a.platformFailure(err), false
+	}
+	return report, 0, true
+}
+
+// readValidMapping is readMapping for commands that act through the mapping:
+// it refuses a mapping with errors (invalid-mapping).
+func (a App) readValidMapping(adapter platform.Adapter, target string, flags platformFlags, curriculum platform.Curriculum) (platform.MappingReport, int, bool) {
+	report, code, ok := a.readMapping(adapter, flags, curriculum)
+	if !ok {
+		return platform.MappingReport{}, code, false
+	}
+	if !report.Valid {
+		return platform.MappingReport{}, a.platformFailure(&platform.Error{
+			Code: platform.CodeInvalidMapping, Adapter: adapter.ID(), Target: target,
+			Message: fmt.Sprintf("platform mapping %s is not valid (%d errors); run alp platform mapping validate", filepath.Base(flags.mapping), report.Summary.Errors),
+		}), false
+	}
+	return report, 0, true
+}
+
 func runPlatformInspect(a App, adapter platform.Adapter, target string, flags platformFlags) int {
 	curriculum, code, ok := a.readCurriculum(adapter, target, flags)
 	if !ok {
@@ -308,21 +345,13 @@ func runPlatformMappingValidate(a App, adapter platform.Adapter, target string, 
 	if flags.mapping == "" {
 		return a.platformUsageError("--mapping is required: pass the platform's content mapping file")
 	}
-	validator, ok := adapter.(platform.ContentMappingValidator)
-	if !ok {
-		return a.platformFailure(fmt.Errorf("platform adapter %q declares %s but does not implement it", adapter.ID(), platform.ContentMapper))
-	}
 	curriculum, code, ok := a.readCurriculum(adapter, target, flags)
 	if !ok {
 		return code
 	}
-	data, err := os.ReadFile(flags.mapping)
-	if err != nil {
-		return a.platformFailure(fmt.Errorf("read mapping: %w", err))
-	}
-	report, err := validator.ValidateContentMapping(data, filepath.Base(flags.mapping), curriculum)
-	if err != nil {
-		return a.platformFailure(err)
+	report, code, ok := a.readMapping(adapter, flags, curriculum)
+	if !ok {
+		return code
 	}
 	output := mappingValidateOutput{
 		SchemaVersion:    1,
