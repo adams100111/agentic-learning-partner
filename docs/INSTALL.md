@@ -63,13 +63,24 @@ Use the normal current Codex/OpenAI plugin installation or local marketplace wor
 
 ## Claude Code
 
-Claude Code packaging is provided by `.claude-plugin/plugin.json` plus the same root `skills/` directory.
+Claude Code packaging is provided by `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` plus the same root `skills/` directory (all skills are auto-discovered from `skills/`).
+
+Install from the GitHub marketplace:
+
+    claude plugin marketplace add adams100111/agentic-learning-partner
+    claude plugin install agentic-learning-partner@agentic-learning-partner
+
+Verify that all skills are listed:
+
+    claude plugin details agentic-learning-partner@agentic-learning-partner
+
+Update later with `claude plugin marketplace update agentic-learning-partner`.
 
 For local development, load the repository as a plugin directory. Claude Code namespaces plugin skills under `agentic-learning-partner`.
 
-Validate with a current Claude Code installation:
+Validate with a current Claude Code installation (a warning about the root `CLAUDE.md` not being loaded as plugin context is expected):
 
-    claude plugin validate . --strict
+    claude plugin validate .
 
 ## State consistency
 
