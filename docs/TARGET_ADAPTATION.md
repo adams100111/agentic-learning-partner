@@ -131,7 +131,7 @@ A realized unit keeps its specification ID. When a proposed unit (`uspec_…` ke
 
 ## Authoring Plans and Authoring Intent
 
-An Authoring Plan (`authoring-plans/<apl_id>.json`, `schemas/authoring-plan.schema.json`) is an Authoring Intent over specific specification versions, realized by the authoring target skill the adapter declares (`authoringTarget.skill`; PyLearn declares `pylearn-alp-authoring`). Its ID hashes its content, so the same intent over the same versions is the same plan (`authoringPlan.status: existing`).
+An Authoring Plan (`authoring-plans/<apl_id>.json`, `schemas/authoring-plan.schema.json`) is an Authoring Intent over specific specification versions, realized by the authoring target skill the adapter declares (`authoringTarget.skill`; PyLearn declares `pylearn-alp-authoring`). `alp platform inspect` reports the same declaration as `authoringTarget: {platform, skill}`, or `null` when the adapter declares no Authoring Target, so an orchestrator resolves the skill from the platform rather than knowing it. Its ID hashes its content, so the same intent over the same versions is the same plan (`authoringPlan.status: existing`).
 
 Intents, largest to smallest: `target-skeleton` → `curriculum` → `unit` → `activity` → `patch`.
 
@@ -200,3 +200,12 @@ alp platform gates record --adapter pylearn --target go-alp --curriculum curricu
 - `specifications/realizations/<rlz_id>.json` (`schemas/realization-link.schema.json`), one per realized unit version: the Realization Link with `unit`, `plan`, `gateRecord`, `root` (the unit-level item), every realizing `items` entry as a namespaced `{platform, target, item}`, and the unit's `claims` with their `sources`. Specification versions stay immutable; the link is the record on the specification of what realized it.
 
 Output: `{schemaVersion, adapter, target, status: recorded|already-recorded, path, record, realizations}` (each realization with its `path`).
+
+## Skills
+
+Two portable skills drive this workflow through the `alp platform` JSON contracts only (ADR-0012, ADR-0056, Q24):
+
+- `skills/adapt-platform-target`: inspect → plan → present each unit's `proposedMode` with its rationale and the persona-derived teaching shape → `decision accept` only for what the learner explicitly confirmed (`--confirm` with the current `--basis`) → `decision revoke` on request.
+- `skills/orchestrate-platform-authoring`: take an Authoring Plan, resolve the authoring target skill from `inspect`'s `authoringTarget.skill`, hand it the plan, `gates record` the platform validator's result with the realization report, and report each unit realized or unrealized with its reasons; plus the activity loop: `account link` (learner-confirmed) → `import` (the caller keeps `cursor.next`) → re-plan.
+
+`internal/cli` tests parse every `alp platform` invocation in `skills/*/SKILL.md` and fail when a skill names a command, flag or enumerated value the CLI does not take, or shows a decision or account link without `--confirm`.
