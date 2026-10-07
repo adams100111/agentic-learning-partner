@@ -142,6 +142,9 @@ type TargetConstraints struct {
 	Source        SourceRef
 	AllowedModes  []string
 	RequiredUnits []string
+	// Goal lists competencies the target is for, beyond what its content
+	// already covers; Curriculum Specifications propose units for them.
+	Goal []string
 }
 
 // TargetConstraintsSchema is the embedded JSON Schema for target constraints.
@@ -153,6 +156,7 @@ type constraintsDocument struct {
 	Target        string   `json:"target"`
 	AllowedModes  []string `json:"allowedModes"`
 	RequiredUnits []string `json:"requiredUnits"`
+	Goal          []string `json:"goal"`
 }
 
 // ReadTargetConstraints validates a target constraints document (YAML or
@@ -211,6 +215,7 @@ func ReadTargetConstraints(data []byte, name string, curriculum Curriculum) (Tar
 		Source:        SourceRef{SchemaVersion: parsed.SchemaVersion, ContentHash: "sha256:" + hex.EncodeToString(sum[:])},
 		AllowedModes:  parsed.AllowedModes,
 		RequiredUnits: parsed.RequiredUnits,
+		Goal:          parsed.Goal,
 	}
 	return constraints, nil
 }

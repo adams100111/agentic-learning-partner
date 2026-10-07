@@ -106,18 +106,26 @@ func writeProjection(ws platformWorkspace, projection platform.TargetAdaptationP
 }
 
 type planOutput struct {
-	SchemaVersion int                                 `json:"schemaVersion"`
-	Adapter       string                              `json:"adapter"`
-	Target        platform.ExternalID                 `json:"target"`
-	Path          string                              `json:"path"`
-	Projection    platform.TargetAdaptationProjection `json:"projection"`
+	SchemaVersion  int                                 `json:"schemaVersion"`
+	Adapter        string                              `json:"adapter"`
+	Target         platform.ExternalID                 `json:"target"`
+	Path           string                              `json:"path"`
+	Projection     platform.TargetAdaptationProjection `json:"projection"`
+	Specifications planSpecifications                  `json:"specifications"`
+	Authoring      platform.AuthoringOutcome           `json:"authoring"`
+	AuthoringPlan  *planAuthoringRecord                `json:"authoringPlan"`
 }
 
 // runPlatformPlan rebuilds the learner's Target Adaptation Projection for one
 // shared Learning Target and writes it as a generated workspace file. Agents
 // read proposedMode as their Adaptation Proposal; only the learner turns it
-// into an Accepted Adaptation Decision.
+// into an Accepted Adaptation Decision. From the projection it reconciles the
+// immutable Curriculum and Learning Unit Specification versions and records
+// the Authoring Plan for the selected Authoring Intent.
 func runPlatformPlan(a App, adapter platform.Adapter, target string, flags platformFlags) int {
+	if flags.intent != "" && !platform.ValidIntent(flags.intent) {
+		return a.platformUsageError(fmt.Sprintf("unknown authoring intent %q (intents: target-skeleton, curriculum, unit, activity, patch)", flags.intent))
+	}
 	inputs, code, ok := a.readAdaptationInputs(adapter, target, flags)
 	if !ok {
 		return code
@@ -136,11 +144,17 @@ func runPlatformPlan(a App, adapter platform.Adapter, target string, flags platf
 		ws.abandon()
 		return a.platformFailure(err)
 	}
+	specifications, authoring, plan, err := specifyTarget(ws, adapter, inputs, projection, flags)
+	if err != nil {
+		ws.abandon()
+		return a.platformFailure(err)
+	}
 	if err := ws.finish(true, fmt.Sprintf("alp: plan %s %s target adaptation", adapter.ID(), target)); err != nil {
 		return a.platformFailure(err)
 	}
 	return a.writePlatformJSON(planOutput{
 		SchemaVersion: 1, Adapter: adapter.ID(), Target: projection.Target, Path: path, Projection: projection,
+		Specifications: specifications, Authoring: authoring, AuthoringPlan: plan,
 	}, 0)
 }
 

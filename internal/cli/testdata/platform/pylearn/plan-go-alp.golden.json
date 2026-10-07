@@ -139,5 +139,240 @@
         ]
       }
     ]
+  },
+  "specifications": {
+    "curriculum": {
+      "id": "cspec_052c4e3a6565c06aee6ea2b9",
+      "version": 1,
+      "contentHash": "sha256:c4b47815382ac5e7ca5e3caa2f2d770bf686628904386257d86ed2fa8e8cf07d",
+      "path": "specifications/curricula/cspec_052c4e3a6565c06aee6ea2b9-v1.json",
+      "status": "created",
+      "title": "Go (ALP)"
+    },
+    "units": [
+      {
+        "id": "uspec_14d290a7cdcac64bf5b33eff",
+        "version": 1,
+        "contentHash": "sha256:cb400b8f00839f0c472c284bdc9a54a55ed36b3b9a2b5eeaafeca6b65813e15f",
+        "path": "specifications/units/uspec_14d290a7cdcac64bf5b33eff-v1.json",
+        "status": "created",
+        "title": "Context and Cancellation",
+        "platformItem": {
+          "platform": "pylearn",
+          "target": "go-alp",
+          "item": "go-alp-a1-context"
+        },
+        "group": "A",
+        "mode": "skip"
+      },
+      {
+        "id": "uspec_6e83d32168cee92bf8868707",
+        "version": 1,
+        "contentHash": "sha256:69fc1bb45c6c4c06df39aea53d6b026d29f2a7e3d4875e5c416e98c2642d935b",
+        "path": "specifications/units/uspec_6e83d32168cee92bf8868707-v1.json",
+        "status": "created",
+        "title": "Goroutines and scheduler mental model",
+        "group": "stage-1",
+        "mode": "full"
+      },
+      {
+        "id": "uspec_b2a03a8be26712b138f2fcde",
+        "version": 1,
+        "contentHash": "sha256:7253814f693ca153eb2b8a468c263d3ce8babd6f0da6603b771bc6d7fd05bdf1",
+        "path": "specifications/units/uspec_b2a03a8be26712b138f2fcde-v1.json",
+        "status": "created",
+        "title": "Goroutine Lifetimes",
+        "platformItem": {
+          "platform": "pylearn",
+          "target": "go-alp",
+          "item": "go-alp-a2-goroutines"
+        },
+        "group": "A",
+        "mode": "skim"
+      },
+      {
+        "id": "uspec_7a65bbd33e705b1191f89d5a",
+        "version": 1,
+        "contentHash": "sha256:459d7535d9602bd31b70c4cbd38cb6c371d4eb068c4d9c3542d46cc909577b22",
+        "path": "specifications/units/uspec_7a65bbd33e705b1191f89d5a-v1.json",
+        "status": "created",
+        "title": "Generics",
+        "platformItem": {
+          "platform": "pylearn",
+          "target": "go-alp",
+          "item": "go-alp-a3-generics"
+        },
+        "group": "A",
+        "mode": "full"
+      },
+      {
+        "id": "uspec_90b21bfcbc2a3c7586a68619",
+        "version": 1,
+        "contentHash": "sha256:f8bc9d2d7a51457a1bf1c65ba59caf8aec16379d0b11f1effea2305a7823af0c",
+        "path": "specifications/units/uspec_90b21bfcbc2a3c7586a68619-v1.json",
+        "status": "created",
+        "title": "Channels and ownership",
+        "group": "stage-1",
+        "mode": "full"
+      },
+      {
+        "id": "uspec_5e2cb7f36015549a1aad2ee8",
+        "version": 1,
+        "contentHash": "sha256:91e6eb1282a1beeee73cc9f514119b1f13844730311db438b90ea63f9ac6d41b",
+        "path": "specifications/units/uspec_5e2cb7f36015549a1aad2ee8-v1.json",
+        "status": "created",
+        "title": "Mutexes, WaitGroups, Once, atomics",
+        "group": "stage-1",
+        "mode": "full"
+      }
+    ]
+  },
+  "authoring": {
+    "status": "planned",
+    "intent": "unit",
+    "selection": "default",
+    "reason": "Smallest justified intent is unit: uspec_6e83d32168cee92bf8868707 (Goroutines and scheduler mental model) is proposed for this target, not yet on the platform, and the learner's adaptation mode for it is full."
+  },
+  "authoringPlan": {
+    "path": "authoring-plans/apl_4162c4da9128f6e07711d07c.json",
+    "status": "created",
+    "schemaVersion": 1,
+    "id": "apl_4162c4da9128f6e07711d07c",
+    "learnerId": "ada",
+    "target": {
+      "platform": "pylearn",
+      "target": "go-alp"
+    },
+    "intent": "unit",
+    "justification": "Smallest justified intent is unit: uspec_6e83d32168cee92bf8868707 (Goroutines and scheduler mental model) is proposed for this target, not yet on the platform, and the learner's adaptation mode for it is full.",
+    "authoringTarget": {
+      "platform": "pylearn",
+      "skill": "pylearn-alp-authoring"
+    },
+    "curriculum": {
+      "id": "cspec_052c4e3a6565c06aee6ea2b9",
+      "version": 1,
+      "contentHash": "sha256:c4b47815382ac5e7ca5e3caa2f2d770bf686628904386257d86ed2fa8e8cf07d"
+    },
+    "units": [
+      {
+        "id": "uspec_6e83d32168cee92bf8868707",
+        "version": 1,
+        "contentHash": "sha256:69fc1bb45c6c4c06df39aea53d6b026d29f2a7e3d4875e5c416e98c2642d935b"
+      }
+    ],
+    "public": {
+      "intent": "unit",
+      "curriculum": {
+        "id": "cspec_052c4e3a6565c06aee6ea2b9",
+        "version": 1,
+        "contentHash": "sha256:c4b47815382ac5e7ca5e3caa2f2d770bf686628904386257d86ed2fa8e8cf07d",
+        "title": "Go (ALP)",
+        "goal": [],
+        "groups": [
+          {
+            "id": "A",
+            "title": "Runtime Foundations",
+            "platformPhase": "A",
+            "units": [
+              {
+                "id": "uspec_14d290a7cdcac64bf5b33eff",
+                "title": "Context and Cancellation",
+                "platformItem": {
+                  "platform": "pylearn",
+                  "target": "go-alp",
+                  "item": "go-alp-a1-context"
+                }
+              },
+              {
+                "id": "uspec_b2a03a8be26712b138f2fcde",
+                "title": "Goroutine Lifetimes",
+                "platformItem": {
+                  "platform": "pylearn",
+                  "target": "go-alp",
+                  "item": "go-alp-a2-goroutines"
+                }
+              },
+              {
+                "id": "uspec_7a65bbd33e705b1191f89d5a",
+                "title": "Generics",
+                "platformItem": {
+                  "platform": "pylearn",
+                  "target": "go-alp",
+                  "item": "go-alp-a3-generics"
+                }
+              }
+            ]
+          },
+          {
+            "id": "stage-1",
+            "title": "Stage 1",
+            "units": [
+              {
+                "id": "uspec_6e83d32168cee92bf8868707",
+                "title": "Goroutines and scheduler mental model"
+              },
+              {
+                "id": "uspec_90b21bfcbc2a3c7586a68619",
+                "title": "Channels and ownership"
+              },
+              {
+                "id": "uspec_5e2cb7f36015549a1aad2ee8",
+                "title": "Mutexes, WaitGroups, Once, atomics"
+              }
+            ]
+          }
+        ]
+      },
+      "units": [
+        {
+          "id": "uspec_6e83d32168cee92bf8868707",
+          "version": 1,
+          "contentHash": "sha256:69fc1bb45c6c4c06df39aea53d6b026d29f2a7e3d4875e5c416e98c2642d935b",
+          "group": "stage-1",
+          "teachingIntent": {
+            "title": "Goroutines and scheduler mental model",
+            "objectives": [
+              "Understand goroutine scheduling sufficiently to reason about concurrency without treating goroutines as threads or promises."
+            ],
+            "competencies": [
+              {
+                "domain": "go",
+                "id": "go.runtime.scheduler",
+                "name": "Goroutines and scheduler mental model",
+                "roles": [
+                  "teaches"
+                ]
+              }
+            ],
+            "prerequisites": [
+              {
+                "domain": "go",
+                "id": "go.language.syntax",
+                "name": "Core syntax recall"
+              }
+            ],
+            "dependsOn": [],
+            "requiredEvidence": [
+              {
+                "domain": "go",
+                "competency": "go.runtime.scheduler",
+                "role": "assesses",
+                "minimumLevel": "functional"
+              }
+            ],
+            "claims": [
+              {
+                "domain": "go",
+                "competency": "go.runtime.scheduler",
+                "freshnessClass": "version-sensitive-language-runtime",
+                "versionSensitive": true,
+                "sourceRequired": true
+              }
+            ]
+          }
+        }
+      ]
+    }
   }
 }
