@@ -7,12 +7,15 @@
 //
 // Everything learner-side is synthetic and throwaway: a fresh workspace with
 // a synthetic profile and personas, an isolated HOME, and a throwaway PyLearn
-// libSQL (SQLite file) database. The PyLearn checkout is only read, except
-// for the files its own gates regenerate, which are restored afterwards; the
-// smoke fails if it leaves the checkout's git status changed.
+// libSQL (SQLite file) database. The PyLearn checkout's files are left as
+// found: the files its own gates regenerate are restored, and the realization
+// report is committed on a throwaway `alp-smoke/<run>` branch that the
+// checkout leaves again (the branch itself stays; refs are never deleted).
+// The smoke fails if it leaves the checkout's git status changed.
 //
 // Real Claude/Codex harness runs are out of scope: the authoring and
 // assessing agents are played by this test with fixed synthetic inputs.
+// Agent authoring itself is proven by PyLearn #47's real run.
 package e2e
 
 import (
@@ -30,6 +33,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/adams100111/agentic-learning-partner/internal/gitexec"
 	"go.yaml.in/yaml/v3"
@@ -41,6 +45,9 @@ const (
 	realizedLesson      = "go-alp-a3-sync-primitives"
 	realizedCompetency  = "go.concurrency.sync"
 	realizedQuizConcept = "go-alp-sync-primitives"
+	// Where the smoke commits the realization report on its throwaway
+	// authoring branch in the PyLearn checkout.
+	smokeRealizationPath = ".alp-smoke/realization.json"
 	// Files PyLearn's gates rewrite in place (compile:go's wasm manifest).
 	pylearnGeneratedManifest = "apps/web/public/wasm/go/manifest.json"
 	// PyLearn writes timestamps at second precision; a fixed answer time keeps
@@ -124,6 +131,10 @@ type smoke struct {
 	dbURL   string
 	// Post-authoring PyLearn inputs.
 	curriculum, mapping, constraints string
+	// home is where the PyLearn checkout was before the authoring branch:
+	// a branch name, or a commit when HEAD was detached. Empty when the
+	// checkout is not on the authoring branch.
+	pylearnHome string
 }
 
 type alpRun struct {
@@ -215,8 +226,17 @@ func TestClosedLoopGoALP(t *testing.T) {
 	interimUnit := interim.unitAt(t, realizedLesson)
 	t.Logf("re-plan before gates record: %s appears as %s (realized: %v)", realizedLesson, interimUnit.ID, interimUnit.Realized)
 
-	// Step 3: the already-realized unit. Gates, then gates record.
-	s.step(3, "validate:platform and gates record for the realized unit")
+	// Step 3: the already-realized unit, on an authoring branch as the
+	// authoring target skill would leave it: commit the realization report to
+	// a throwaway branch, run the gates on that branch, then gates record.
+	s.step(3, "authoring branch, validate:platform and gates record for the realized unit")
+	branch := s.authoringBranch()
+	realization := filepath.Join(s.pylearn, filepath.FromSlash(smokeRealizationPath))
+	s.write(realization, s.realizationReport(skeletonPlan, proposed.ID, skeleton))
+	commit := s.commitOnAuthoringBranch(smokeRealizationPath, "test(alp-smoke): realization report for "+proposed.ID)
+	s.curriculum = s.path("curriculum-branch.json")
+	s.write(s.curriculum, s.pylearnRun("bun", "run", "--cwd", "apps/web", "export:curriculum", "--course", smokeTarget))
+	t.Logf("authoring branch %s: realization report committed as %s", branch, commit)
 	gateResult := s.path("gate-result.json")
 	s.write(gateResult, s.pylearnGates())
 	var gates struct {
@@ -228,8 +248,6 @@ func TestClosedLoopGoALP(t *testing.T) {
 	if !gates.Publishable || gates.Target != smokeTarget {
 		t.Fatalf("validate:platform = %s", s.read(gateResult))
 	}
-	realization := s.path("realization.json")
-	s.write(realization, s.realizationReport(skeletonPlan, proposed.ID, skeleton))
 	record := s.gatesRecord(skeletonPlan, gateResult, realization)
 	if record.Status != "recorded" {
 		t.Fatalf("gates record status = %s", record.Status)
@@ -250,6 +268,7 @@ func TestClosedLoopGoALP(t *testing.T) {
 		t.Fatalf("second gates record status = %s", again.Status)
 	}
 	t.Logf("gates: publishable %v (%s); %s v%d realized by %s", gates.Publishable, gateSummary(gates.Gates), proposed.ID, proposed.Version, record.Realizations[0].Path)
+	s.leaveAuthoringBranch()
 
 	// Spec-ID stability: the realized unit keeps its proposed ID.
 	realized := s.plan(s.curriculum, s.mapping)
@@ -487,7 +506,9 @@ func (s *smoke) pylearnRun(args ...string) []byte {
 func (s *smoke) pylearnExec(args ...string) ([]byte, []byte, error) {
 	command := exec.Command("devenv", append([]string{"shell", "--"}, args...)...)
 	command.Dir = s.pylearn
-	command.Env = append(os.Environ(), "DATABASE_URL="+s.dbURL, "ALP_BIN="+s.alpBin)
+	// gitexec.Env: git run inside PyLearn's devenv (its hooks need bun) must
+	// target the checkout, never an inherited GIT_DIR.
+	command.Env = append(gitexec.Env(), "DATABASE_URL="+s.dbURL, "ALP_BIN="+s.alpBin)
 	var stdout, stderr bytes.Buffer
 	command.Stdout, command.Stderr = &stdout, &stderr
 	err := command.Run()
@@ -503,6 +524,62 @@ func (s *smoke) pylearnGates() []byte {
 	saved := s.read(manifest)
 	defer s.write(manifest, saved)
 	return s.pylearnRun("bun", "run", "validate:platform", "--target", smokeTarget)
+}
+
+// pylearnGit runs git in the PyLearn checkout inside PyLearn's devenv, so its
+// own commit hooks run with its toolchain.
+func (s *smoke) pylearnGit(args ...string) string {
+	s.t.Helper()
+	return strings.TrimSpace(string(s.pylearnRun(append([]string{"git"}, args...)...)))
+}
+
+// authoringBranch switches the PyLearn checkout to a new throwaway branch,
+// as the authoring target skill works on an authoring branch. The checkout
+// returns to where it was (leaveAuthoringBranch, or at cleanup when the smoke
+// fails first). The branch is left in place: the smoke never deletes refs, so
+// run it in a dedicated PyLearn worktree.
+func (s *smoke) authoringBranch() string {
+	s.t.Helper()
+	home := s.pylearnGit("rev-parse", "HEAD")
+	if branch, _, err := s.pylearnExec("git", "symbolic-ref", "--quiet", "--short", "HEAD"); err == nil {
+		home = strings.TrimSpace(string(branch))
+	}
+	branch := fmt.Sprintf("alp-smoke/%d", time.Now().UTC().UnixNano())
+	s.pylearnGit("switch", "--quiet", "--create", branch)
+	s.pylearnHome = home
+	s.t.Cleanup(s.leaveAuthoringBranch)
+	return branch
+}
+
+// commitOnAuthoringBranch formats and commits one file on the authoring
+// branch through PyLearn's own commit hooks, and returns the commit.
+func (s *smoke) commitOnAuthoringBranch(path, message string) string {
+	s.t.Helper()
+	s.pylearnRun("bunx", "biome", "format", "--write", path)
+	s.pylearnGit("add", "--", path)
+	s.pylearnGit("-c", "user.name=ALP closed-loop smoke", "-c", "user.email=closed-loop-smoke@alp.invalid",
+		"commit", "--quiet", "--message", message, "--", path)
+	if changed := s.pylearnGit("show", "--name-only", "--format=", "HEAD"); changed != path {
+		s.t.Fatalf("authoring branch commit changed %q, want only %s", changed, path)
+	}
+	return s.pylearnGit("rev-parse", "--short", "HEAD")
+}
+
+// leaveAuthoringBranch switches the PyLearn checkout back to where it was.
+func (s *smoke) leaveAuthoringBranch() {
+	s.t.Helper()
+	if s.pylearnHome == "" {
+		return
+	}
+	home := s.pylearnHome
+	s.pylearnHome = ""
+	args := []string{"switch", "--quiet", home}
+	if regexp.MustCompile(`^[0-9a-f]{40,64}$`).MatchString(home) {
+		args = []string{"switch", "--quiet", "--detach", home}
+	}
+	if _, stderr, err := s.pylearnExec(append([]string{"git"}, args...)...); err != nil {
+		s.t.Errorf("return the PyLearn checkout to %s: %v\n%s", home, err, stderr)
+	}
 }
 
 func (s *smoke) pylearnStatus() string {

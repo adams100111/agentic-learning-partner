@@ -6,7 +6,9 @@
 #
 # Builds alp from this tree and runs internal/e2e TestClosedLoopGoALP (build tag
 # `closedloop`) against the PyLearn checkout, a fresh synthetic workspace and a
-# throwaway PyLearn database. Local only: no CI, and no real Claude/Codex
+# throwaway PyLearn database. The smoke commits a realization report on a
+# throwaway `alp-smoke/<run>` branch of the checkout and switches back, so pass
+# a dedicated PyLearn worktree. Local only: no CI, and no real Claude/Codex
 # harness is run.
 set -euo pipefail
 
