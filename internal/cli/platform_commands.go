@@ -115,62 +115,71 @@ func (a App) runPlatform(args []string) int {
 	if !ok {
 		return a.platformUsageError(fmt.Sprintf("unknown platform command %q", name))
 	}
-	flags := flag.NewFlagSet("platform "+name, flag.ContinueOnError)
-	flags.SetOutput(io.Discard)
-	adapterID := flags.String("adapter", "", "platform adapter ID")
-	target := flags.String("target", "", "platform Learning Target ID")
-	curriculum := flags.String("curriculum", "", "curriculum export file")
-	mapping := flags.String("mapping", "", "platform content mapping file")
-	export := flags.String("export", "", "platform activity export file")
-	cursor := flags.String("cursor", "", "activity cursor returned by the previous import")
-	instance := flags.String("instance", "", "platform instance ID")
-	user := flags.String("user", "", "platform user ID")
-	confirm := flags.Bool("confirm", false, "the learner explicitly confirms this action")
-	constraints := flags.String("constraints", "", "target constraints file")
-	unit := flags.String("unit", "", "unit item ID of the Learning Target")
-	mode := flags.String("mode", "", "adaptation mode: skip, challenge, skim or full")
-	basis := flags.String("basis", "", "Target Adaptation Projection revision the learner confirmed against")
-	decisionID := flags.String("decision", "", "Accepted Adaptation Decision ID")
-	reason := flags.String("reason", "", "the learner's reason for the decision")
-	intent := flags.String("intent", "", "Authoring Intent: target-skeleton, curriculum, unit, activity or patch")
-	planID := flags.String("plan", "", "Authoring Plan ID the gate result is attached to")
-	result := flags.String("result", "", "platform gate result file")
-	realization := flags.String("realization", "", "realization report from the authoring target")
-	explicitWorkspace := flags.String("workspace", "", "learner workspace path")
+	var parsed platformArgs
+	flags := newPlatformFlagSet(name, &parsed)
 	if err := flags.Parse(rest); err != nil {
 		return a.platformUsageError(err.Error())
 	}
 	if flags.NArg() != 0 {
 		return a.platformUsageError(fmt.Sprintf("unexpected argument %q", flags.Arg(0)))
 	}
-	cursorSet := false
 	flags.Visit(func(set *flag.Flag) {
 		if set.Name == "cursor" {
-			cursorSet = true
+			parsed.cursorSet = true
 		}
 	})
 	switch {
-	case command.targetless && *target != "":
+	case command.targetless && parsed.target != "":
 		return a.platformUsageError(fmt.Sprintf("platform %s takes no --target", name))
-	case command.targetless && *adapterID == "":
+	case command.targetless && parsed.adapter == "":
 		return a.platformUsageError("--adapter is required")
-	case !command.targetless && (*adapterID == "" || *target == ""):
+	case !command.targetless && (parsed.adapter == "" || parsed.target == ""):
 		return a.platformUsageError("--adapter and --target are required")
 	}
 	var adapter platform.Adapter
 	for _, capability := range command.capabilities {
-		required, err := a.platforms().Require(*adapterID, capability)
+		required, err := a.platforms().Require(parsed.adapter, capability)
 		if err != nil {
 			return a.platformFailure(err)
 		}
 		adapter = required
 	}
-	return command.run(a, adapter, *target, platformFlags{
-		curriculum: *curriculum, mapping: *mapping, export: *export, cursor: *cursor, cursorSet: cursorSet,
-		instance: *instance, user: *user, confirm: *confirm, workspace: *explicitWorkspace,
-		constraints: *constraints, unit: *unit, mode: *mode, basis: *basis, decision: *decisionID, reason: *reason,
-		intent: *intent, plan: *planID, result: *result, realization: *realization,
-	})
+	return command.run(a, adapter, parsed.target, parsed.platformFlags)
+}
+
+// platformArgs are the parsed flags of one `alp platform` command.
+type platformArgs struct {
+	adapter string
+	target  string
+	platformFlags
+}
+
+// newPlatformFlagSet defines every `alp platform` flag on a new flag set that
+// parses into args. platformUsage documents which flags each command takes.
+func newPlatformFlagSet(name string, args *platformArgs) *flag.FlagSet {
+	flags := flag.NewFlagSet("platform "+name, flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	flags.StringVar(&args.adapter, "adapter", "", "platform adapter ID")
+	flags.StringVar(&args.target, "target", "", "platform Learning Target ID")
+	flags.StringVar(&args.curriculum, "curriculum", "", "curriculum export file")
+	flags.StringVar(&args.mapping, "mapping", "", "platform content mapping file")
+	flags.StringVar(&args.export, "export", "", "platform activity export file")
+	flags.StringVar(&args.cursor, "cursor", "", "activity cursor returned by the previous import")
+	flags.StringVar(&args.instance, "instance", "", "platform instance ID")
+	flags.StringVar(&args.user, "user", "", "platform user ID")
+	flags.BoolVar(&args.confirm, "confirm", false, "the learner explicitly confirms this action")
+	flags.StringVar(&args.constraints, "constraints", "", "target constraints file")
+	flags.StringVar(&args.unit, "unit", "", "unit item ID of the Learning Target")
+	flags.StringVar(&args.mode, "mode", "", "adaptation mode: skip, challenge, skim or full")
+	flags.StringVar(&args.basis, "basis", "", "Target Adaptation Projection revision the learner confirmed against")
+	flags.StringVar(&args.decision, "decision", "", "Accepted Adaptation Decision ID")
+	flags.StringVar(&args.reason, "reason", "", "the learner's reason for the decision")
+	flags.StringVar(&args.intent, "intent", "", "Authoring Intent: target-skeleton, curriculum, unit, activity or patch")
+	flags.StringVar(&args.plan, "plan", "", "Authoring Plan ID the gate result is attached to")
+	flags.StringVar(&args.result, "result", "", "platform gate result file")
+	flags.StringVar(&args.realization, "realization", "", "realization report from the authoring target")
+	flags.StringVar(&args.workspace, "workspace", "", "learner workspace path")
+	return flags
 }
 
 type inspectOutput struct {
@@ -180,10 +189,13 @@ type inspectOutput struct {
 	Title                 string                `json:"title,omitempty"`
 	Capabilities          []platform.Capability `json:"capabilities"`
 	StableIdentifierKinds []string              `json:"stableIdentifierKinds"`
-	CurriculumExport      inspectSource         `json:"curriculumExport"`
-	Mapping               *platform.MappingRef  `json:"mapping"`
-	Phases                []platform.Phase      `json:"phases"`
-	Items                 []inspectItem         `json:"items"`
+	// AuthoringTarget names the platform-declared authoring target skill
+	// (ADR-0056, Q24); null when the adapter declares no Authoring Target.
+	AuthoringTarget  *platform.AuthoringTargetRef `json:"authoringTarget"`
+	CurriculumExport inspectSource                `json:"curriculumExport"`
+	Mapping          *platform.MappingRef         `json:"mapping"`
+	Phases           []platform.Phase             `json:"phases"`
+	Items            []inspectItem                `json:"items"`
 }
 
 type inspectSource struct {
@@ -226,6 +238,15 @@ func runPlatformInspect(a App, adapter platform.Adapter, target string, flags pl
 		return code
 	}
 
+	var authoringTarget *platform.AuthoringTargetRef
+	if platform.Declares(adapter, platform.AuthoringTarget) {
+		declaration, ok := adapter.(platform.AuthoringTargetDeclaration)
+		if !ok {
+			return a.platformFailure(fmt.Errorf("platform adapter %q declares %s but does not implement it", adapter.ID(), platform.AuthoringTarget))
+		}
+		authoringTarget = &platform.AuthoringTargetRef{Platform: adapter.ID(), Skill: declaration.AuthoringSkill()}
+	}
+
 	output := inspectOutput{
 		SchemaVersion:         1,
 		Adapter:               adapter.ID(),
@@ -233,6 +254,7 @@ func runPlatformInspect(a App, adapter platform.Adapter, target string, flags pl
 		Title:                 curriculum.Title,
 		Capabilities:          platform.DeclaredCapabilities(adapter),
 		StableIdentifierKinds: sortedCopy(adapter.StableIdentifierKinds()),
+		AuthoringTarget:       authoringTarget,
 		CurriculumExport:      inspectSource{SchemaVersion: curriculum.SchemaVersion, ContentHash: curriculum.ContentHash},
 		Mapping:               curriculum.Mapping,
 		Phases:                curriculum.Phases,
