@@ -429,6 +429,10 @@ Q36–Q38 were explicitly accepted by the user (2026-10-07), after spec #66 and 
 - **Q37 Curriculum Reader:** platforms expose target structure via a versioned curriculum export (declared-stable items, phases, mapping, content hash); PyLearn provides `export:curriculum`; ALP never parses MDX or platform repos.
 - **Q38 Closed-loop synthetic activity:** seeded into a throwaway PyLearn libSQL DB through PyLearn's real persistence code, then exported with the real `export:activity`.
 
+## Notes after the grill
+
+- **2026-10-07 — Q35's command list was extended by Q31 and Q36.** Q35 listed `inspect`, `mapping validate`, `import`, `plan` and `gates record`. Q31 (learner-confirmed Accepted Adaptation Decisions) added `alp platform decision accept|revoke`, and Q36 (learner-confirmed Platform Account Links) added `alp platform account link`, which acts on a platform account rather than a Learning Target and so takes `--adapter` but no `--target`. The full contract, including which flags each command takes, is in `docs/TARGET_ADAPTATION.md` (`alp platform` command reference).
+
 ## Grill status
 
 Grill closed. Spec: adams100111/agentic-learning-partner#66. Tickets: ALP #68–#75, PyLearn #43–#47 (sub-issues of #66 with native blocked-by edges). Next: `implement-spec`.

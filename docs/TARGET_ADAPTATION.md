@@ -1,6 +1,25 @@
-# Target adaptation: `alp platform plan`, specifications, Authoring Plans and Accepted Adaptation Decisions
+# Target adaptation: the `alp platform` commands, specifications, Authoring Plans and Accepted Adaptation Decisions
 
 ALP adapts a shared Learning Target (for example PyLearn `go-alp`) to one learner without forking the target or the learner's competency state (ADR-0055, ADR-0060, ADR-0061).
+
+## `alp platform` command reference
+
+Every command takes `--adapter ID`, requires the capabilities the adapter declares for it (otherwise `capability-not-declared`), and prints deterministic JSON. A flag a command does not take is a usage error (exit 2, `usage`), never silently ignored: for example `inspect --confirm`. Q35 defined the family; Q31 added `decision accept|revoke` and Q36 added `account link`.
+
+| Command | Flags besides `--adapter` | Capabilities | Documented in |
+|---|---|---|---|
+| `inspect` | `--target --curriculum` | Curriculum Reader | target structure from the curriculum export (Q37) and `authoringTarget` ([Authoring Plans](#authoring-plans-and-authoring-intent)) |
+| `mapping validate` | `--target --curriculum --mapping` | Content Mapper, Curriculum Reader | [`PLATFORM_MAPPING.md`](PLATFORM_MAPPING.md#validation-alp-platform-mapping-validate) |
+| `account link` | `--instance --user --confirm [--workspace]` — **no `--target`** | Activity Source | [Platform Account Link](integrations/PYLEARN_EXPORT.md#platform-account-link) |
+| `import` | `--target --curriculum --mapping --export [--cursor] [--workspace]` | Activity Source, Content Mapper, Curriculum Reader | [Import](integrations/PYLEARN_EXPORT.md#import) |
+| `plan` | `--target --curriculum --mapping [--constraints] [--intent] [--unit] [--workspace]` | Content Mapper, Curriculum Reader, Authoring Target | below |
+| `decision accept` | `--target --curriculum --mapping [--constraints] --unit --mode --basis --confirm [--reason] [--workspace]` | Content Mapper, Curriculum Reader | [below](#accepted-adaptation-decisions) |
+| `decision revoke` | `--target --curriculum --mapping [--constraints] --decision --basis --confirm [--reason] [--workspace]` | Content Mapper, Curriculum Reader | [below](#accepted-adaptation-decisions) |
+| `gates record` | `--target --curriculum --plan --result [--realization] [--workspace]` | Platform Validator, Authoring Target, Curriculum Reader | [below](#platform-gate-results-and-realization-links) |
+
+`account link` records a learner-confirmed Platform Account Link from `{platform, instance, platform user ID}` to the workspace learner (Q36). A platform account belongs to a learner, not to a Learning Target, so the command refuses `--target`. Without `--confirm` it fails with `learner-confirmation-required` and writes nothing; agents must not link accounts on their own. Linking an account already linked to this learner reports `already-linked`; an account linked to another learner fails with `platform-account-linked-to-another-learner`.
+
+`decision accept|revoke` record and supersede Accepted Adaptation Decisions; only the learner confirms them (Q31, ADR-0061). See [Accepted Adaptation Decisions](#accepted-adaptation-decisions).
 
 ## Target Adaptation Projection
 

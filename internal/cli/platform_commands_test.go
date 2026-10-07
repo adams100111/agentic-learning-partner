@@ -147,6 +147,45 @@ func TestPlatformCommandUsageErrorsExitTwo(t *testing.T) {
 	}
 }
 
+func TestPlatformCommandsRejectFlagsTheyDoNotTake(t *testing.T) {
+	cases := map[string]struct {
+		args []string
+		flag string
+	}{
+		"inspect --confirm":          {[]string{"inspect", "--adapter", "pylearn", "--target", "go", "--curriculum", pylearnCurriculumFixture, "--confirm"}, "confirm"},
+		"inspect --workspace":        {[]string{"inspect", "--adapter", "pylearn", "--target", "go", "--curriculum", pylearnCurriculumFixture, "--workspace", "ws"}, "workspace"},
+		"mapping validate --export":  {[]string{"mapping", "validate", "--adapter", "pylearn", "--target", "go", "--curriculum", pylearnCurriculumFixture, "--mapping", "m.yaml", "--export", "e.json"}, "export"},
+		"account link --curriculum":  {[]string{"account", "link", "--adapter", "pylearn", "--instance", "i", "--user", "u", "--confirm", "--curriculum", pylearnCurriculumFixture}, "curriculum"},
+		"import --confirm":           {[]string{"import", "--adapter", "pylearn", "--target", "go", "--curriculum", pylearnCurriculumFixture, "--mapping", "m.yaml", "--export", "e.json", "--confirm"}, "confirm"},
+		"plan --mode":                {[]string{"plan", "--adapter", "pylearn", "--target", "go", "--curriculum", pylearnCurriculumFixture, "--mapping", "m.yaml", "--mode", "skip"}, "mode"},
+		"decision accept --decision": {[]string{"decision", "accept", "--adapter", "pylearn", "--target", "go", "--curriculum", pylearnCurriculumFixture, "--mapping", "m.yaml", "--decision", "d", "--unit", "u", "--mode", "skip", "--basis", "b", "--confirm"}, "decision"},
+		"decision revoke --mode":     {[]string{"decision", "revoke", "--adapter", "pylearn", "--target", "go", "--curriculum", pylearnCurriculumFixture, "--mapping", "m.yaml", "--decision", "d", "--mode", "skip", "--basis", "b", "--confirm"}, "mode"},
+		"gates record --confirm":     {[]string{"gates", "record", "--adapter", "pylearn", "--target", "go", "--curriculum", pylearnCurriculumFixture, "--plan", "p", "--result", "r.json", "--confirm"}, "confirm"},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			result := runPlatform(t, App{}, tc.args...)
+			if result.code != 2 {
+				t.Fatalf("exit code = %d, stdout = %s", result.code, result.stdout)
+			}
+			got := errorField(t, result)
+			if got["code"] != "usage" || !strings.Contains(got["message"].(string), "--"+tc.flag) {
+				t.Fatalf("error = %#v", got)
+			}
+		})
+	}
+}
+
+func TestTopLevelUsageListsPlatformCommands(t *testing.T) {
+	var out, errOut bytes.Buffer
+	App{Out: &out, ErrOut: &errOut}.Run(nil)
+	for _, command := range []string{"platform inspect", "platform mapping validate", "platform account link", "platform import", "platform plan", "platform decision accept", "platform decision revoke", "platform gates record"} {
+		if !strings.Contains(errOut.String(), command) {
+			t.Errorf("top-level usage does not list %q:\n%s", command, errOut.String())
+		}
+	}
+}
+
 func writeExport(t *testing.T, content string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "curriculum-export.json")
@@ -261,5 +300,50 @@ func TestPlatformInspectRejectsInvalidCurriculumExports(t *testing.T) {
 				t.Fatalf("problems %#v do not mention %q", problems, tc.problem)
 			}
 		})
+	}
+}
+
+// The documented usage of each platform command names exactly the flags the
+// command takes.
+func TestPlatformUsageDocumentsEachCommandsFlags(t *testing.T) {
+	documented := map[string]map[string]bool{}
+	for _, line := range strings.Split(platformUsage, "\n") {
+		words := strings.Fields(strings.TrimPrefix(strings.TrimSpace(line), "usage:"))
+		var name []string
+		flags := map[string]bool{}
+		for _, word := range words[2:] {
+			word = strings.Trim(word, "[]")
+			switch {
+			case strings.HasPrefix(word, "--"):
+				flags[strings.TrimPrefix(word, "--")] = true
+			case len(flags) == 0 && strings.ToLower(word) == word:
+				name = append(name, word)
+			}
+		}
+		documented[strings.Join(name, " ")] = flags
+	}
+	for name, command := range platformCommands {
+		want := map[string]bool{"adapter": true}
+		if !command.targetless {
+			want["target"] = true
+		}
+		for _, flag := range command.flags {
+			want[flag] = true
+		}
+		got, ok := documented[name]
+		if !ok {
+			t.Errorf("platformUsage does not document %q", name)
+			continue
+		}
+		for flag := range want {
+			if !got[flag] {
+				t.Errorf("platformUsage for %q omits --%s", name, flag)
+			}
+		}
+		for flag := range got {
+			if !want[flag] {
+				t.Errorf("platformUsage for %q documents --%s, which the command does not take", name, flag)
+			}
+		}
 	}
 }
