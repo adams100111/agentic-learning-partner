@@ -1,0 +1,444 @@
+{
+  "schemaVersion": 1,
+  "platform": "pylearn",
+  "targets": [
+    {
+      "id": "go",
+      "title": "Modern Go — the standard library is your framework",
+      "contentHash": "sha256:421ecf7dd4f4f75a04cbe274a12b0f91776fbdddea39b30170d6450da7354e98",
+      "phases": [
+        {
+          "id": "A",
+          "title": "Language Proficiency"
+        },
+        {
+          "id": "B",
+          "title": "Concurrency & the Runtime"
+        },
+        {
+          "id": "C",
+          "title": "Production Backends"
+        },
+        {
+          "id": "D",
+          "title": "Real-Time & Distributed"
+        },
+        {
+          "id": "E",
+          "title": "Infrastructure & Cloud-Native"
+        }
+      ],
+      "items": [
+        {
+          "id": "go-a1-first-delivery",
+          "kind": "lesson",
+          "phase": "A",
+          "title": "Project & First Delivery"
+        },
+        {
+          "id": "go-a1-first-delivery#init",
+          "kind": "scene",
+          "parent": "go-a1-first-delivery"
+        },
+        {
+          "id": "go-a1-first-delivery#build-delivery",
+          "kind": "scene",
+          "parent": "go-a1-first-delivery"
+        },
+        {
+          "id": "go-a1-first-delivery#post",
+          "kind": "scene",
+          "parent": "go-a1-first-delivery"
+        },
+        {
+          "id": "go-a1-first-delivery#check",
+          "kind": "scene",
+          "parent": "go-a1-first-delivery"
+        },
+        {
+          "id": "go-a1-first-delivery#quiz:go-module-basics",
+          "kind": "quiz",
+          "parent": "go-a1-first-delivery"
+        },
+        {
+          "id": "go-a1-first-delivery#quiz:go-module-basics/q1",
+          "kind": "question",
+          "parent": "go-a1-first-delivery#quiz:go-module-basics"
+        },
+        {
+          "id": "go-a1-first-delivery#quiz:go-module-basics/q2",
+          "kind": "question",
+          "parent": "go-a1-first-delivery#quiz:go-module-basics"
+        },
+        {
+          "id": "go-a2-model-the-domain",
+          "kind": "lesson",
+          "phase": "A",
+          "title": "Model the Domain — Structs & Methods"
+        },
+        {
+          "id": "go-a2-model-the-domain#domain",
+          "kind": "scene",
+          "parent": "go-a2-model-the-domain"
+        },
+        {
+          "id": "go-a2-model-the-domain#methods",
+          "kind": "scene",
+          "parent": "go-a2-model-the-domain"
+        },
+        {
+          "id": "go-a2-model-the-domain#receiver-trap",
+          "kind": "scene",
+          "parent": "go-a2-model-the-domain"
+        },
+        {
+          "id": "go-a2-model-the-domain#check",
+          "kind": "scene",
+          "parent": "go-a2-model-the-domain"
+        },
+        {
+          "id": "go-a2-model-the-domain#quiz:go-receivers",
+          "kind": "quiz",
+          "parent": "go-a2-model-the-domain"
+        },
+        {
+          "id": "go-a2-model-the-domain#quiz:go-receivers/q1",
+          "kind": "question",
+          "parent": "go-a2-model-the-domain#quiz:go-receivers"
+        },
+        {
+          "id": "go-a2-model-the-domain#quiz:go-receivers/q2",
+          "kind": "question",
+          "parent": "go-a2-model-the-domain#quiz:go-receivers"
+        },
+        {
+          "id": "go-a3-errors-as-values",
+          "kind": "lesson",
+          "phase": "A",
+          "title": "Errors as Values — the Shift"
+        },
+        {
+          "id": "go-a3-errors-as-values#shift",
+          "kind": "scene",
+          "parent": "go-a3-errors-as-values"
+        },
+        {
+          "id": "go-a3-errors-as-values#classify",
+          "kind": "scene",
+          "parent": "go-a3-errors-as-values"
+        },
+        {
+          "id": "go-a3-errors-as-values#is-as",
+          "kind": "scene",
+          "parent": "go-a3-errors-as-values"
+        },
+        {
+          "id": "go-a3-errors-as-values#join",
+          "kind": "scene",
+          "parent": "go-a3-errors-as-values"
+        },
+        {
+          "id": "go-a3-errors-as-values#check",
+          "kind": "scene",
+          "parent": "go-a3-errors-as-values"
+        },
+        {
+          "id": "go-a3-errors-as-values#quiz:go-errors",
+          "kind": "quiz",
+          "parent": "go-a3-errors-as-values"
+        },
+        {
+          "id": "go-a3-errors-as-values#quiz:go-errors/q1",
+          "kind": "question",
+          "parent": "go-a3-errors-as-values#quiz:go-errors"
+        },
+        {
+          "id": "go-a3-errors-as-values#quiz:go-errors/q2",
+          "kind": "question",
+          "parent": "go-a3-errors-as-values#quiz:go-errors"
+        },
+        {
+          "id": "go-a4-collections",
+          "kind": "lesson",
+          "phase": "A",
+          "title": "Collections — Slices & Maps"
+        },
+        {
+          "id": "go-a4-collections#loop",
+          "kind": "scene",
+          "parent": "go-a4-collections"
+        },
+        {
+          "id": "go-a4-collections#append-alias",
+          "kind": "scene",
+          "parent": "go-a4-collections"
+        },
+        {
+          "id": "go-a4-collections#map-order",
+          "kind": "scene",
+          "parent": "go-a4-collections"
+        },
+        {
+          "id": "go-a4-collections#loopvar",
+          "kind": "scene",
+          "parent": "go-a4-collections"
+        },
+        {
+          "id": "go-a4-collections#check",
+          "kind": "scene",
+          "parent": "go-a4-collections"
+        },
+        {
+          "id": "go-a4-collections#quiz:go-collections",
+          "kind": "quiz",
+          "parent": "go-a4-collections"
+        },
+        {
+          "id": "go-a4-collections#quiz:go-collections/q1",
+          "kind": "question",
+          "parent": "go-a4-collections#quiz:go-collections"
+        },
+        {
+          "id": "go-a4-collections#quiz:go-collections/q2",
+          "kind": "question",
+          "parent": "go-a4-collections#quiz:go-collections"
+        },
+        {
+          "id": "go-a5-interfaces",
+          "kind": "lesson",
+          "phase": "A",
+          "title": "Interfaces — Small & Structural"
+        },
+        {
+          "id": "go-a5-interfaces#deliverer",
+          "kind": "scene",
+          "parent": "go-a5-interfaces"
+        },
+        {
+          "id": "go-a5-interfaces#satisfy",
+          "kind": "scene",
+          "parent": "go-a5-interfaces"
+        },
+        {
+          "id": "go-a5-interfaces#store",
+          "kind": "scene",
+          "parent": "go-a5-interfaces"
+        },
+        {
+          "id": "go-a5-interfaces#check",
+          "kind": "scene",
+          "parent": "go-a5-interfaces"
+        },
+        {
+          "id": "go-a5-interfaces#quiz:go-interfaces",
+          "kind": "quiz",
+          "parent": "go-a5-interfaces"
+        },
+        {
+          "id": "go-a5-interfaces#quiz:go-interfaces/q1",
+          "kind": "question",
+          "parent": "go-a5-interfaces#quiz:go-interfaces"
+        },
+        {
+          "id": "go-a5-interfaces#quiz:go-interfaces/q2",
+          "kind": "question",
+          "parent": "go-a5-interfaces#quiz:go-interfaces"
+        },
+        {
+          "id": "go-a6-persistence",
+          "kind": "lesson",
+          "phase": "A",
+          "title": "Persistence — Files & JSON"
+        },
+        {
+          "id": "go-a6-persistence#marshal",
+          "kind": "scene",
+          "parent": "go-a6-persistence"
+        },
+        {
+          "id": "go-a6-persistence#jsonstore",
+          "kind": "scene",
+          "parent": "go-a6-persistence"
+        },
+        {
+          "id": "go-a6-persistence#check",
+          "kind": "scene",
+          "parent": "go-a6-persistence"
+        },
+        {
+          "id": "go-a6-persistence#quiz:go-json",
+          "kind": "quiz",
+          "parent": "go-a6-persistence"
+        },
+        {
+          "id": "go-a6-persistence#quiz:go-json/q1",
+          "kind": "question",
+          "parent": "go-a6-persistence#quiz:go-json"
+        },
+        {
+          "id": "go-a6-persistence#quiz:go-json/q2",
+          "kind": "question",
+          "parent": "go-a6-persistence#quiz:go-json"
+        },
+        {
+          "id": "go-a7-cli-surface",
+          "kind": "lesson",
+          "phase": "A",
+          "title": "The CLI Surface — flag then cobra"
+        },
+        {
+          "id": "go-a7-cli-surface#flag",
+          "kind": "scene",
+          "parent": "go-a7-cli-surface"
+        },
+        {
+          "id": "go-a7-cli-surface#cobra",
+          "kind": "scene",
+          "parent": "go-a7-cli-surface"
+        },
+        {
+          "id": "go-a7-cli-surface#check",
+          "kind": "scene",
+          "parent": "go-a7-cli-surface"
+        },
+        {
+          "id": "go-a7-cli-surface#quiz:go-cli",
+          "kind": "quiz",
+          "parent": "go-a7-cli-surface"
+        },
+        {
+          "id": "go-a7-cli-surface#quiz:go-cli/q1",
+          "kind": "question",
+          "parent": "go-a7-cli-surface#quiz:go-cli"
+        },
+        {
+          "id": "go-a7-cli-surface#quiz:go-cli/q2",
+          "kind": "question",
+          "parent": "go-a7-cli-surface#quiz:go-cli"
+        },
+        {
+          "id": "go-a8-generics-iterators",
+          "kind": "lesson",
+          "phase": "A",
+          "title": "Generics & Iterators"
+        },
+        {
+          "id": "go-a8-generics-iterators#generic-store",
+          "kind": "scene",
+          "parent": "go-a8-generics-iterators"
+        },
+        {
+          "id": "go-a8-generics-iterators#iterator",
+          "kind": "scene",
+          "parent": "go-a8-generics-iterators"
+        },
+        {
+          "id": "go-a8-generics-iterators#check",
+          "kind": "scene",
+          "parent": "go-a8-generics-iterators"
+        },
+        {
+          "id": "go-a8-generics-iterators#quiz:go-generics",
+          "kind": "quiz",
+          "parent": "go-a8-generics-iterators"
+        },
+        {
+          "id": "go-a8-generics-iterators#quiz:go-generics/q1",
+          "kind": "question",
+          "parent": "go-a8-generics-iterators#quiz:go-generics"
+        },
+        {
+          "id": "go-a8-generics-iterators#quiz:go-generics/q2",
+          "kind": "question",
+          "parent": "go-a8-generics-iterators#quiz:go-generics"
+        },
+        {
+          "id": "go-a9-testing-tooling",
+          "kind": "lesson",
+          "phase": "A",
+          "title": "Testing & the Tooling Bar"
+        },
+        {
+          "id": "go-a9-testing-tooling#table",
+          "kind": "scene",
+          "parent": "go-a9-testing-tooling"
+        },
+        {
+          "id": "go-a9-testing-tooling#httptest",
+          "kind": "scene",
+          "parent": "go-a9-testing-tooling"
+        },
+        {
+          "id": "go-a9-testing-tooling#check",
+          "kind": "scene",
+          "parent": "go-a9-testing-tooling"
+        },
+        {
+          "id": "go-a9-testing-tooling#quiz:go-testing",
+          "kind": "quiz",
+          "parent": "go-a9-testing-tooling"
+        },
+        {
+          "id": "go-a9-testing-tooling#quiz:go-testing/q1",
+          "kind": "question",
+          "parent": "go-a9-testing-tooling#quiz:go-testing"
+        },
+        {
+          "id": "go-a9-testing-tooling#quiz:go-testing/q2",
+          "kind": "question",
+          "parent": "go-a9-testing-tooling#quiz:go-testing"
+        },
+        {
+          "id": "go-a10-concurrency-ship",
+          "kind": "lesson",
+          "phase": "A",
+          "title": "Concurrency Preview + Ship It"
+        },
+        {
+          "id": "go-a10-concurrency-ship#fanout",
+          "kind": "scene",
+          "parent": "go-a10-concurrency-ship"
+        },
+        {
+          "id": "go-a10-concurrency-ship#context",
+          "kind": "scene",
+          "parent": "go-a10-concurrency-ship"
+        },
+        {
+          "id": "go-a10-concurrency-ship#race",
+          "kind": "scene",
+          "parent": "go-a10-concurrency-ship"
+        },
+        {
+          "id": "go-a10-concurrency-ship#install",
+          "kind": "scene",
+          "parent": "go-a10-concurrency-ship"
+        },
+        {
+          "id": "go-a10-concurrency-ship#check",
+          "kind": "scene",
+          "parent": "go-a10-concurrency-ship"
+        },
+        {
+          "id": "go-a10-concurrency-ship#quiz:go-concurrency",
+          "kind": "quiz",
+          "parent": "go-a10-concurrency-ship"
+        },
+        {
+          "id": "go-a10-concurrency-ship#quiz:go-concurrency/q1",
+          "kind": "question",
+          "parent": "go-a10-concurrency-ship#quiz:go-concurrency"
+        },
+        {
+          "id": "go-a10-concurrency-ship#quiz:go-concurrency/q2",
+          "kind": "question",
+          "parent": "go-a10-concurrency-ship#quiz:go-concurrency"
+        }
+      ],
+      "mapping": {
+        "ref": "content/alp/go.mapping.yaml",
+        "contentHash": "sha256:55e94ab966a11710e52918476f5c202938f374860d8db5307a7bfb7628af9253"
+      }
+    }
+  ]
+}

@@ -10,7 +10,8 @@
     "activity-source",
     "curriculum-reader",
     "content-mapper",
-    "authoring-target"
+    "authoring-target",
+    "platform-validator"
   ],
   "stableIdentifierKinds": [
     "lesson",

@@ -325,11 +325,11 @@ func TestPlatformPlanReshapesSpecificationVersionsCreatedBeforeTeachingShapes(t 
 		t.Fatal(err)
 	}
 	stored.Teaching.Shape, stored.Adaptation.Persona, stored.Provenance.Personas = nil, nil, nil
-	legacy, _, err := platform.ReviseUnitSpec(stored, nil)
+	legacy, err := platform.ReviseUnitSpec(stored, nil, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	encoded, err := platform.EncodeSpec(legacy)
+	encoded, err := platform.EncodeSpec(legacy.Spec)
 	if err != nil {
 		t.Fatal(err)
 	}

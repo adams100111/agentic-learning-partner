@@ -125,7 +125,9 @@ Specifications contain no platform-native rendering concepts.
 
 Projections are recomputed freely. A new unit specification version is written only when a **material** field changes: competencies (IDs and roles), prerequisites, adaptation mode, misconceptions, required evidence, or the teaching shape (`teachingShape`: `teaching.shape` plus the private `risks`). Anything else (titles, objectives, claims, provenance including persona document hashes, override reasons, experience levels, a new projection revision from evidence that changes nothing material) keeps the stored version, which `plan` reports as `unchanged`. So a persona or profile edit is a material change only when it changes the derived teaching shape; it is not evidence-linked. A version created before teaching shapes has none, so the next `plan` writes a new version with `materialFields: [teachingShape]`. A new version carries `supersedes: {version, contentHash}` and `change: {materialFields, evidenceLinked}`, where `evidenceLinked` is true when the learner state revision changed with it. The curriculum specification is re-versioned only when its goal, groups or referenced unit versions change.
 
-Once a unit is realized (Realization Links, ticket #73), a material change will also have to be evidence-linked before it produces a new version and so a content change; until then units are unrealized and are re-specified freely.
+Once a unit is realized (it has a Realization Link, see below), its content exists on the platform, so a material change produces a new version (and so a content change) only when it is **evidence-linked**. A material change to a realized unit without new learner state is **held**: `plan` keeps the stored version and reports `status: held` with the `heldFields` it held back; since a persona or profile edit is not evidence-linked, a teaching shape change alone is held for a realized unit. Unrealized units are re-specified freely.
+
+A realized unit keeps its specification ID. When a proposed unit (`uspec_…` keyed by its competency) is realized as a new unit-level platform item, later plans recognise that item through its Realization Link and keep the proposed unit's ID instead of minting an item-derived one. Until a new version is written, `plan` shows a realized unit at its realized item (`platformItem`, `realized: true`) and, so that realized content is never authored again, a kept version justifies only what the realized unit justifies now (for example `activity`, or nothing); a kept curriculum version likewise justifies what its units justify now, so a realized skeleton is no longer a new target.
 
 ## Authoring Plans and Authoring Intent
 
@@ -155,3 +157,46 @@ The authoring skill (PyLearn: `pylearn-alp-authoring`) must apply `teachingInten
 - `pace` sets density and difficulty (`senior-dense`: no beginner restatement, dense examples; `gentle`: more scaffolding); `activityTypes` picks the exercise forms (prefer the earlier ones); `avoid` lists forms and framings the content must not use; `emphasis` lists themes the content must foreground; `feedback` sets the voice of hints, explanations and grading feedback.
 
 Shared content is authored once for every learner, so the shape biases choices (examples, analogies, difficulty, exercise mix) without per-learner variants. It may read the full unit specifications in the learner workspace (for example `adaptation.misconceptions` and `adaptation.mode` to shape difficulty and examples, or `adaptation.persona.risks` to design exercises that surface them) but must never copy them, or anything else outside `public`, into content or PRs.
+
+## Platform Gate Results and Realization Links
+
+```
+alp platform gates record --adapter pylearn --target go-alp --curriculum curriculum-export.json \
+  --plan apl_… --result gate-result.json [--realization realization.json] [--workspace PATH]
+```
+
+`gates record` requires the Platform Validator, Authoring Target and Curriculum Reader capabilities. It attaches a Platform Gate Result (`schemas/platform-gate-result.schema.json`) to a recorded Authoring Plan and decides, for every unit in the plan's scope, whether that unit specification version is **realized** (ADR-0057, Q22, Q27).
+
+**Inputs.**
+
+- `--result`: the platform validator's own JSON, recorded verbatim. PyLearn's is the stdout of `bun run validate:platform --target <id>` (it composes `compile:go`, `gate:reels --json`, `lint:lessons --json`, `typecheck` and `gate:alp-mapping --json` and decides `publishable`; it exits 1 when not publishable, which still prints a result to record). The result must be schema-valid, for the adapter's platform and `--target`, with unique gate IDs (`invalid-gate-result` otherwise). ALP never interprets gate commands, artifacts or diagnostics.
+- `--curriculum`: the curriculum export **after** authoring (for PyLearn, `export:curriculum --course <id>` on the authoring branch), the only source of which items are declared-stable.
+- `--realization` (`schemas/platform-realization-report.schema.json`): what the authoring target skill realized. Optional; without it no unit can be realized.
+
+```json
+{
+  "schemaVersion": 1,
+  "plan": "apl_…",
+  "units": [
+    {
+      "unit": "uspec_…",
+      "items": ["go-alp-s1-scheduler", "go-alp-s1-scheduler#quiz:preemption"],
+      "claims": [
+        {"domain": "go", "competency": "go.runtime.scheduler",
+         "sources": [{"url": "https://go.dev/doc/go1.27", "version": "go1.27", "verifiedAt": "2026-10-07"}]}
+      ]
+    }
+  ]
+}
+```
+
+`items` are the target's opaque item IDs. They must all be items of the curriculum export (so declared-stable; heading slugs and positional scene IDs never are), exactly one must be a unit-level item (placed in a phase) and the rest must descend from it. An existing unit must be realized by its own platform item, a realized unit keeps its unit-level item, and an item realizes at most one unit specification (`invalid-realization-link`, `realization-conflict`). `claims` give the source provenance of the unit's `teaching.claims` (Q27): every claim needs at least one source with a `url` and `verifiedAt` date (`YYYY-MM-DD`); a version-sensitive claim's sources must also name the `version` verified. A report for another plan, a unit outside the plan, or a claim the unit does not declare is refused (`invalid-realization-report`). A refused input records nothing.
+
+**Realization rule.** A unit is `realized` only when the result is `publishable`, the report lists its items, and every claim has the required provenance. Otherwise it is `unrealized` with every reason: `not-publishable` (naming the failed and skipped gates), `realization-not-reported`, or `provenance-missing` (per claim). Recording an unpublishable result is not an error: the record is the audit trail.
+
+**Records** (canonical, append-only, one Store transaction):
+
+- `authoring-plans/<apl_id>/gate-results/<pgr_id>.json` (`schemas/platform-gate-record.schema.json`): `learnerId`, `target`, `plan {id, intent}`, `recordedAt`, the verbatim `result`, and per unit `{unit {id, version, contentHash}, status, reasons, realization}`. Its ID hashes the plan, result and report, so recording the same inputs again reports `status: already-recorded` and writes nothing.
+- `specifications/realizations/<rlz_id>.json` (`schemas/realization-link.schema.json`), one per realized unit version: the Realization Link with `unit`, `plan`, `gateRecord`, `root` (the unit-level item), every realizing `items` entry as a namespaced `{platform, target, item}`, and the unit's `claims` with their `sources`. Specification versions stay immutable; the link is the record on the specification of what realized it.
+
+Output: `{schemaVersion, adapter, target, status: recorded|already-recorded, path, record, realizations}` (each realization with its `path`).

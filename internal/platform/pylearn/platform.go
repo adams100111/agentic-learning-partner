@@ -15,6 +15,7 @@ var _ platform.Adapter = Adapter{}
 var _ platform.CurriculumSource = Adapter{}
 var _ platform.ContentMappingValidator = Adapter{}
 var _ platform.AuthoringTargetDeclaration = Adapter{}
+var _ platform.GateResultReader = Adapter{}
 
 // AuthoringSkillName is the PyLearn repo-local skill that realizes ALP
 // Curriculum and Learning Unit Specifications as PyLearn-native content and
@@ -25,9 +26,10 @@ func (Adapter) ID() string { return AdapterID }
 
 // Capabilities declares what the PyLearn adapter supports today. Authoring
 // Target is declared because PyLearn names its authoring target skill;
-// validation is not declared until it is implemented.
+// Platform Validator because PyLearn composes its own gates into a Platform
+// Gate Result (`bun run validate:platform --target <id>`).
 func (Adapter) Capabilities() []platform.Capability {
-	return []platform.Capability{platform.ActivitySource, platform.CurriculumReader, platform.ContentMapper, platform.AuthoringTarget}
+	return []platform.Capability{platform.ActivitySource, platform.CurriculumReader, platform.ContentMapper, platform.AuthoringTarget, platform.PlatformValidator}
 }
 
 // AuthoringSkill names the platform-declared authoring target skill.
@@ -55,4 +57,12 @@ func (a Adapter) ValidateContentMapping(mapping []byte, name string, curriculum 
 		Curriculum:  curriculum,
 		Packs:       a.Domains,
 	})
+}
+
+// ReadGateResult reads the Platform Gate Result PyLearn's validator prints:
+// `bun run validate:platform --target <id>` composes compile:go, gate:reels,
+// lint:lessons, typecheck and gate:alp-mapping and decides `publishable`.
+// ALP records the gates as PyLearn reports them.
+func (Adapter) ReadGateResult(data []byte, target string) (platform.GateResult, error) {
+	return platform.ReadGateResult(data, platform.GateExpectation{Platform: AdapterID, Target: target})
 }

@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/platform-realization-report.schema.json",
+  "title": "ALP Platform Realization Report v1",
+  "description": "What an authoring target skill realized for one Authoring Plan, passed to `alp platform gates record --realization`: per unit specification, the declared-stable platform items that realize it (exactly one unit-level item plus its descendants, by the IDs of the target's curriculum export) and the source provenance recorded for its version-sensitive and source-required claims (Q27).",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "plan",
+    "units"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "plan": {
+      "type": "string",
+      "pattern": "^apl_[0-9a-f]{24}$"
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "unit",
+          "items",
+          "claims"
+        ],
+        "properties": {
+          "unit": {
+            "type": "string",
+            "pattern": "^uspec_[0-9a-f]{24}$"
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Opaque platform item IDs of the plan's target."
+          },
+          "claims": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "domain",
+                "competency",
+                "sources"
+              ],
+              "properties": {
+                "domain": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "competency": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sources": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/source"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "source": {
+      "type": "object",
+      "required": [
+        "url",
+        "verifiedAt"
+      ],
+      "properties": {
+        "url": {
+          "type": "string",
+          "pattern": "^https?://[^\\s]+$",
+          "description": "Source the claim was re-verified against."
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Version of the technology the source documents; required for version-sensitive claims."
+        },
+        "verifiedAt": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "description": "Date (YYYY-MM-DD) the claim was re-verified."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

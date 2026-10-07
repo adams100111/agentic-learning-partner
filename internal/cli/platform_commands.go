@@ -22,7 +22,8 @@ const platformUsage = "usage: alp platform inspect --adapter ID --target ID --cu
 	"       alp platform import --adapter ID --target ID --curriculum FILE --mapping FILE --export FILE [--cursor CURSOR] [--workspace PATH]\n" +
 	"       alp platform plan --adapter ID --target ID --curriculum FILE --mapping FILE [--constraints FILE] [--intent target-skeleton|curriculum|unit|activity|patch] [--unit ID] [--workspace PATH]\n" +
 	"       alp platform decision accept --adapter ID --target ID --curriculum FILE --mapping FILE [--constraints FILE] --unit ITEM --mode skip|challenge|skim|full --basis REVISION --confirm [--reason TEXT] [--workspace PATH]\n" +
-	"       alp platform decision revoke --adapter ID --target ID --curriculum FILE --mapping FILE [--constraints FILE] --decision ID --basis REVISION --confirm [--reason TEXT] [--workspace PATH]"
+	"       alp platform decision revoke --adapter ID --target ID --curriculum FILE --mapping FILE [--constraints FILE] --decision ID --basis REVISION --confirm [--reason TEXT] [--workspace PATH]\n" +
+	"       alp platform gates record --adapter ID --target ID --curriculum FILE --plan PLAN --result FILE [--realization FILE] [--workspace PATH]"
 
 // defaultPlatforms is the composition root for built-in platform adapters.
 func defaultPlatforms() platform.Registry {
@@ -65,6 +66,10 @@ type platformFlags struct {
 	reason      string
 	// Authoring flags.
 	intent string
+	// Gate flags.
+	plan        string
+	result      string
+	realization string
 }
 
 // platformCommands is keyed by the command words, e.g. "mapping validate".
@@ -86,10 +91,14 @@ var platformCommands = map[string]platformCommand{
 	// need the same inputs.
 	"decision accept": {capabilities: []platform.Capability{platform.ContentMapper, platform.CurriculumReader}, run: runPlatformDecisionAccept},
 	"decision revoke": {capabilities: []platform.Capability{platform.ContentMapper, platform.CurriculumReader}, run: runPlatformDecisionRevoke},
+	// Gate results attach to Authoring Plans the authoring target realized;
+	// Realization Links are checked against the curriculum export, the only
+	// source of which items are declared-stable.
+	"gates record": {capabilities: []platform.Capability{platform.PlatformValidator, platform.AuthoringTarget, platform.CurriculumReader}, run: runPlatformGatesRecord},
 }
 
 // platformCommandGroups are first words that take a second command word.
-var platformCommandGroups = map[string]bool{"mapping": true, "account": true, "decision": true}
+var platformCommandGroups = map[string]bool{"mapping": true, "account": true, "decision": true, "gates": true}
 
 func (a App) runPlatform(args []string) int {
 	if len(args) == 0 {
@@ -124,6 +133,9 @@ func (a App) runPlatform(args []string) int {
 	decisionID := flags.String("decision", "", "Accepted Adaptation Decision ID")
 	reason := flags.String("reason", "", "the learner's reason for the decision")
 	intent := flags.String("intent", "", "Authoring Intent: target-skeleton, curriculum, unit, activity or patch")
+	planID := flags.String("plan", "", "Authoring Plan ID the gate result is attached to")
+	result := flags.String("result", "", "platform gate result file")
+	realization := flags.String("realization", "", "realization report from the authoring target")
 	explicitWorkspace := flags.String("workspace", "", "learner workspace path")
 	if err := flags.Parse(rest); err != nil {
 		return a.platformUsageError(err.Error())
@@ -157,7 +169,7 @@ func (a App) runPlatform(args []string) int {
 		curriculum: *curriculum, mapping: *mapping, export: *export, cursor: *cursor, cursorSet: cursorSet,
 		instance: *instance, user: *user, confirm: *confirm, workspace: *explicitWorkspace,
 		constraints: *constraints, unit: *unit, mode: *mode, basis: *basis, decision: *decisionID, reason: *reason,
-		intent: *intent,
+		intent: *intent, plan: *planID, result: *result, realization: *realization,
 	})
 }
 
