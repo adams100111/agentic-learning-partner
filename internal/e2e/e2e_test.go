@@ -20,6 +20,7 @@ import (
 	"github.com/adams100111/agentic-learning-partner/internal/platform/pylearn"
 	"github.com/adams100111/agentic-learning-partner/internal/state"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
+	"go.yaml.in/yaml/v3"
 )
 
 func TestV0ClosedLoopFromPlatformEvidenceToPlan(t *testing.T) {
@@ -205,13 +206,55 @@ func TestPortableAndClaudePluginManifestsShareOneSkillTree(t *testing.T) {
 		if !entry.IsDir() {
 			continue
 		}
-		if _, err := os.Stat(filepath.Join(root, "skills", entry.Name(), "SKILL.md")); err == nil {
-			validSkills++
+		data, err := os.ReadFile(filepath.Join(root, "skills", entry.Name(), "SKILL.md"))
+		if err != nil {
+			t.Fatalf("skill directory %s has no SKILL.md: %v", entry.Name(), err)
 		}
+		frontmatter := skillFrontmatter(t, entry.Name(), data)
+		if frontmatter.Name != entry.Name() {
+			t.Fatalf("skill %s: frontmatter name %q must equal its directory name", entry.Name(), frontmatter.Name)
+		}
+		if strings.TrimSpace(frontmatter.Description) == "" {
+			t.Fatalf("skill %s: frontmatter description is required for harness discovery", entry.Name())
+		}
+		validSkills++
 	}
-	if validSkills < 7 {
+	// The eight learning skills plus the platform adaptation and authoring
+	// orchestration skills (#74).
+	if validSkills < 10 {
 		t.Fatalf("shared skill tree has %d valid skills", validSkills)
 	}
+	for _, required := range []string{"adapt-platform-target", "orchestrate-platform-authoring"} {
+		if _, err := os.Stat(filepath.Join(root, "skills", required, "SKILL.md")); err != nil {
+			t.Fatalf("platform skill %s is not packaged in the shared skill tree: %v", required, err)
+		}
+	}
+}
+
+type skillMetadata struct {
+	Name        string `yaml:"name"`
+	Description string `yaml:"description"`
+}
+
+// skillFrontmatter parses the YAML frontmatter Claude Code and Codex read to
+// discover a skill.
+func skillFrontmatter(t *testing.T, name string, data []byte) skillMetadata {
+	t.Helper()
+	text := string(data)
+	if !strings.HasPrefix(text, "---\n") {
+		t.Fatalf("skill %s: SKILL.md must start with YAML frontmatter", name)
+	}
+	end := strings.Index(text[4:], "\n---\n")
+	if end < 0 {
+		t.Fatalf("skill %s: SKILL.md frontmatter is not closed", name)
+	}
+	var metadata skillMetadata
+	decoder := yaml.NewDecoder(strings.NewReader(text[4 : 4+end]))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&metadata); err != nil {
+		t.Fatalf("skill %s: frontmatter: %v", name, err)
+	}
+	return metadata
 }
 
 func makeWorkspace(t *testing.T) (string, string) {

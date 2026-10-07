@@ -19,6 +19,10 @@
     "quiz",
     "scene"
   ],
+  "authoringTarget": {
+    "platform": "pylearn",
+    "skill": "pylearn-alp-authoring"
+  },
   "curriculumExport": {
     "schemaVersion": 1,
     "contentHash": "sha256:3f1c0a9d6e2b4c8a7f5e1d3b9a0c2e4f6a8b0d2c4e6f8a0b2d4c6e8f0a2b4c6d"

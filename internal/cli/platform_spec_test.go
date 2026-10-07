@@ -631,3 +631,32 @@ func TestPlatformPlanRequiresTheAuthoringTargetCapability(t *testing.T) {
 		}
 	}
 }
+
+func TestPlatformInspectNamesTheDeclaredAuthoringTargetSkill(t *testing.T) {
+	declared := runPlatform(t, App{}, "inspect", "--adapter", "pylearn", "--target", "go", "--curriculum", pylearnCurriculumFixture)
+	if declared.code != 0 {
+		t.Fatalf("exit = %d, stdout = %s", declared.code, declared.stdout)
+	}
+	var output map[string]any
+	if err := json.Unmarshal(declared.stdout, &output); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(output["authoringTarget"], map[string]any{"platform": "pylearn", "skill": "pylearn-alp-authoring"}) {
+		t.Fatalf("authoringTarget = %#v", output["authoringTarget"])
+	}
+
+	// An adapter that does not declare Authoring Target names no skill, even
+	// when its implementation could.
+	registry := platform.NewRegistry(noAuthoringAdapter{pylearn.NewAdapter()})
+	undeclared := runPlatform(t, App{Platforms: &registry}, "inspect", "--adapter", "read-only", "--target", "go", "--curriculum", pylearnCurriculumFixture)
+	if undeclared.code != 0 {
+		t.Fatalf("exit = %d, stdout = %s", undeclared.code, undeclared.stdout)
+	}
+	output = nil
+	if err := json.Unmarshal(undeclared.stdout, &output); err != nil {
+		t.Fatal(err)
+	}
+	if value, present := output["authoringTarget"]; !present || value != nil {
+		t.Fatalf("authoringTarget = %#v (present %v), want null", value, present)
+	}
+}
