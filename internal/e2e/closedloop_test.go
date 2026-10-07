@@ -232,6 +232,9 @@ func TestClosedLoopGoALP(t *testing.T) {
 	s.step(3, "authoring branch, validate:platform and gates record for the realized unit")
 	branch := s.authoringBranch()
 	realization := filepath.Join(s.pylearn, filepath.FromSlash(smokeRealizationPath))
+	if err := os.MkdirAll(filepath.Dir(realization), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	s.write(realization, s.realizationReport(skeletonPlan, proposed.ID, skeleton))
 	commit := s.commitOnAuthoringBranch(smokeRealizationPath, "test(alp-smoke): realization report for "+proposed.ID)
 	s.curriculum = s.path("curriculum-branch.json")
