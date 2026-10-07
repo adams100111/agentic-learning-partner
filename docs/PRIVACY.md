@@ -32,6 +32,8 @@ Platform/repository adapters should use allowlists and purpose-limited extractio
 
 Do not mirror whole databases or repositories into learner state.
 
+Free text from a platform is kept only when it is the learning evidence itself. The PyLearn adapter keeps a learner's reflection text (a learning reflection) but reduces exercise failure output to a bounded, sanitized one-line summary without local paths (`docs/integrations/PYLEARN_EXPORT.md`, "What import keeps").
+
 ## Generated views
 
 Human views should show enough provenance to explain state but should not expose unnecessary sensitive raw source content.

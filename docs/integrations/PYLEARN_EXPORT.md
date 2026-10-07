@@ -129,6 +129,11 @@ PyLearn's signal-kind policy (what a record shows before Mapping Roles apply):
 
 Lesson progress is navigation/completion evidence only and never sufficient for promotion. A passing test is not automatically mastery. Reflections are learner self-report.
 
+**What import keeps (data minimization, [`../PRIVACY.md`](../PRIVACY.md#adapters)).** Evidence observations keep only what assessment needs:
+
+- a reflection's `text` is kept, trimmed, as the observation: learning reflections are an allowed category and the reflection is the evidence itself;
+- an attempt's `failure` is reduced to a bounded summary: its first non-empty line with terminal escapes and control characters removed, absolute filesystem paths reduced to their file name, whitespace collapsed, and at most 200 characters (ending in `…` when cut). Raw runner output can carry local paths, environment values and unrelated logs, and assessment needs what failed, not the full output. `failure` stays part of the event revision hash, so a changed failure is still a new revision.
+
 ### Project/source code
 
 When PyLearn references a learner project/repository, ALP should inspect the relevant commit/diff and produce separate repository evidence. This can be stronger than platform exercise evidence because it shows independent integration, design, verification, and maintenance.
