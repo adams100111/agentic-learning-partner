@@ -51,7 +51,7 @@ Done when one skill name comes from the platform's declaration and matches the p
 
 ### 3. Hand the plan to that skill
 
-Invoke the declared skill with the Authoring Plan file. It works in the platform's own repository: it realizes the plan's `public` face, re-verifies the plan's claims, runs the platform's gates and opens the platform's normal review. Only `public` may appear in platform content or PRs; the rest of the plan is the learner's private record.
+Invoke the declared skill with the Authoring Plan file and, for each unit in the plan, its private persona view from the `plan` output (`specifications.units[].persona`; re-run step 1's command when you started from an `apl_…` ID — the same inputs give the same plan). It works in the platform's own repository: it realizes the plan's `public` face, re-verifies the plan's claims, runs the platform's gates and opens the platform's normal review. Only `public` may appear in platform content or PRs; the rest of the plan and the persona view are the learner's private record: do not write the persona view to a file in the platform repository.
 
 The skill is the platform's, installed from the platform's repository, so this harness may not have it. When you cannot invoke it, give the learner its name, the plan path and the hand-back below, and stop here; step 4 resumes in any harness once the hand-back exists.
 

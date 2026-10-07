@@ -47,3 +47,5 @@ If no, use it transiently and do not persist it.
 ## Deletion/correction
 
 Canonical append-only learning evidence supports correction/supersession for auditability, but personal profile/persona facts must also support explicit removal where the learner requests it. Audit semantics must not become a reason to retain unnecessary personal information forever.
+
+Immutable records must therefore not copy persona or profile content. Learning Unit Specification versions store only persona/profile document references and content hashes plus the learner-free teaching shape; the private persona view (risks, analogy override reasons, experience levels) is re-derived from the live persona and profile on every `alp platform plan` and never stored (`docs/TARGET_ADAPTATION.md`, "Persona privacy"). Versions written before 2026-10-07 may still hold that view in `adaptation.persona`; they stay readable, and later versions omit it.

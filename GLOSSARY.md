@@ -68,7 +68,7 @@ A platform-neutral specification for one learner-facing unit. It describes compe
 
 ## Teaching Shape
 
-The persona-derived part of a Learning Unit Specification's teaching intent: pace, preferred activity types, avoid and emphasis constraints, feedback style, and per-competency analogy sources (stacks). It is derived deterministically from the effective Global and Domain Persona and the Learner Profile, and is learner-free; the learner's risks, experience levels and raw persona text stay in the specification's private persona basis.
+The persona-derived part of a Learning Unit Specification's teaching intent: pace, preferred activity types, avoid and emphasis constraints, feedback style, and per-competency analogy sources (stacks). It is derived deterministically from the effective Global and Domain Persona and the Learner Profile, and is learner-free. The learner's risks, experience levels and persona reasons form the private persona view, which `alp platform plan` re-derives from the live persona and profile on every run and never stores in a specification version.
 
 ## Authoring Plan
 

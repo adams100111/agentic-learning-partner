@@ -24,6 +24,12 @@ type planSpecEntry struct {
 	HeldFields []string `json:"heldFields,omitempty"`
 	// Realized reports whether this version is realized on the platform.
 	Realized bool `json:"realized,omitempty"`
+	// Persona is the unit's private persona view (risks, analogy override
+	// reasons, analogy source experience), re-derived from the live persona
+	// and profile documents for this plan. It is never stored in a
+	// specification version or Authoring Plan, and must never be copied into
+	// platform content.
+	Persona *platform.PersonaBasis `json:"persona,omitempty"`
 }
 
 type planSpecifications struct {
@@ -115,6 +121,7 @@ func specifyTarget(ws platformWorkspace, adapter platform.Adapter, inputs adapta
 			ID: spec.ID, Version: spec.Version, ContentHash: spec.ContentHash, Path: path, Status: status,
 			Title: spec.Teaching.Title, PlatformItem: spec.Unit.PlatformItem, Group: spec.Unit.Group, Mode: spec.Adaptation.Mode,
 			HeldFields: revision.HeldFields, Realized: realizations.VersionRealized(spec.ID, spec.Version),
+			Persona: personaView(draft.PersonaViews, unitDraft.ID),
 		})
 	}
 
@@ -168,6 +175,15 @@ func specifyTarget(ws platformWorkspace, adapter platform.Adapter, inputs adapta
 		record.Status = "created"
 	}
 	return output, outcome, record, nil
+}
+
+// personaView returns the unit's private persona view, if it has one.
+func personaView(views map[string]platform.PersonaBasis, unitID string) *platform.PersonaBasis {
+	view, ok := views[unitID]
+	if !ok {
+		return nil
+	}
+	return &view
 }
 
 // realizedView is how planning sees a stored unit version once the unit is

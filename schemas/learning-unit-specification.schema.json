@@ -267,7 +267,7 @@
         },
         "persona": {
           "type": "object",
-          "description": "Private persona basis of the teaching shape: the learner's risks, the persona's reasons for applied analogy overrides, and the learner's experience behind each analogy source.",
+          "description": "Legacy, read-only: versions written before 2026-10-07 stored the private persona basis here (the learner's risks, the persona's reasons for applied analogy overrides, and the learner's experience behind each analogy source). New versions never include it: alp platform plan re-derives this private persona view from the live persona and profile documents on every run and reports it in its output only, so persona-derived content stays removable (PRIVACY.md).",
           "required": ["risks", "analogyReasons", "sourceExperience"],
           "properties": {
             "risks": {

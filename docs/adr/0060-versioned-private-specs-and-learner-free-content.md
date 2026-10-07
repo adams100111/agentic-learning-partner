@@ -23,3 +23,7 @@ Curriculum/Learning Unit Specifications and Target Adaptation Projections drive 
 
 - Ephemeral prompts: content PRs become unauditable.
 - Specs in the platform repo: leaks private learner reasoning.
+
+## Notes
+
+- **2026-10-07 — specifications store no persona-derived private content.** Private specification versions are immutable, while persona and profile facts must stay removable (`docs/PRIVACY.md`). A Learning Unit Specification version therefore stores only persona/profile document references and content hashes and the learner-free teaching shape; the private persona view (risks, analogy override reasons, experience levels) is re-derived from the live persona and profile on every `alp platform plan`. Versions written earlier may hold it in `adaptation.persona` and stay readable. See `docs/TARGET_ADAPTATION.md`, "Persona privacy". This note refines what "private" specs may hold; it does not change the decision.

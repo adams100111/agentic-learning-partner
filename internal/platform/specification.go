@@ -162,8 +162,12 @@ type UnitAdaptation struct {
 	Rationale      string           `json:"rationale"`
 	Competencies   []UnitCompetency `json:"competencies"`
 	Misconceptions []Misconception  `json:"misconceptions"`
-	// Persona is the private persona basis of the teaching shape. Absent on
-	// versions created before teaching shapes.
+	// Persona is a legacy field: versions written before 2026-10-07 stored
+	// the private persona basis here. It is kept only so those versions stay
+	// readable (their content hash covers it) and is never written: the
+	// private persona view is re-derived from the live persona and profile
+	// documents on every plan (SpecDraft.PersonaViews), so persona-derived
+	// content stays removable (PRIVACY.md).
 	Persona *PersonaBasis `json:"persona,omitempty"`
 }
 
@@ -244,6 +248,10 @@ type SpecRequest struct {
 type SpecDraft struct {
 	Curriculum CurriculumSpec
 	Units      []LearningUnitSpec
+	// PersonaViews are the units' private persona views, keyed by unit
+	// specification ID: derived from the live persona and profile documents
+	// for this plan only and never stored in a specification version.
+	PersonaViews map[string]PersonaBasis
 }
 
 // LearnerStateRevision hashes the learner's competency projection: the
@@ -309,6 +317,7 @@ func DraftSpecifications(request SpecRequest) (SpecDraft, error) {
 		learner: newLearnerView(request.LearnerState), constraints: request.Constraints,
 		covered: map[string]bool{}, assessed: assessedByUnit(request.Curriculum, request.Mapping),
 		persona:      request.Persona,
+		personaViews: map[string]PersonaBasis{},
 		realizations: request.Realizations,
 	}
 
@@ -464,7 +473,7 @@ func DraftSpecifications(request SpecRequest) (SpecDraft, error) {
 		Units:         []CurriculumUnit{},
 		Sequence:      []string{},
 	}
-	return SpecDraft{Curriculum: curriculum, Units: ordered}, nil
+	return SpecDraft{Curriculum: curriculum, Units: ordered, PersonaViews: builder.personaViews}, nil
 }
 
 // ComposeCurriculum completes a curriculum draft with the reconciled unit
@@ -544,6 +553,7 @@ type specBuilder struct {
 	// assessed maps each unit item to the competencies its item tree assesses.
 	assessed     map[string]map[string]bool
 	persona      TeachingPersona
+	personaViews map[string]PersonaBasis
 	realizations Realizations
 }
 
@@ -680,8 +690,9 @@ func (b specBuilder) fill(spec *LearningUnitSpec, competencies []UnitCompetency)
 }
 
 // shapeTeaching derives the unit's teaching shape from the learner's
-// personas and profile. A unit with no competencies is shaped by the
-// personas of every domain of the target.
+// personas and profile, and its private persona view, which is kept out of
+// the specification. A unit with no competencies is shaped by the personas
+// of every domain of the target.
 func (b specBuilder) shapeTeaching(spec *LearningUnitSpec) {
 	request := shapeRequest{competencies: spec.Teaching.Competencies, definitions: map[string]domain.Competency{}}
 	for _, competency := range spec.Teaching.Competencies {
@@ -695,7 +706,8 @@ func (b specBuilder) shapeTeaching(spec *LearningUnitSpec) {
 		}
 	}
 	shape, basis := b.persona.shape(request)
-	spec.Teaching.Shape, spec.Adaptation.Persona = &shape, &basis
+	spec.Teaching.Shape = &shape
+	b.personaViews[spec.ID] = basis
 }
 
 func personaProvenance(persona TeachingPersona) *PersonaProvenance {
@@ -933,18 +945,12 @@ func materialMisconceptions(values []Misconception) []Misconception {
 	return result
 }
 
-// materialShape is the derived teaching shape: the public shape and the
-// unit's risks. Persona text that changes neither (override reasons,
-// experience levels, document hashes) is not material.
+// materialShape is the derived teaching shape a version stores. Persona
+// edits that leave it unchanged (risks, override reasons, experience levels,
+// document hashes) are not material: they change only the private persona
+// view, which is re-derived on every plan and never stored.
 func materialShape(spec LearningUnitSpec) any {
-	var risks []UnitRisk
-	if spec.Adaptation.Persona != nil {
-		risks = spec.Adaptation.Persona.Risks
-	}
-	return struct {
-		Shape *TeachingShape `json:"shape"`
-		Risks []UnitRisk     `json:"risks"`
-	}{spec.Teaching.Shape, risks}
+	return spec.Teaching.Shape
 }
 
 func materialUnits(values []CurriculumUnit) []CurriculumUnit {
