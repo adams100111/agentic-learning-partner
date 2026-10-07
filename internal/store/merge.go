@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"time"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -40,6 +41,14 @@ func reconcileSnapshots(base, local, remote map[string][]byte) (map[string][]byt
 		remoteValue, remoteOK := remote[path]
 
 		switch {
+		case strings.HasPrefix(path, "platform-accounts/"):
+			merged, ok, err := reconcilePlatformAccountLink(path, baseValue, baseOK, localValue, localOK, remoteValue, remoteOK)
+			if err != nil {
+				return nil, err
+			}
+			if ok {
+				result[path] = merged
+			}
 		case isAppendOnlyPath(path):
 			merged, ok, err := reconcileAppendOnly(path, baseValue, baseOK, localValue, localOK, remoteValue, remoteOK)
 			if err != nil {
@@ -80,7 +89,11 @@ func reconcileSnapshots(base, local, remote map[string][]byte) (map[string][]byt
 func isAppendOnlyPath(path string) bool {
 	return strings.HasPrefix(path, "evidence/") ||
 		strings.HasPrefix(path, "assessments/") ||
-		strings.HasPrefix(path, "sessions/")
+		strings.HasPrefix(path, "sessions/") ||
+		strings.HasPrefix(path, "platform-accounts/") ||
+		strings.HasPrefix(path, "adaptation-decisions/") ||
+		strings.HasPrefix(path, "specifications/") ||
+		strings.HasPrefix(path, "authoring-plans/")
 }
 
 func reconcileAppendOnly(path string, base []byte, baseOK bool, local []byte, localOK bool, remote []byte, remoteOK bool) ([]byte, bool, error) {
@@ -112,6 +125,69 @@ func reconcileAppendOnly(path string, base []byte, baseOK bool, local []byte, lo
 	default:
 		return nil, false, nil
 	}
+}
+
+// reconcilePlatformAccountLink reconciles a Platform Account Link record. Its
+// ID is derived from {platform, instance, platform user ID}, so linking the
+// same account on two devices creates the same append-only identity with
+// different confirmation timestamps. Such links are equivalent when they link
+// the same learner: every device keeps the earliest confirmed record, so sync
+// converges. Links of one account to different learners still conflict.
+func reconcilePlatformAccountLink(path string, base []byte, baseOK bool, local []byte, localOK bool, remote []byte, remoteOK bool) ([]byte, bool, error) {
+	merged, ok, err := reconcileAppendOnly(path, base, baseOK, local, localOK, remote, remoteOK)
+	if err == nil || baseOK || !localOK || !remoteOK {
+		return merged, ok, err
+	}
+	localLink, parseErr := parsePlatformAccountLink(path, local)
+	if parseErr != nil {
+		return nil, false, parseErr
+	}
+	remoteLink, parseErr := parsePlatformAccountLink(path, remote)
+	if parseErr != nil {
+		return nil, false, parseErr
+	}
+	if localLink.identity() != remoteLink.identity() {
+		return nil, false, SemanticConflict{Path: path, Reason: "platform account is linked to different learners", RequiresLearnerChoice: true}
+	}
+	switch {
+	case localLink.recordedAt.Before(remoteLink.recordedAt):
+		return local, true, nil
+	case remoteLink.recordedAt.Before(localLink.recordedAt):
+		return remote, true, nil
+	case bytes.Compare(local, remote) <= 0:
+		// Equal timestamps: a byte-order tiebreak keeps the choice the same
+		// on every device.
+		return local, true, nil
+	default:
+		return remote, true, nil
+	}
+}
+
+type platformAccountLinkIdentity struct {
+	ID             string `yaml:"id"`
+	RecordedAt     string `yaml:"recordedAt"`
+	Platform       string `yaml:"platform"`
+	Instance       string `yaml:"instance"`
+	PlatformUserID string `yaml:"platformUserId"`
+	LearnerID      string `yaml:"learnerId"`
+	recordedAt     time.Time
+}
+
+func (l platformAccountLinkIdentity) identity() string {
+	return strings.Join([]string{l.ID, l.Platform, l.Instance, l.PlatformUserID, l.LearnerID}, "\x00")
+}
+
+func parsePlatformAccountLink(path string, data []byte) (platformAccountLinkIdentity, error) {
+	var link platformAccountLinkIdentity
+	if err := yaml.Unmarshal(data, &link); err != nil {
+		return link, fmt.Errorf("parse platform account link %s: %w", path, err)
+	}
+	recordedAt, err := time.Parse(time.RFC3339, link.RecordedAt)
+	if err != nil {
+		return link, fmt.Errorf("parse platform account link %s recordedAt: %w", path, err)
+	}
+	link.recordedAt = recordedAt
+	return link, nil
 }
 
 func reconcileWorkspaceManifest(path string, base []byte, baseOK bool, local []byte, localOK bool, remote []byte, remoteOK bool) ([]byte, bool, error) {

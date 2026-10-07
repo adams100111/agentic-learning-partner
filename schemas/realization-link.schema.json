@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/realization-link.schema.json",
+  "title": "ALP Realization Link v1",
+  "description": "Canonical, append-only record (`specifications/realizations/<id>.json`) of which declared-stable platform items realized one Learning Unit Specification version (ADR-0057), written by `alp platform gates record` only when the attached Platform Gate Result is publishable and every claim has source provenance. Platform activity on these items traces back to the specification.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "learnerId",
+    "target",
+    "unit",
+    "plan",
+    "gateRecord",
+    "recordedAt",
+    "root",
+    "items",
+    "claims"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^rlz_[0-9a-f]{24}$"
+    },
+    "learnerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target": {
+      "$ref": "#/$defs/target"
+    },
+    "unit": {
+      "$ref": "#/$defs/specRef"
+    },
+    "plan": {
+      "type": "string",
+      "pattern": "^apl_[0-9a-f]{24}$"
+    },
+    "gateRecord": {
+      "type": "string",
+      "pattern": "^pgr_[0-9a-f]{24}$"
+    },
+    "recordedAt": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "root": {
+      "$ref": "#/$defs/externalId",
+      "description": "The unit-level item (placed in a phase) realizing the unit."
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/externalId"
+      },
+      "description": "Every realizing item: the root and its descendants."
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "domain",
+          "competency",
+          "freshnessClass",
+          "versionSensitive",
+          "sourceRequired",
+          "sources"
+        ],
+        "properties": {
+          "domain": {
+            "type": "string",
+            "minLength": 1
+          },
+          "competency": {
+            "type": "string",
+            "minLength": 1
+          },
+          "freshnessClass": {
+            "type": "string",
+            "minLength": 1
+          },
+          "versionSensitive": {
+            "type": "boolean"
+          },
+          "sourceRequired": {
+            "type": "boolean"
+          },
+          "sources": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/source"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "externalId": {
+      "type": "object",
+      "required": [
+        "platform",
+        "target",
+        "item"
+      ],
+      "properties": {
+        "platform": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "item": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "object",
+      "required": [
+        "platform",
+        "target"
+      ],
+      "properties": {
+        "platform": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "specRef": {
+      "type": "object",
+      "required": [
+        "id",
+        "version",
+        "contentHash"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^uspec_[0-9a-f]{24}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "contentHash": {
+          "$ref": "#/$defs/hash"
+        }
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "url",
+        "verifiedAt"
+      ],
+      "properties": {
+        "url": {
+          "type": "string",
+          "pattern": "^https?://[^\\s]+$",
+          "description": "Source the claim was re-verified against."
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Version of the technology the source documents; required for version-sensitive claims."
+        },
+        "verifiedAt": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "description": "Date (YYYY-MM-DD) the claim was re-verified."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

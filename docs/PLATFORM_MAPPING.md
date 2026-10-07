@@ -2,36 +2,82 @@
 
 ## Ownership
 
-The learning platform owns the mapping from its own content IDs to ALP competency IDs.
+The learning platform owns the mapping from its own content IDs to ALP competency IDs (ADR-0017). The mapping changes in the same PR as the content it describes, because the platform controls content identity, lesson/exercise changes, and what a piece of content actually teaches or tests.
 
-Example in PyLearn:
+The learner workspace does not own platform content mappings. Platform-local tags (for example PyLearn quiz `concept` strings or `concept_mastery` keys) are not ALP competency IDs and are not the mapping.
+
+## Format: schema v2
+
+`schemas/platform-mapping.schema.json` (ADR-0058). One mapping file covers one Learning Target. YAML or JSON (chosen by file extension).
 
 ```yaml
-go-b5-context-debugging:
-  competencies:
-    - go.runtime.context
-    - go.concurrency.goroutines
+schemaVersion: 2
+platform: pylearn
+target: go
+packs:
+  - domain: go
+    packVersion: ">=0.1.0 <0.2.0"   # semver range the mapping was written against
+entries:
+  - item: go-b1-goroutines          # a declared-stable item ID of the target
+    competencies:
+      - id: go.concurrency.goroutines
+        role: teaches
+  - item: go-goroutine-lifetimes
+    strengthCeiling: moderate        # optional cap on evidence strength
+    competencies:
+      - id: go.concurrency.goroutines
+        role: assesses
+      - id: go.concurrency.races-deadlocks-leaks
+        role: assesses
 ```
 
-## Why platform-owned
+- **`item`** must be a declared-stable identifier (ADR-0057) that the target's curriculum export lists. For PyLearn: lesson `id`, explicit Scene `id`, quiz and question IDs. Heading-derived section slugs and positional scene IDs are never listed, so they are rejected.
+- **`role`** is the Mapping Role: `teaches`, `reinforces`, or `assesses`. Only `assesses` activity can yield assessment-grade evidence; `teaches`/`reinforces` activity yields exposure or practice evidence.
+- **`strengthCeiling`** (`weak`, `moderate`, `strong`, `production`) caps evidence strength. The mapping never sets strength itself: strength comes from the adapter's signal-kind policy and the observed result.
+- **`packs`** declares each domain pack used, with a semver `packVersion` range. A competency belongs to the declared pack whose domain is its ID prefix (the domain-prefix check is the only place ALP interprets an ID's structure).
 
-The platform controls:
+### Schema v1 is rejected
 
-- content identity;
-- lesson/exercise changes;
-- what a piece of content actually teaches/tests.
+v1 (a flat `competencies[]` list per `contentId`) carries no Mapping Roles. Roles cannot be inferred without guessing whether content teaches or assesses, so ALP does not migrate v1: it reports `unsupported-mapping-version` and the file must be rewritten as v2.
 
-Therefore the mapping should change in the same PR as the content it describes.
+## Validation: `alp platform mapping validate`
 
-## ALP responsibility
+```sh
+alp platform mapping validate --adapter pylearn --target go \
+  --curriculum curriculum-export.json --mapping go.mapping.yaml
+```
 
-ALP:
+The adapter must declare the Content Mapper and Curriculum Reader capabilities. The curriculum export (`schemas/platform-curriculum-export.schema.json`) is the only source of which items exist and are declared-stable; ALP never reads the platform's repository.
 
-- defines competency IDs in domain packs;
-- validates that mapped IDs exist;
-- normalizes platform events using the mapping;
-- never requires PyLearn phase IDs inside the competency taxonomy.
+Output is deterministic JSON: the mapping's content hash, the curriculum export's hash, each declared pack with its loaded version and compatibility, every entry with its item identity, kind and resolved competencies (`resolvedId` is the current pack ID to use), and `problems[]`. Every problem has a severity, a specific `code`, a JSON Pointer `path` into the mapping, and a message. Exit code 0 means valid (warnings allowed); 1 means at least one error; 2 is a usage error.
 
-## Learner workspace
+Competencies resolve through the domain pack's migrations:
 
-The learner workspace does not own platform content mappings.
+| Pack migration | Result |
+|---|---|
+| none (current ID) | valid |
+| `rename` | valid, `competency-renamed` warning naming the new ID |
+| `split` | `competency-split` error: ALP will not guess which part the item covers |
+| `merge` | `competency-merged` error: merged competencies require reassessment |
+| `reassess` | `competency-reassess` error |
+| `remove` | `competency-removed` error |
+| unknown, no migration | `unknown-competency` error |
+
+Other error codes: `unreadable-mapping`, `unsupported-mapping-version`, `schema`, `platform-mismatch`, `target-mismatch`, `duplicate-pack`, `unknown-domain-pack`, `invalid-pack-version-range`, `pack-version-out-of-range`, `competency-not-resolved` (its pack is unavailable or out of range), `unstable-identifier`, `duplicate-item`, `undeclared-domain`, `duplicate-competency`, `invalid-pack-migration`. Schema errors stop validation before semantic checks; all other problems are reported together.
+
+## Evidence grading on import: `alp platform import`
+
+`alp platform import` (ADR-0059) applies the validated mapping to activity. An activity record's item is looked up in the mapping; if the item itself is not mapped, its nearest mapped ancestor in the curriculum export (`parent` chain, for example question → quiz → lesson) is used. Records on items that are not mapped, or not in the curriculum export at all, are reported as `unmapped` (`not-mapped` / `not-in-curriculum`) and never dropped.
+
+The adapter's signal-kind policy says what a record shows before roles apply: an evidence type, result, base strength, and whether the signal can be assessed at all (an answered question or a checked exercise can; navigation progress and reflections cannot). Each mapped competency then gets an evidence grade:
+
+| Mapping Role | Assessable signal | Not assessable |
+|---|---|---|
+| `teaches` | exposure | exposure |
+| `reinforces` | practice | practice |
+| `assesses` | **assessment** | practice |
+
+- **assessment** evidence keeps the signal's type, result, failure classification and strength, with strength capped by the entry's `strengthCeiling`.
+- **exposure** and **practice** evidence is recorded as `platform-event`, result `neutral`, strength `weak`: it never claims an outcome. The observed result is kept in `metadata.activity.observedResult`.
+
+One evidence record is written per competency domain and grade, so assessment and exposure/practice competencies never share a record. The grade and the roles are recorded in `metadata.evidenceGrade` and `metadata.mappingRoles`.

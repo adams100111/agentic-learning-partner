@@ -21,6 +21,10 @@ Claude Code uses `.claude-plugin/plugin.json` for plugin identity and loads the 
 
 Plugin skills are namespaced by Claude Code automatically.
 
+## Platform authoring target skills
+
+A platform's authoring target skill (ADR-0056) lives in the platform's repository and is installed with it, not with ALP. `orchestrate-platform-authoring` resolves its name from `alp platform inspect` (`authoringTarget.skill`). When the harness cannot invoke it, the orchestration skill hands the learner the plan and the expected hand-back files and resumes at `alp platform gates record`, so correctness never depends on cross-skill invocation (ADR-0012).
+
 ## No shadow state
 
 Harness adapters may provide discovery/ergonomics only.

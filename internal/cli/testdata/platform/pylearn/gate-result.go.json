@@ -1,0 +1,282 @@
+{
+  "schemaVersion": 1,
+  "platform": "pylearn",
+  "target": "go",
+  "publishable": true,
+  "gates": [
+    {
+      "id": "compile:go",
+      "status": "pass",
+      "provenance": {
+        "command": "bun run --cwd apps/web compile:go",
+        "version": "pylearn@9c7ba35+dirty",
+        "exitCode": 0,
+        "startedAt": "2026-10-07T00:26:18.728Z",
+        "finishedAt": "2026-10-07T00:26:20.853Z"
+      },
+      "artifacts": [],
+      "diagnostics": []
+    },
+    {
+      "id": "gate:reels",
+      "status": "warn",
+      "provenance": {
+        "command": "bun run --cwd apps/web gate:reels --json --course go",
+        "version": "pylearn@9c7ba35+dirty",
+        "exitCode": 0,
+        "startedAt": "2026-10-07T00:26:20.854Z",
+        "finishedAt": "2026-10-07T00:26:21.007Z"
+      },
+      "artifacts": [
+        {
+          "ref": "apps/web/content/reel/go-a1.mdx",
+          "contentHash": "sha256:38ad5b0a2a986a99a830cd4c0e356894508af182bbc21a3330902d0be47479ea"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a10.mdx",
+          "contentHash": "sha256:a227d76a86027f960d9ce7b85260ef4921a4fd142f3c512086944e1f5b7e9d38"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a2.mdx",
+          "contentHash": "sha256:7bee00e5d8f39a13eb7108707cbb2c10e16a4f280ff15cc14549b9e1b2958ace"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a3.mdx",
+          "contentHash": "sha256:e7d5cbbf2130e13868c780385e523b7a9c3ba1163e22c75f521131fa0f3c566c"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a4.mdx",
+          "contentHash": "sha256:efa892dbc7898ef2994330f0f5345b3997a9cb94a5e35c2675b20d2146be541b"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a5.mdx",
+          "contentHash": "sha256:3cc5e39b74316ebfaeb7dd729ceff458811f6c330fcf19497ac354025e855449"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a6.mdx",
+          "contentHash": "sha256:b011ef99752b096ecc026674e6c5b3b3e304a2ef80cf79c89fbdb5f76b285457"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a7.mdx",
+          "contentHash": "sha256:b609852b45013a88c1f8dd26923a944c9aa02baf7d80a1cc703cf89c848ffd2a"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a8.mdx",
+          "contentHash": "sha256:12222eb508ba73e239d6fea28af437807dc03f7cb0fb654ab1d554a1e22855a1"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a9.mdx",
+          "contentHash": "sha256:67191841a03f49c305f72599101850cb5e0d46f9181f75ee985a7f046313add2"
+        }
+      ],
+      "diagnostics": [
+        {
+          "severity": "warning",
+          "code": "narration-pending",
+          "message": "Narration pending: G1/G2 skipped (not a failure; reel not yet done).",
+          "item": {
+            "platform": "pylearn",
+            "target": "go",
+            "item": "go-a1-first-delivery"
+          },
+          "artifact": "apps/web/content/reel/go-a1.mdx"
+        },
+        {
+          "severity": "warning",
+          "code": "narration-pending",
+          "message": "Narration pending: G1/G2 skipped (not a failure; reel not yet done).",
+          "item": {
+            "platform": "pylearn",
+            "target": "go",
+            "item": "go-a10-concurrency-ship"
+          },
+          "artifact": "apps/web/content/reel/go-a10.mdx"
+        },
+        {
+          "severity": "warning",
+          "code": "narration-pending",
+          "message": "Narration pending: G1/G2 skipped (not a failure; reel not yet done).",
+          "item": {
+            "platform": "pylearn",
+            "target": "go",
+            "item": "go-a2-model-the-domain"
+          },
+          "artifact": "apps/web/content/reel/go-a2.mdx"
+        },
+        {
+          "severity": "warning",
+          "code": "narration-pending",
+          "message": "Narration pending: G1/G2 skipped (not a failure; reel not yet done).",
+          "item": {
+            "platform": "pylearn",
+            "target": "go",
+            "item": "go-a3-errors-as-values"
+          },
+          "artifact": "apps/web/content/reel/go-a3.mdx"
+        },
+        {
+          "severity": "warning",
+          "code": "narration-pending",
+          "message": "Narration pending: G1/G2 skipped (not a failure; reel not yet done).",
+          "item": {
+            "platform": "pylearn",
+            "target": "go",
+            "item": "go-a4-collections"
+          },
+          "artifact": "apps/web/content/reel/go-a4.mdx"
+        },
+        {
+          "severity": "warning",
+          "code": "narration-pending",
+          "message": "Narration pending: G1/G2 skipped (not a failure; reel not yet done).",
+          "item": {
+            "platform": "pylearn",
+            "target": "go",
+            "item": "go-a5-interfaces"
+          },
+          "artifact": "apps/web/content/reel/go-a5.mdx"
+        },
+        {
+          "severity": "warning",
+          "code": "narration-pending",
+          "message": "Narration pending: G1/G2 skipped (not a failure; reel not yet done).",
+          "item": {
+            "platform": "pylearn",
+            "target": "go",
+            "item": "go-a6-persistence"
+          },
+          "artifact": "apps/web/content/reel/go-a6.mdx"
+        },
+        {
+          "severity": "warning",
+          "code": "narration-pending",
+          "message": "Narration pending: G1/G2 skipped (not a failure; reel not yet done).",
+          "item": {
+            "platform": "pylearn",
+            "target": "go",
+            "item": "go-a7-cli-surface"
+          },
+          "artifact": "apps/web/content/reel/go-a7.mdx"
+        },
+        {
+          "severity": "warning",
+          "code": "narration-pending",
+          "message": "Narration pending: G1/G2 skipped (not a failure; reel not yet done).",
+          "item": {
+            "platform": "pylearn",
+            "target": "go",
+            "item": "go-a8-generics-iterators"
+          },
+          "artifact": "apps/web/content/reel/go-a8.mdx"
+        },
+        {
+          "severity": "warning",
+          "code": "narration-pending",
+          "message": "Narration pending: G1/G2 skipped (not a failure; reel not yet done).",
+          "item": {
+            "platform": "pylearn",
+            "target": "go",
+            "item": "go-a9-testing-tooling"
+          },
+          "artifact": "apps/web/content/reel/go-a9.mdx"
+        }
+      ]
+    },
+    {
+      "id": "lint:lessons",
+      "status": "pass",
+      "provenance": {
+        "command": "bun run --cwd apps/web lint:lessons --json --course go",
+        "version": "pylearn@9c7ba35+dirty",
+        "exitCode": 0,
+        "startedAt": "2026-10-07T00:26:21.007Z",
+        "finishedAt": "2026-10-07T00:26:21.223Z"
+      },
+      "artifacts": [
+        {
+          "ref": "apps/web/content/alp/go.mapping.yaml",
+          "contentHash": "sha256:55e94ab966a11710e52918476f5c202938f374860d8db5307a7bfb7628af9253"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a1.mdx",
+          "contentHash": "sha256:38ad5b0a2a986a99a830cd4c0e356894508af182bbc21a3330902d0be47479ea"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a10.mdx",
+          "contentHash": "sha256:a227d76a86027f960d9ce7b85260ef4921a4fd142f3c512086944e1f5b7e9d38"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a2.mdx",
+          "contentHash": "sha256:7bee00e5d8f39a13eb7108707cbb2c10e16a4f280ff15cc14549b9e1b2958ace"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a3.mdx",
+          "contentHash": "sha256:e7d5cbbf2130e13868c780385e523b7a9c3ba1163e22c75f521131fa0f3c566c"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a4.mdx",
+          "contentHash": "sha256:efa892dbc7898ef2994330f0f5345b3997a9cb94a5e35c2675b20d2146be541b"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a5.mdx",
+          "contentHash": "sha256:3cc5e39b74316ebfaeb7dd729ceff458811f6c330fcf19497ac354025e855449"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a6.mdx",
+          "contentHash": "sha256:b011ef99752b096ecc026674e6c5b3b3e304a2ef80cf79c89fbdb5f76b285457"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a7.mdx",
+          "contentHash": "sha256:b609852b45013a88c1f8dd26923a944c9aa02baf7d80a1cc703cf89c848ffd2a"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a8.mdx",
+          "contentHash": "sha256:12222eb508ba73e239d6fea28af437807dc03f7cb0fb654ab1d554a1e22855a1"
+        },
+        {
+          "ref": "apps/web/content/reel/go-a9.mdx",
+          "contentHash": "sha256:67191841a03f49c305f72599101850cb5e0d46f9181f75ee985a7f046313add2"
+        }
+      ],
+      "diagnostics": []
+    },
+    {
+      "id": "typecheck",
+      "status": "pass",
+      "provenance": {
+        "command": "bun run typecheck",
+        "version": "pylearn@9c7ba35+dirty",
+        "exitCode": 0,
+        "startedAt": "2026-10-07T00:26:21.223Z",
+        "finishedAt": "2026-10-07T00:26:21.351Z"
+      },
+      "artifacts": [],
+      "diagnostics": []
+    },
+    {
+      "id": "gate:alp-mapping",
+      "status": "pass",
+      "provenance": {
+        "command": "bun run --cwd apps/web gate:alp-mapping --json --course go --required",
+        "version": "pylearn@9c7ba35+dirty",
+        "exitCode": 0,
+        "startedAt": "2026-10-07T00:26:21.351Z",
+        "finishedAt": "2026-10-07T00:26:21.553Z"
+      },
+      "artifacts": [
+        {
+          "ref": "apps/web/content/alp/go.mapping.yaml",
+          "contentHash": "sha256:55e94ab966a11710e52918476f5c202938f374860d8db5307a7bfb7628af9253"
+        }
+      ],
+      "diagnostics": [
+        {
+          "severity": "info",
+          "code": "pack-version",
+          "message": "domain pack go 0.1.0 satisfies the mapping's packVersion \">=0.1.0 <0.2.0\"",
+          "artifact": "apps/web/content/alp/go.mapping.yaml"
+        }
+      ]
+    }
+  ]
+}

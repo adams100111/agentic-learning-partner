@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/accepted-adaptation-decision.schema.json",
+  "title": "ALP Accepted Adaptation Decision",
+  "description": "A canonical, append-only workspace record (adaptation-decisions/<id>.yaml) of an adaptation choice the learner explicitly confirmed for one unit of a shared Learning Target (ADR-0060, ADR-0061). It is an input to the Target Adaptation Projection, not part of it, so it survives projection rebuilds. Agents may only propose; only the learner confirms. A decision is revoked or replaced by a later record that supersedes it.",
+  "type": "object",
+  "required": ["schemaVersion", "id", "recordedAt", "learnerId", "target", "action", "basis", "confirmation"],
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "id": {"type": "string", "pattern": "^aad_[A-Za-z0-9_-]+$"},
+    "recordedAt": {"type": "string", "format": "date-time"},
+    "learnerId": {"type": "string", "minLength": 1, "description": "The workspace learner who confirmed the decision."},
+    "target": {
+      "type": "object",
+      "required": ["platform", "target"],
+      "properties": {
+        "platform": {"type": "string", "minLength": 1},
+        "target": {"type": "string", "minLength": 1, "description": "Opaque, platform-owned Learning Target ID."}
+      },
+      "additionalProperties": false
+    },
+    "unit": {"type": "string", "minLength": 1, "description": "Opaque, declared-stable platform item ID of the unit the decision applies to."},
+    "action": {"enum": ["accept", "revoke"], "description": "accept binds a mode for the unit (superseding any active decision for it); revoke supersedes an active decision without replacing it."},
+    "mode": {"enum": ["skip", "challenge", "skim", "full"]},
+    "reason": {"type": "string", "minLength": 1},
+    "basis": {
+      "type": "object",
+      "required": ["projectionRevision"],
+      "properties": {
+        "projectionRevision": {"type": "string", "pattern": "^tapr_[a-f0-9]{24}$", "description": "The Target Adaptation Projection revision the learner confirmed against."}
+      },
+      "additionalProperties": false
+    },
+    "supersedes": {"type": "array", "items": {"type": "string", "pattern": "^aad_[A-Za-z0-9_-]+$"}, "uniqueItems": true, "minItems": 1},
+    "confirmation": {
+      "type": "object",
+      "required": ["confirmedBy", "confirmedAt"],
+      "properties": {
+        "confirmedBy": {"const": "learner", "description": "Only the learner can confirm an adaptation decision; agents may only propose."},
+        "confirmedAt": {"type": "string", "format": "date-time"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"action": {"const": "accept"}}},
+      "then": {"required": ["unit", "mode"]}
+    },
+    {
+      "if": {"properties": {"action": {"const": "revoke"}}},
+      "then": {"required": ["unit", "supersedes"], "not": {"required": ["mode"]}}
+    }
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,320 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/learning-unit-specification.schema.json",
+  "title": "ALP Learning Unit Specification",
+  "description": "One immutable version (specifications/units/<id>-v<version>.json) of a platform-neutral Learning Unit Specification in the private learner workspace (ADR-0056, ADR-0060), written by alp platform plan. contentHash hashes the version's canonical JSON without contentHash; a new version is written only when a material field changes (competencies, prerequisites, adaptation mode, misconceptions, required evidence, teaching shape). teaching is learner-free teaching intent; adaptation is the private learner basis and never leaves the workspace. Contains no platform-native rendering concepts.",
+  "type": "object",
+  "required": ["schemaVersion", "id", "version", "contentHash", "learnerId", "target", "provenance", "authoringIntent", "unit", "teaching", "adaptation"],
+  "$defs": {
+    "personaSource": {
+      "type": "object",
+      "required": ["path", "contentHash"],
+      "properties": {"path": {"type": "string", "minLength": 1}, "contentHash": {"$ref": "#/$defs/hash"}},
+      "additionalProperties": false
+    },
+    "teachingShape": {
+      "type": "object",
+      "description": "Persona-derived teaching shape (Q26): how content for this unit should be pitched. Learner-free: analogy stacks and teaching constraints only, never learner identity, experience levels or risks.",
+      "required": ["pace", "activityTypes", "avoid", "emphasis", "feedback", "analogies"],
+      "properties": {
+        "pace": {"enum": ["gentle", "standard", "senior-dense"]},
+        "activityTypes": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "avoid": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "emphasis": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "feedback": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "analogies": {
+          "type": "array",
+          "description": "Per competency: the stacks to draw analogies and transfer contrasts from, in preference order. basis semantic-override names the persona concepts that matched; default-priority means none matched; none means the learner profile lists no usable stack.",
+          "items": {
+            "type": "object",
+            "required": ["domain", "competency", "basis", "concepts", "sources"],
+            "properties": {
+              "domain": {"type": "string", "minLength": 1},
+              "competency": {"type": "string", "minLength": 1},
+              "basis": {"enum": ["semantic-override", "default-priority", "none"]},
+              "concepts": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+              "sources": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "unitSpecId": {"type": "string", "pattern": "^uspec_[0-9a-f]{24}$"},
+    "externalId": {
+      "type": "object",
+      "required": ["platform", "target"],
+      "properties": {
+        "platform": {"type": "string", "minLength": 1},
+        "target": {"type": "string", "minLength": 1},
+        "item": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "sourceRef": {
+      "type": "object",
+      "required": ["schemaVersion", "contentHash"],
+      "properties": {"schemaVersion": {"type": "integer"}, "contentHash": {"type": "string", "minLength": 1}},
+      "additionalProperties": false
+    },
+    "competencyRef": {
+      "type": "object",
+      "required": ["domain", "id"],
+      "properties": {"domain": {"type": "string", "minLength": 1}, "id": {"type": "string", "minLength": 1}},
+      "additionalProperties": false
+    },
+    "role": {"enum": ["teaches", "reinforces", "assesses"]},
+    "mode": {"enum": ["skip", "challenge", "skim", "full"]},
+    "versionRef": {
+      "type": "object",
+      "required": ["version", "contentHash"],
+      "properties": {"version": {"type": "integer", "minimum": 1}, "contentHash": {"$ref": "#/$defs/hash"}},
+      "additionalProperties": false
+    },
+    "change": {
+      "type": "object",
+      "description": "Why this version superseded its predecessor: the material fields that changed, and whether learner state changed with them (evidence-linked).",
+      "required": ["materialFields", "evidenceLinked"],
+      "properties": {
+        "materialFields": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+        "evidenceLinked": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "description": "The inputs this version was derived from: learner state revision, Target Adaptation Projection revision, target snapshot (curriculum export, mapping, constraints), domain-pack versions and the sources the packs were verified against.",
+      "required": ["learnerStateRevision", "projectionRevision", "curriculum", "mapping", "constraints", "packs", "sources"],
+      "properties": {
+        "learnerStateRevision": {"type": "string", "pattern": "^lsr_[0-9a-f]{24}$"},
+        "projectionRevision": {"type": "string", "pattern": "^tapr_[0-9a-f]{24}$"},
+        "curriculum": {"$ref": "#/$defs/sourceRef"},
+        "mapping": {
+          "type": "object",
+          "required": ["contentHash"],
+          "properties": {"schemaVersion": {"type": "integer"}, "contentHash": {"type": "string", "minLength": 1}},
+          "additionalProperties": false
+        },
+        "constraints": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sourceRef"}]},
+        "packs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["domain", "version"],
+            "properties": {"domain": {"type": "string"}, "version": {"type": "string"}},
+            "additionalProperties": false
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["domain", "key", "value"],
+            "properties": {"domain": {"type": "string"}, "key": {"type": "string"}, "value": {"type": "string"}},
+            "additionalProperties": false
+          }
+        },
+        "personas": {
+          "type": "object",
+          "description": "The Learner Profile and persona documents teaching shapes were derived from (path and content hash); null or absent documents were missing and documented defaults applied. Absent on versions created before teaching shapes.",
+          "required": ["profile", "global", "domains"],
+          "properties": {
+            "profile": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/personaSource"}]},
+            "global": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/personaSource"}]},
+            "domains": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["domain", "path", "contentHash"],
+                "properties": {"domain": {"type": "string", "minLength": 1}, "path": {"type": "string", "minLength": 1}, "contentHash": {"$ref": "#/$defs/hash"}},
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "teaching": {
+      "type": "object",
+      "description": "Learner-free teaching intent: the only part of a unit specification an Authoring Plan exposes publicly.",
+      "required": ["title", "objectives", "competencies", "prerequisites", "dependsOn", "requiredEvidence", "claims"],
+      "properties": {
+        "title": {"type": "string"},
+        "objectives": {"type": "array", "items": {"type": "string"}},
+        "competencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["domain", "id", "name", "roles"],
+            "properties": {
+              "domain": {"type": "string", "minLength": 1},
+              "id": {"type": "string", "minLength": 1},
+              "name": {"type": "string"},
+              "roles": {"type": "array", "items": {"$ref": "#/$defs/role"}, "minItems": 1, "uniqueItems": true}
+            },
+            "additionalProperties": false
+          }
+        },
+        "prerequisites": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["domain", "id", "name"],
+            "properties": {"domain": {"type": "string"}, "id": {"type": "string"}, "name": {"type": "string"}},
+            "additionalProperties": false
+          }
+        },
+        "dependsOn": {"type": "array", "items": {"$ref": "#/$defs/unitSpecId"}, "uniqueItems": true},
+        "requiredEvidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["domain", "competency", "role", "minimumLevel"],
+            "properties": {
+              "domain": {"type": "string"},
+              "competency": {"type": "string"},
+              "role": {"const": "assesses"},
+              "minimumLevel": {"enum": ["rusty", "functional", "strong", "production-ready"]}
+            },
+            "additionalProperties": false
+          }
+        },
+        "claims": {
+          "type": "array",
+          "description": "Competencies whose technical claims are version-sensitive or need a cited source; the authoring target re-verifies them and records source provenance.",
+          "items": {
+            "type": "object",
+            "required": ["domain", "competency", "freshnessClass", "versionSensitive", "sourceRequired"],
+            "properties": {
+              "domain": {"type": "string"},
+              "competency": {"type": "string"},
+              "freshnessClass": {"type": "string"},
+              "versionSensitive": {"type": "boolean"},
+              "sourceRequired": {"type": "boolean"}
+            },
+            "additionalProperties": false
+          }
+        },
+        "shape": {"$ref": "#/$defs/teachingShape"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "id": {"$ref": "#/$defs/unitSpecId"},
+    "version": {"type": "integer", "minimum": 1},
+    "contentHash": {"$ref": "#/$defs/hash"},
+    "supersedes": {"$ref": "#/$defs/versionRef"},
+    "change": {"$ref": "#/$defs/change"},
+    "learnerId": {"type": "string", "minLength": 1},
+    "target": {"$ref": "#/$defs/externalId"},
+    "provenance": {"$ref": "#/$defs/provenance"},
+    "authoringIntent": {"enum": ["unit", "activity", "patch", "none"], "description": "The smallest Authoring Intent this unit justified when the version was created."},
+    "unit": {
+      "type": "object",
+      "required": ["group"],
+      "properties": {
+        "platformItem": {"$ref": "#/$defs/externalId", "description": "The declared-stable item this spec adapts; absent for a unit proposed for the target."},
+        "group": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "teaching": {"$ref": "#/$defs/teaching"},
+    "adaptation": {
+      "type": "object",
+      "description": "Private learner basis: never published.",
+      "required": ["mode", "proposedMode", "rationale", "competencies", "misconceptions"],
+      "properties": {
+        "mode": {"$ref": "#/$defs/mode"},
+        "proposedMode": {"$ref": "#/$defs/mode"},
+        "decision": {"type": "string", "pattern": "^aad_"},
+        "rationale": {"type": "string"},
+        "competencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "domain", "roles", "status"],
+            "properties": {
+              "id": {"type": "string"},
+              "domain": {"type": "string"},
+              "roles": {"type": "array", "items": {"$ref": "#/$defs/role"}},
+              "status": {"enum": ["demonstrated", "unconfirmed", "functional", "rusty", "unassessed"]},
+              "level": {"type": "string"},
+              "confidence": {"type": "string"},
+              "assessmentId": {"type": "string"}
+            },
+            "additionalProperties": false
+          }
+        },
+        "misconceptions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["domain", "competency", "gap", "assessmentId"],
+            "properties": {
+              "domain": {"type": "string"},
+              "competency": {"type": "string"},
+              "gap": {"type": "string", "minLength": 1},
+              "assessmentId": {"type": "string", "minLength": 1}
+            },
+            "additionalProperties": false
+          }
+        },
+        "persona": {
+          "type": "object",
+          "description": "Legacy, read-only: versions written before 2026-10-07 stored the private persona basis here (the learner's risks, the persona's reasons for applied analogy overrides, and the learner's experience behind each analogy source). New versions never include it: alp platform plan re-derives this private persona view from the live persona and profile documents on every run and reports it in its output only, so persona-derived content stays removable (PRIVACY.md).",
+          "required": ["risks", "analogyReasons", "sourceExperience"],
+          "properties": {
+            "risks": {
+              "type": "array",
+              "description": "Every risk of the unit's Global and Domain Personas, with the unit concepts it names (none for a general risk).",
+              "items": {
+                "type": "object",
+                "required": ["risk", "concepts"],
+                "properties": {"risk": {"type": "string", "minLength": 1}, "concepts": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}},
+                "additionalProperties": false
+              }
+            },
+            "analogyReasons": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["domain", "competency", "concept", "layer", "reason"],
+                "properties": {
+                  "domain": {"type": "string"},
+                  "competency": {"type": "string"},
+                  "concept": {"type": "string"},
+                  "layer": {"enum": ["global", "domain"]},
+                  "reason": {"type": "string"}
+                },
+                "additionalProperties": false
+              }
+            },
+            "sourceExperience": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["source", "stack", "level"],
+                "properties": {
+                  "source": {"type": "string"},
+                  "stack": {"type": "string"},
+                  "level": {"type": "string"},
+                  "relativeRank": {"type": "integer", "minimum": 1}
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 2,
+  "platform": "pylearn",
+  "instance": "pylearn-local",
+  "exportedAt": "2026-10-07T10:00:00Z",
+  "user": {"id": "usr_7f3a"},
+  "cursor": {"since": "cursor-0001", "next": "cursor-0002"},
+  "targets": [
+    {
+      "id": "go-alp",
+      "records": [
+        {
+          "kind": "quiz-answer",
+          "item": "go-alp-a1-context#quiz:context-cancellation/q2",
+          "event": {"id": "quiz_answers:go-alp-a1-context#quiz:context-cancellation/q2", "revision": "sha256:8617ebc8013ff5a7eae4d56eba13832405ee450317fbb71bc01155c7aebd263f", "synthetic": true},
+          "observedAt": "2026-10-07T09:30:00Z",
+          "picked": 1,
+          "correct": true
+        }
+      ]
+    }
+  ]
+}

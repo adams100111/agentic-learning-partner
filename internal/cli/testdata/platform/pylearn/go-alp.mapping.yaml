@@ -1,0 +1,29 @@
+# PyLearn-owned mapping (ADR-0017) for the `go-alp` target, schema v2 (ADR-0058).
+# Item IDs follow PyLearn's curriculum export: lesson `<lessonId>`,
+# quiz `<lessonId>#quiz:<concept>`, question `<lessonId>#quiz:<concept>/<questionId>`.
+schemaVersion: 2
+platform: pylearn
+target: go-alp
+packs:
+  - domain: go
+    packVersion: ">=0.1.0 <0.2.0"
+entries:
+  - item: go-alp-a1-context
+    competencies:
+      - id: go.runtime.context
+        role: teaches
+  - item: go-alp-a1-context#quiz:context-cancellation
+    competencies:
+      - id: go.runtime.context
+        role: assesses
+  - item: go-alp-a2-goroutines
+    competencies:
+      - id: go.concurrency.goroutines
+        role: teaches
+  - item: go-alp-a2-goroutines#quiz:goroutine-leaks
+    strengthCeiling: weak
+    competencies:
+      - id: go.concurrency.goroutines
+        role: assesses
+      - id: go.concurrency.races-deadlocks-leaks
+        role: reinforces

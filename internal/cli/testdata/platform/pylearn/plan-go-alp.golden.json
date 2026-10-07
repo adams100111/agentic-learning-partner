@@ -1,0 +1,479 @@
+{
+  "schemaVersion": 1,
+  "adapter": "pylearn",
+  "target": {
+    "platform": "pylearn",
+    "target": "go-alp"
+  },
+  "path": "state/target-adaptations/tap_052c4e3a6565c06aee6ea2b9.json",
+  "projection": {
+    "schemaVersion": 1,
+    "id": "tap_052c4e3a6565c06aee6ea2b9",
+    "revision": "tapr_1c5d12b733cb10f7945ed86d",
+    "learnerId": "ada",
+    "target": {
+      "platform": "pylearn",
+      "target": "go-alp"
+    },
+    "inputs": {
+      "curriculum": {
+        "schemaVersion": 1,
+        "contentHash": "sha256:5d1e7c0b9a8f6e4d2c0b8a6f4e2d0c8b6a4f2e0d8c6b4a2f0e8d6c4b2a0f8e6d"
+      },
+      "mapping": {
+        "schemaVersion": 2,
+        "contentHash": "sha256:d0726d5916a9faeebdee23b797a395852c4b25b7ed6d0e76e926d31a0027b00a"
+      },
+      "packs": [
+        {
+          "domain": "go",
+          "version": "0.1.0"
+        }
+      ],
+      "constraints": null,
+      "decisions": []
+    },
+    "units": [
+      {
+        "item": {
+          "platform": "pylearn",
+          "target": "go-alp",
+          "item": "go-alp-a1-context"
+        },
+        "phase": "A",
+        "title": "Context and Cancellation",
+        "competencies": [
+          {
+            "id": "go.runtime.context",
+            "domain": "go",
+            "roles": [
+              "teaches",
+              "assesses"
+            ],
+            "status": "demonstrated",
+            "level": "strong",
+            "confidence": "high",
+            "assessmentId": "asmt_seed_676f2e72756e74696d652e636f6e74657874323032362d31302d30315430393a30303a30305a"
+          }
+        ],
+        "proposedMode": "skip",
+        "mode": "skip",
+        "rationale": "Already demonstrated: go.runtime.context."
+      },
+      {
+        "item": {
+          "platform": "pylearn",
+          "target": "go-alp",
+          "item": "go-alp-a2-goroutines"
+        },
+        "phase": "A",
+        "title": "Goroutine Lifetimes",
+        "competencies": [
+          {
+            "id": "go.concurrency.goroutines",
+            "domain": "go",
+            "roles": [
+              "teaches",
+              "assesses"
+            ],
+            "status": "functional",
+            "level": "functional",
+            "confidence": "medium",
+            "assessmentId": "asmt_seed_676f2e636f6e63757272656e63792e676f726f7574696e6573323032362d31302d30315430393a30353a30305a"
+          },
+          {
+            "id": "go.concurrency.races-deadlocks-leaks",
+            "domain": "go",
+            "roles": [
+              "reinforces"
+            ],
+            "status": "unassessed"
+          }
+        ],
+        "proposedMode": "skim",
+        "mode": "skim",
+        "rationale": "Assessed functional: go.concurrency.goroutines."
+      },
+      {
+        "item": {
+          "platform": "pylearn",
+          "target": "go-alp",
+          "item": "go-alp-a3-generics"
+        },
+        "phase": "A",
+        "title": "Generics",
+        "competencies": [],
+        "proposedMode": "full",
+        "mode": "full",
+        "rationale": "The unit maps to no competencies, so learner state cannot justify adapting it."
+      }
+    ],
+    "sequence": [
+      "go-alp-a2-goroutines",
+      "go-alp-a3-generics"
+    ],
+    "reinforcement": [],
+    "gaps": [
+      {
+        "competency": "go.concurrency.channels",
+        "domain": "go",
+        "status": "unassessed",
+        "requiredBy": [
+          "go.concurrency.races-deadlocks-leaks"
+        ]
+      },
+      {
+        "competency": "go.concurrency.sync",
+        "domain": "go",
+        "status": "unassessed",
+        "requiredBy": [
+          "go.concurrency.races-deadlocks-leaks"
+        ]
+      },
+      {
+        "competency": "go.runtime.scheduler",
+        "domain": "go",
+        "status": "unassessed",
+        "requiredBy": [
+          "go.concurrency.goroutines"
+        ]
+      }
+    ]
+  },
+  "specifications": {
+    "curriculum": {
+      "id": "cspec_052c4e3a6565c06aee6ea2b9",
+      "version": 1,
+      "contentHash": "sha256:9c54441852ed6701c5f8fddb276153f1a660f60fb8db3b8a1454dd2c4f6373ef",
+      "path": "specifications/curricula/cspec_052c4e3a6565c06aee6ea2b9-v1.json",
+      "status": "created",
+      "title": "Go (ALP)"
+    },
+    "units": [
+      {
+        "id": "uspec_14d290a7cdcac64bf5b33eff",
+        "version": 1,
+        "contentHash": "sha256:6c07a9b6930e999ac1dd829110da9b39d28e53afa7933926d00fd107f37c8e6b",
+        "path": "specifications/units/uspec_14d290a7cdcac64bf5b33eff-v1.json",
+        "status": "created",
+        "title": "Context and Cancellation",
+        "platformItem": {
+          "platform": "pylearn",
+          "target": "go-alp",
+          "item": "go-alp-a1-context"
+        },
+        "group": "A",
+        "mode": "skip",
+        "persona": {
+          "risks": [],
+          "analogyReasons": [],
+          "sourceExperience": []
+        }
+      },
+      {
+        "id": "uspec_6e83d32168cee92bf8868707",
+        "version": 1,
+        "contentHash": "sha256:b901a9a0f041651798d640797ef8dd74670a4d00e5914c986138cd8d96955fc7",
+        "path": "specifications/units/uspec_6e83d32168cee92bf8868707-v1.json",
+        "status": "created",
+        "title": "Goroutines and scheduler mental model",
+        "group": "stage-1",
+        "mode": "full",
+        "persona": {
+          "risks": [],
+          "analogyReasons": [],
+          "sourceExperience": []
+        }
+      },
+      {
+        "id": "uspec_b2a03a8be26712b138f2fcde",
+        "version": 1,
+        "contentHash": "sha256:8999a7523d907828bc7703db1702d5e532103bb511d9315346cb8f669a3f0b23",
+        "path": "specifications/units/uspec_b2a03a8be26712b138f2fcde-v1.json",
+        "status": "created",
+        "title": "Goroutine Lifetimes",
+        "platformItem": {
+          "platform": "pylearn",
+          "target": "go-alp",
+          "item": "go-alp-a2-goroutines"
+        },
+        "group": "A",
+        "mode": "skim",
+        "persona": {
+          "risks": [],
+          "analogyReasons": [],
+          "sourceExperience": []
+        }
+      },
+      {
+        "id": "uspec_7a65bbd33e705b1191f89d5a",
+        "version": 1,
+        "contentHash": "sha256:158035272af82c9cde70a165933d21fb4803b2349574acec51aa44dc2323090f",
+        "path": "specifications/units/uspec_7a65bbd33e705b1191f89d5a-v1.json",
+        "status": "created",
+        "title": "Generics",
+        "platformItem": {
+          "platform": "pylearn",
+          "target": "go-alp",
+          "item": "go-alp-a3-generics"
+        },
+        "group": "A",
+        "mode": "full",
+        "persona": {
+          "risks": [],
+          "analogyReasons": [],
+          "sourceExperience": []
+        }
+      },
+      {
+        "id": "uspec_90b21bfcbc2a3c7586a68619",
+        "version": 1,
+        "contentHash": "sha256:82ee0fcaeb480629f4a109d02a98a7c70f5cfcadcb454a2dff93fcecf2751f6d",
+        "path": "specifications/units/uspec_90b21bfcbc2a3c7586a68619-v1.json",
+        "status": "created",
+        "title": "Channels and ownership",
+        "group": "stage-1",
+        "mode": "full",
+        "persona": {
+          "risks": [],
+          "analogyReasons": [],
+          "sourceExperience": []
+        }
+      },
+      {
+        "id": "uspec_5e2cb7f36015549a1aad2ee8",
+        "version": 1,
+        "contentHash": "sha256:19540e182ef9014ec2726d126c370e2f6b56495730fd29797c684179a44c6b90",
+        "path": "specifications/units/uspec_5e2cb7f36015549a1aad2ee8-v1.json",
+        "status": "created",
+        "title": "Mutexes, WaitGroups, Once, atomics",
+        "group": "stage-1",
+        "mode": "full",
+        "persona": {
+          "risks": [],
+          "analogyReasons": [],
+          "sourceExperience": []
+        }
+      }
+    ],
+    "persona": {
+      "documents": [
+        {
+          "path": "profile/profile.yaml",
+          "present": false
+        },
+        {
+          "path": "personas/global.yaml",
+          "present": false
+        },
+        {
+          "path": "personas/domains/go.yaml",
+          "domain": "go",
+          "present": false
+        }
+      ],
+      "defaults": [
+        {
+          "domain": "go",
+          "field": "activityTypes",
+          "value": "[]",
+          "reason": "no persona layer (or, for feedback, profile feedbackStyle) sets it"
+        },
+        {
+          "domain": "go",
+          "field": "analogies",
+          "value": "none",
+          "reason": "the learner profile lists no stacks to draw analogies from"
+        },
+        {
+          "domain": "go",
+          "field": "avoid",
+          "value": "[]",
+          "reason": "no persona layer (or, for feedback, profile feedbackStyle) sets it"
+        },
+        {
+          "domain": "go",
+          "field": "emphasis",
+          "value": "[]",
+          "reason": "no persona layer (or, for feedback, profile feedbackStyle) sets it"
+        },
+        {
+          "domain": "go",
+          "field": "feedback",
+          "value": "[]",
+          "reason": "no persona layer (or, for feedback, profile feedbackStyle) sets it"
+        },
+        {
+          "domain": "go",
+          "field": "pace",
+          "value": "standard",
+          "reason": "no persona layer sets teaching.pace and the profile has no teachingPace preference"
+        }
+      ]
+    }
+  },
+  "authoring": {
+    "status": "planned",
+    "intent": "unit",
+    "selection": "default",
+    "reason": "Smallest justified intent is unit: uspec_6e83d32168cee92bf8868707 (Goroutines and scheduler mental model) is proposed for this target, not yet on the platform, and the learner's adaptation mode for it is full."
+  },
+  "authoringPlan": {
+    "path": "authoring-plans/apl_5765a37dd61120bcae088ef5.json",
+    "status": "created",
+    "schemaVersion": 1,
+    "id": "apl_5765a37dd61120bcae088ef5",
+    "learnerId": "ada",
+    "target": {
+      "platform": "pylearn",
+      "target": "go-alp"
+    },
+    "intent": "unit",
+    "justification": "Smallest justified intent is unit: uspec_6e83d32168cee92bf8868707 (Goroutines and scheduler mental model) is proposed for this target, not yet on the platform, and the learner's adaptation mode for it is full.",
+    "authoringTarget": {
+      "platform": "pylearn",
+      "skill": "pylearn-alp-authoring"
+    },
+    "curriculum": {
+      "id": "cspec_052c4e3a6565c06aee6ea2b9",
+      "version": 1,
+      "contentHash": "sha256:9c54441852ed6701c5f8fddb276153f1a660f60fb8db3b8a1454dd2c4f6373ef"
+    },
+    "units": [
+      {
+        "id": "uspec_6e83d32168cee92bf8868707",
+        "version": 1,
+        "contentHash": "sha256:b901a9a0f041651798d640797ef8dd74670a4d00e5914c986138cd8d96955fc7"
+      }
+    ],
+    "public": {
+      "intent": "unit",
+      "curriculum": {
+        "id": "cspec_052c4e3a6565c06aee6ea2b9",
+        "version": 1,
+        "contentHash": "sha256:9c54441852ed6701c5f8fddb276153f1a660f60fb8db3b8a1454dd2c4f6373ef",
+        "title": "Go (ALP)",
+        "goal": [],
+        "groups": [
+          {
+            "id": "A",
+            "title": "Runtime Foundations",
+            "platformPhase": "A",
+            "units": [
+              {
+                "id": "uspec_14d290a7cdcac64bf5b33eff",
+                "title": "Context and Cancellation",
+                "platformItem": {
+                  "platform": "pylearn",
+                  "target": "go-alp",
+                  "item": "go-alp-a1-context"
+                }
+              },
+              {
+                "id": "uspec_b2a03a8be26712b138f2fcde",
+                "title": "Goroutine Lifetimes",
+                "platformItem": {
+                  "platform": "pylearn",
+                  "target": "go-alp",
+                  "item": "go-alp-a2-goroutines"
+                }
+              },
+              {
+                "id": "uspec_7a65bbd33e705b1191f89d5a",
+                "title": "Generics",
+                "platformItem": {
+                  "platform": "pylearn",
+                  "target": "go-alp",
+                  "item": "go-alp-a3-generics"
+                }
+              }
+            ]
+          },
+          {
+            "id": "stage-1",
+            "title": "Stage 1",
+            "units": [
+              {
+                "id": "uspec_6e83d32168cee92bf8868707",
+                "title": "Goroutines and scheduler mental model"
+              },
+              {
+                "id": "uspec_90b21bfcbc2a3c7586a68619",
+                "title": "Channels and ownership"
+              },
+              {
+                "id": "uspec_5e2cb7f36015549a1aad2ee8",
+                "title": "Mutexes, WaitGroups, Once, atomics"
+              }
+            ]
+          }
+        ]
+      },
+      "units": [
+        {
+          "id": "uspec_6e83d32168cee92bf8868707",
+          "version": 1,
+          "contentHash": "sha256:b901a9a0f041651798d640797ef8dd74670a4d00e5914c986138cd8d96955fc7",
+          "group": "stage-1",
+          "teachingIntent": {
+            "title": "Goroutines and scheduler mental model",
+            "objectives": [
+              "Understand goroutine scheduling sufficiently to reason about concurrency without treating goroutines as threads or promises."
+            ],
+            "competencies": [
+              {
+                "domain": "go",
+                "id": "go.runtime.scheduler",
+                "name": "Goroutines and scheduler mental model",
+                "roles": [
+                  "teaches"
+                ]
+              }
+            ],
+            "prerequisites": [
+              {
+                "domain": "go",
+                "id": "go.language.syntax",
+                "name": "Core syntax recall"
+              }
+            ],
+            "dependsOn": [],
+            "requiredEvidence": [
+              {
+                "domain": "go",
+                "competency": "go.runtime.scheduler",
+                "role": "assesses",
+                "minimumLevel": "functional"
+              }
+            ],
+            "claims": [
+              {
+                "domain": "go",
+                "competency": "go.runtime.scheduler",
+                "freshnessClass": "version-sensitive-language-runtime",
+                "versionSensitive": true,
+                "sourceRequired": true
+              }
+            ],
+            "shape": {
+              "pace": "standard",
+              "activityTypes": [],
+              "avoid": [],
+              "emphasis": [],
+              "feedback": [],
+              "analogies": [
+                {
+                  "domain": "go",
+                  "competency": "go.runtime.scheduler",
+                  "basis": "none",
+                  "concepts": [],
+                  "sources": []
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

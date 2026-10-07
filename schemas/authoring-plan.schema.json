@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentic-learning-partner.dev/schemas/authoring-plan.schema.json",
+  "title": "ALP Authoring Plan",
+  "description": "An immutable Authoring Plan (authoring-plans/<id>.json) in the private learner workspace, written by alp platform plan: an Authoring Intent (target-skeleton, curriculum, unit, activity or patch) over specific Curriculum and Learning Unit Specification versions, realized by the platform-declared authoring target skill (ADR-0056). id is a content hash, so the same intent over the same specification versions is the same plan. public is the only part that may appear in platform content or PRs: specification IDs, versions, hashes and teaching intent, never learner data (ADR-0060).",
+  "type": "object",
+  "required": ["schemaVersion", "id", "learnerId", "target", "intent", "justification", "authoringTarget", "curriculum", "units", "public"],
+  "$defs": {
+    "specRef": {
+      "type": "object",
+      "required": ["id", "version", "contentHash"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^(cspec|uspec)_[0-9a-f]{24}$"},
+        "version": {"type": "integer", "minimum": 1},
+        "contentHash": {"$ref": "learning-unit-specification.schema.json#/$defs/hash"}
+      },
+      "additionalProperties": false
+    },
+    "intent": {"enum": ["target-skeleton", "curriculum", "unit", "activity", "patch"]}
+  },
+  "properties": {
+    "schemaVersion": {"type": "integer", "const": 1},
+    "id": {"type": "string", "pattern": "^apl_[0-9a-f]{24}$"},
+    "learnerId": {"type": "string", "minLength": 1},
+    "target": {"$ref": "learning-unit-specification.schema.json#/$defs/externalId"},
+    "intent": {"$ref": "#/$defs/intent"},
+    "justification": {"type": "string", "minLength": 1, "description": "Private explanation of why this intent and scope; not part of the public face."},
+    "authoringTarget": {
+      "type": "object",
+      "required": ["platform", "skill"],
+      "properties": {"platform": {"type": "string", "minLength": 1}, "skill": {"type": "string", "minLength": 1}},
+      "additionalProperties": false
+    },
+    "curriculum": {"$ref": "#/$defs/specRef"},
+    "units": {"type": "array", "items": {"$ref": "#/$defs/specRef"}, "minItems": 1},
+    "public": {
+      "type": "object",
+      "required": ["intent", "curriculum", "units"],
+      "properties": {
+        "intent": {"$ref": "#/$defs/intent"},
+        "curriculum": {
+          "type": "object",
+          "required": ["id", "version", "contentHash", "goal", "groups"],
+          "properties": {
+            "id": {"type": "string", "pattern": "^cspec_[0-9a-f]{24}$"},
+            "version": {"type": "integer", "minimum": 1},
+            "contentHash": {"$ref": "learning-unit-specification.schema.json#/$defs/hash"},
+            "title": {"type": "string"},
+            "goal": {"type": "array", "items": {"$ref": "learning-unit-specification.schema.json#/$defs/competencyRef"}},
+            "groups": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["id", "title", "units"],
+                "properties": {
+                  "id": {"type": "string", "minLength": 1},
+                  "title": {"type": "string"},
+                  "platformPhase": {"type": "string", "minLength": 1},
+                  "units": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["id", "title"],
+                      "properties": {
+                        "id": {"$ref": "learning-unit-specification.schema.json#/$defs/unitSpecId"},
+                        "title": {"type": "string"},
+                        "platformItem": {"$ref": "learning-unit-specification.schema.json#/$defs/externalId"}
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "units": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "version", "contentHash", "group", "teachingIntent"],
+            "properties": {
+              "id": {"$ref": "learning-unit-specification.schema.json#/$defs/unitSpecId"},
+              "version": {"type": "integer", "minimum": 1},
+              "contentHash": {"$ref": "learning-unit-specification.schema.json#/$defs/hash"},
+              "platformItem": {"$ref": "learning-unit-specification.schema.json#/$defs/externalId"},
+              "group": {"type": "string", "minLength": 1},
+              "teachingIntent": {"$ref": "learning-unit-specification.schema.json#/$defs/teaching"}
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

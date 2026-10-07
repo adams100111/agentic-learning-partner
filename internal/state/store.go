@@ -124,7 +124,31 @@ func (s Store) AppendAssessment(expectedRevision string, assessment Assessment) 
 	return assessment, nil
 }
 
+// RebuildProjection recomputes the competency projection from canonical
+// assessments and writes it to state/competencies.yaml.
 func (s Store) RebuildProjection() (Projection, error) {
+	projection, err := s.CompetencyProjection()
+	if err != nil {
+		return Projection{}, err
+	}
+	data, err := yaml.Marshal(projection)
+	if err != nil {
+		return Projection{}, fmt.Errorf("marshal projection: %w", err)
+	}
+	if err := s.validate("projection.schema.json", "state/competencies.yaml", data); err != nil {
+		return Projection{}, err
+	}
+	if err := writeGenerated(filepath.Join(s.Root, "state", "competencies.yaml"), data); err != nil {
+		return Projection{}, err
+	}
+	return projection, nil
+}
+
+// CompetencyProjection computes the learner × domain competency projection
+// from canonical assessments without writing anything. It is the one
+// competency state (ADR-0055); derived views read it rather than judging
+// competency themselves.
+func (s Store) CompetencyProjection() (Projection, error) {
 	assessments, err := s.loadAssessments()
 	if err != nil {
 		return Projection{}, err
@@ -190,16 +214,6 @@ func (s Store) RebuildProjection() (Projection, error) {
 	sort.Slice(projection.Competencies, func(i, j int) bool {
 		return projection.Competencies[i].ID < projection.Competencies[j].ID
 	})
-	data, err := yaml.Marshal(projection)
-	if err != nil {
-		return Projection{}, fmt.Errorf("marshal projection: %w", err)
-	}
-	if err := s.validate("projection.schema.json", "state/competencies.yaml", data); err != nil {
-		return Projection{}, err
-	}
-	if err := writeGenerated(filepath.Join(s.Root, "state", "competencies.yaml"), data); err != nil {
-		return Projection{}, err
-	}
 	return projection, nil
 }
 
@@ -235,6 +249,28 @@ func (s Store) validate(schemaName, file string, data []byte) error {
 		return issue
 	}
 	return nil
+}
+
+// ListEvidence returns every evidence record in the workspace, ordered by ID.
+func (s Store) ListEvidence() ([]Evidence, error) {
+	paths, err := filepath.Glob(filepath.Join(s.Root, "evidence", "*.yaml"))
+	if err != nil {
+		return nil, fmt.Errorf("list evidence: %w", err)
+	}
+	sort.Strings(paths)
+	result := make([]Evidence, 0, len(paths))
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("read %s: %w", path, err)
+		}
+		var record Evidence
+		if err := yaml.Unmarshal(data, &record); err != nil {
+			return nil, fmt.Errorf("parse %s: %w", path, err)
+		}
+		result = append(result, record)
+	}
+	return result, nil
 }
 
 func (s Store) loadEvidence(ids []string) ([]Evidence, error) {

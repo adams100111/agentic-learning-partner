@@ -1,26 +1,62 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentic-learning-partner.dev/schemas/platform-mapping.schema.json",
-  "title": "ALP Platform Content Mapping",
+  "title": "ALP Platform Content Mapping v2",
+  "description": "Platform-owned mapping (ADR-0017) from one Learning Target's declared-stable items (ADR-0057) to ALP competencies, each with a Mapping Role (ADR-0058). Validated by `alp platform mapping validate`. Schema version 1 (flat competencies[] without roles) is not accepted: roles cannot be inferred, so v1 mappings must be rewritten as v2.",
   "type": "object",
-  "required": ["schemaVersion", "platform", "mappings"],
+  "required": ["schemaVersion", "platform", "target", "packs", "entries"],
   "properties": {
-    "schemaVersion": {"type": "integer", "const": 1},
-    "platform": {"type": "string", "minLength": 1},
-    "mappings": {
+    "schemaVersion": {"type": "integer", "const": 2},
+    "platform": {"type": "string", "minLength": 1, "description": "Platform identifier; must match the validating adapter."},
+    "target": {"type": "string", "minLength": 1, "description": "Opaque, platform-owned Learning Target ID this mapping covers."},
+    "packs": {
       "type": "array",
+      "minItems": 1,
+      "description": "Domain packs the mapped competencies belong to, each with a semver compatibility range. A competency belongs to the pack whose domain is its ID prefix.",
       "items": {
         "type": "object",
-        "required": ["contentId", "domain", "packVersion", "competencies"],
+        "required": ["domain", "packVersion"],
         "properties": {
-          "contentId": {"type": "string", "minLength": 1},
           "domain": {"type": "string", "minLength": 1},
-          "packVersion": {"type": "string", "minLength": 1},
-          "competencies": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true}
+          "packVersion": {"type": "string", "minLength": 1, "description": "Space-separated comparators, e.g. \">=0.1.0 <0.2.0\"."}
         },
         "additionalProperties": false
       }
+    },
+    "entries": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/entry"}
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "required": ["item", "competencies"],
+      "properties": {
+        "item": {"type": "string", "minLength": 1, "description": "Declared-stable item ID of the target, as listed in its curriculum export."},
+        "strengthCeiling": {
+          "enum": ["weak", "moderate", "strong", "production"],
+          "description": "Optional cap on the evidence strength activity on this item may yield. Strength itself comes from the adapter's signal policy and the observed result."
+        },
+        "competencies": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "role"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "role": {
+                "enum": ["teaches", "reinforces", "assesses"],
+                "description": "Mapping Role. Only assesses may yield assessment-grade evidence."
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
 }
