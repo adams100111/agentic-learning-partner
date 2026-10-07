@@ -117,3 +117,5 @@ The eventual smoke should prove:
 9. subsequent target adaptation changes only when evidence justifies it.
 
 This is a stronger test than merely verifying Git Store synchronization.
+
+The local smoke for this loop on `go-alp` is [CLOSED_LOOP_SMOKE.md](CLOSED_LOOP_SMOKE.md).

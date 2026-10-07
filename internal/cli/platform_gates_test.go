@@ -523,6 +523,52 @@ func TestPlatformRealizedUnitsKeepTheirSpecificationIDsAndChangeOnlyOnEvidence(t
 	requireValidWorkspace(t, root)
 }
 
+// A plan run on the authored export before gates record sees the new lesson
+// as an unlinked existing item (nothing is realized yet), so it gets an
+// item-derived specification. Recording the realization afterwards still
+// gives the realized unit its proposed ID back (PyLearn #47 saw the interim ID).
+func TestPlatformRealizedUnitKeepsItsProposedIDWhenPlannedBeforeGatesRecord(t *testing.T) {
+	root := newLearnerWorkspace(t, "grace")
+	seedAssessment(t, root, "go.runtime.scheduler", "strong", "high", "2026-10-01T09:00:00Z")
+	skeleton := requirePlan(t, planNewTarget(t, root, "--intent", "target-skeleton"))
+	_, plan := authoringOf(t, skeleton)
+	planID := plan["id"].(string)
+	goroutines := specsOf(t, skeleton).Units[0]
+	curriculum, mapping, constraints := realizedGoALPFixtures(t)
+	replan := func() planSpecs {
+		t.Helper()
+		return specsOf(t, requirePlan(t, runPlatform(t, App{}, "plan", "--adapter", "pylearn", "--target", "go-alp",
+			"--curriculum", curriculum, "--mapping", mapping, "--constraints", constraints, "--workspace", root)))
+	}
+
+	if interim := unitSpecFor(t, replan(), "go-alp-s1-goroutines"); interim.ID == goroutines.ID {
+		t.Fatalf("unrealized lesson already carries the proposed ID: %#v", interim)
+	}
+
+	public := plan["public"].(map[string]any)["units"].([]any)
+	report := map[string]any{"schemaVersion": 1, "plan": planID, "units": []any{
+		map[string]any{"unit": goroutines.ID, "items": []any{"go-alp-s1-goroutines", "go-alp-s1-goroutines#quiz:lifetimes"},
+			"claims": claimsWithProvenance(public[0].(map[string]any))},
+	}}
+	recorded := requireRecorded(t, recordGates(t, root, "go-alp", curriculum, planID, publishableGoALPResult(t),
+		"--realization", writeRealization(t, report)))
+	if unit := unitOutcome(t, recorded, goroutines.ID); unit["status"] != "realized" {
+		t.Fatalf("unit %s = %#v", goroutines.ID, unit)
+	}
+
+	specs := replan()
+	kept := unitSpecFor(t, specs, "go-alp-s1-goroutines")
+	if kept.ID != goroutines.ID || kept.Version != 1 || kept.Status != "held" {
+		t.Fatalf("realized unit after gates record = %#v, want %s v1 held", kept, goroutines.ID)
+	}
+	for _, unit := range specs.Units {
+		if unit.PlatformItem != nil && (*unit.PlatformItem)["item"] == "go-alp-s1-goroutines" && unit.ID != goroutines.ID {
+			t.Fatalf("interim item-derived unit still planned: %#v", unit)
+		}
+	}
+	requireValidWorkspace(t, root)
+}
+
 func TestPlatformGatesRecordRefusesAnItemRealizingTwoUnits(t *testing.T) {
 	root := newLearnerWorkspace(t, "grace")
 	seedAssessment(t, root, "go.runtime.scheduler", "strong", "high", "2026-10-01T09:00:00Z")
