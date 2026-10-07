@@ -1,12 +1,10 @@
 package platform
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"sort"
 	"strings"
 
@@ -162,8 +160,12 @@ type UnitAdaptation struct {
 	Rationale      string           `json:"rationale"`
 	Competencies   []UnitCompetency `json:"competencies"`
 	Misconceptions []Misconception  `json:"misconceptions"`
-	// Persona is the private persona basis of the teaching shape. Absent on
-	// versions created before teaching shapes.
+	// Persona is a legacy field: versions written before 2026-10-07 stored
+	// the private persona basis here. It is kept only so those versions stay
+	// readable (their content hash covers it) and is never written: the
+	// private persona view is re-derived from the live persona and profile
+	// documents on every plan (SpecDraft.PersonaViews), so persona-derived
+	// content stays removable (PRIVACY.md).
 	Persona *PersonaBasis `json:"persona,omitempty"`
 }
 
@@ -244,6 +246,10 @@ type SpecRequest struct {
 type SpecDraft struct {
 	Curriculum CurriculumSpec
 	Units      []LearningUnitSpec
+	// PersonaViews are the units' private persona views, keyed by unit
+	// specification ID: derived from the live persona and profile documents
+	// for this plan only and never stored in a specification version.
+	PersonaViews map[string]PersonaBasis
 }
 
 // LearnerStateRevision hashes the learner's competency projection: the
@@ -309,6 +315,7 @@ func DraftSpecifications(request SpecRequest) (SpecDraft, error) {
 		learner: newLearnerView(request.LearnerState), constraints: request.Constraints,
 		covered: map[string]bool{}, assessed: assessedByUnit(request.Curriculum, request.Mapping),
 		persona:      request.Persona,
+		personaViews: map[string]PersonaBasis{},
 		realizations: request.Realizations,
 	}
 
@@ -464,7 +471,7 @@ func DraftSpecifications(request SpecRequest) (SpecDraft, error) {
 		Units:         []CurriculumUnit{},
 		Sequence:      []string{},
 	}
-	return SpecDraft{Curriculum: curriculum, Units: ordered}, nil
+	return SpecDraft{Curriculum: curriculum, Units: ordered, PersonaViews: builder.personaViews}, nil
 }
 
 // ComposeCurriculum completes a curriculum draft with the reconciled unit
@@ -544,6 +551,7 @@ type specBuilder struct {
 	// assessed maps each unit item to the competencies its item tree assesses.
 	assessed     map[string]map[string]bool
 	persona      TeachingPersona
+	personaViews map[string]PersonaBasis
 	realizations Realizations
 }
 
@@ -680,8 +688,9 @@ func (b specBuilder) fill(spec *LearningUnitSpec, competencies []UnitCompetency)
 }
 
 // shapeTeaching derives the unit's teaching shape from the learner's
-// personas and profile. A unit with no competencies is shaped by the
-// personas of every domain of the target.
+// personas and profile, and its private persona view, which is kept out of
+// the specification. A unit with no competencies is shaped by the personas
+// of every domain of the target.
 func (b specBuilder) shapeTeaching(spec *LearningUnitSpec) {
 	request := shapeRequest{competencies: spec.Teaching.Competencies, definitions: map[string]domain.Competency{}}
 	for _, competency := range spec.Teaching.Competencies {
@@ -695,7 +704,8 @@ func (b specBuilder) shapeTeaching(spec *LearningUnitSpec) {
 		}
 	}
 	shape, basis := b.persona.shape(request)
-	spec.Teaching.Shape, spec.Adaptation.Persona = &shape, &basis
+	spec.Teaching.Shape = &shape
+	b.personaViews[spec.ID] = basis
 }
 
 func personaProvenance(persona TeachingPersona) *PersonaProvenance {
@@ -818,208 +828,4 @@ func contains(values []string, value string) bool {
 		}
 	}
 	return false
-}
-
-// UnitRevision is a unit draft reconciled with its latest stored version.
-type UnitRevision struct {
-	Spec   LearningUnitSpec
-	Status string
-	// HeldFields are the material fields that changed without new evidence
-	// for a realized unit, so its stored version was kept (SpecHeld).
-	HeldFields []string
-}
-
-// ReviseUnitSpec reconciles a unit draft with the latest stored version under
-// the regeneration policy: a new version only when a material field changed
-// (competencies, prerequisites, adaptation mode, misconceptions, required
-// evidence, teaching shape). Otherwise the stored version stands, with its
-// provenance. Once a unit is realized its content exists on the platform, so a
-// material change produces a new version (and so a content change) only when
-// it is evidence-linked: the learner state changed with it. Other material
-// changes to a realized unit are held.
-func ReviseUnitSpec(draft LearningUnitSpec, latest *LearningUnitSpec, realized bool) (UnitRevision, error) {
-	if latest == nil {
-		draft.Version = 1
-		hash, err := specHash(draft)
-		draft.ContentHash = hash
-		return UnitRevision{Spec: draft, Status: SpecCreated}, err
-	}
-	changed := changedFields([]materialField{
-		{"competencies", materialCompetencies(draft.Teaching.Competencies), materialCompetencies(latest.Teaching.Competencies)},
-		{"prerequisites", materialPrerequisites(draft.Teaching.Prerequisites), materialPrerequisites(latest.Teaching.Prerequisites)},
-		{"adaptationMode", draft.Adaptation.Mode, latest.Adaptation.Mode},
-		{"misconceptions", materialMisconceptions(draft.Adaptation.Misconceptions), materialMisconceptions(latest.Adaptation.Misconceptions)},
-		{"requiredEvidence", draft.Teaching.RequiredEvidence, latest.Teaching.RequiredEvidence},
-		{"teachingShape", materialShape(draft), materialShape(*latest)},
-	})
-	if len(changed) == 0 {
-		return UnitRevision{Spec: *latest, Status: SpecUnchanged}, nil
-	}
-	evidenceLinked := draft.Provenance.LearnerStateRevision != latest.Provenance.LearnerStateRevision
-	if realized && !evidenceLinked {
-		return UnitRevision{Spec: *latest, Status: SpecHeld, HeldFields: changed}, nil
-	}
-	draft.Version = latest.Version + 1
-	draft.Supersedes = &SpecVersionRef{Version: latest.Version, ContentHash: latest.ContentHash}
-	draft.Change = &SpecChange{MaterialFields: changed, EvidenceLinked: evidenceLinked}
-	hash, err := specHash(draft)
-	draft.ContentHash = hash
-	return UnitRevision{Spec: draft, Status: SpecRevised}, err
-}
-
-// ReviseCurriculumSpec reconciles a composed curriculum with the latest stored
-// version: a new version only when its goal, groups or unit versions changed.
-func ReviseCurriculumSpec(draft CurriculumSpec, latest *CurriculumSpec) (CurriculumSpec, string, error) {
-	if latest == nil {
-		draft.Version = 1
-		hash, err := specHash(draft)
-		draft.ContentHash = hash
-		return draft, SpecCreated, err
-	}
-	changed := changedFields([]materialField{
-		{"goal", draft.Goal, latest.Goal},
-		{"groups", draft.Groups, latest.Groups},
-		{"units", materialUnits(draft.Units), materialUnits(latest.Units)},
-	})
-	if len(changed) == 0 {
-		return *latest, SpecUnchanged, nil
-	}
-	draft.Version = latest.Version + 1
-	draft.Supersedes = &SpecVersionRef{Version: latest.Version, ContentHash: latest.ContentHash}
-	draft.Change = &SpecChange{MaterialFields: changed, EvidenceLinked: draft.Provenance.LearnerStateRevision != latest.Provenance.LearnerStateRevision}
-	hash, err := specHash(draft)
-	draft.ContentHash = hash
-	return draft, SpecRevised, err
-}
-
-type materialField struct {
-	name          string
-	draft, latest any
-}
-
-func changedFields(fields []materialField) []string {
-	changed := []string{}
-	for _, field := range fields {
-		left, _ := json.Marshal(field.draft)
-		right, _ := json.Marshal(field.latest)
-		if !bytes.Equal(left, right) {
-			changed = append(changed, field.name)
-		}
-	}
-	return changed
-}
-
-func materialCompetencies(values []SpecCompetency) []SpecCompetency {
-	result := make([]SpecCompetency, len(values))
-	for i, value := range values {
-		result[i] = SpecCompetency{Domain: value.Domain, ID: value.ID, Roles: value.Roles}
-	}
-	return result
-}
-
-func materialPrerequisites(values []SpecPrerequisite) []CompetencyRef {
-	result := make([]CompetencyRef, len(values))
-	for i, value := range values {
-		result[i] = CompetencyRef{Domain: value.Domain, ID: value.ID}
-	}
-	return result
-}
-
-func materialMisconceptions(values []Misconception) []Misconception {
-	result := make([]Misconception, len(values))
-	for i, value := range values {
-		result[i] = Misconception{Domain: value.Domain, Competency: value.Competency, Gap: value.Gap}
-	}
-	return result
-}
-
-// materialShape is the derived teaching shape: the public shape and the
-// unit's risks. Persona text that changes neither (override reasons,
-// experience levels, document hashes) is not material.
-func materialShape(spec LearningUnitSpec) any {
-	var risks []UnitRisk
-	if spec.Adaptation.Persona != nil {
-		risks = spec.Adaptation.Persona.Risks
-	}
-	return struct {
-		Shape *TeachingShape `json:"shape"`
-		Risks []UnitRisk     `json:"risks"`
-	}{spec.Teaching.Shape, risks}
-}
-
-func materialUnits(values []CurriculumUnit) []CurriculumUnit {
-	result := make([]CurriculumUnit, len(values))
-	for i, value := range values {
-		result[i] = CurriculumUnit{ID: value.ID, Version: value.Version, Group: value.Group}
-	}
-	return result
-}
-
-// specHash hashes a specification's canonical JSON without its content hash.
-func specHash(spec any) (string, error) {
-	value := reflect.ValueOf(&spec).Elem().Elem()
-	copied := reflect.New(value.Type()).Elem()
-	copied.Set(value)
-	if field := copied.FieldByName("ContentHash"); field.IsValid() {
-		field.SetString("")
-	}
-	data, err := json.Marshal(copied.Interface())
-	if err != nil {
-		return "", fmt.Errorf("encode specification: %w", err)
-	}
-	sum := sha256.Sum256(data)
-	return "sha256:" + hex.EncodeToString(sum[:]), nil
-}
-
-// EncodeSpec renders a specification or Authoring Plan as deterministic JSON.
-func EncodeSpec(value any) ([]byte, error) {
-	var buffer bytes.Buffer
-	encoder := json.NewEncoder(&buffer)
-	encoder.SetEscapeHTML(false)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(value); err != nil {
-		return nil, fmt.Errorf("encode specification: %w", err)
-	}
-	return buffer.Bytes(), nil
-}
-
-// DecodeUnitSpec parses a stored Learning Unit Specification and verifies its
-// content hash: stored versions are immutable.
-func DecodeUnitSpec(path string, data []byte) (LearningUnitSpec, error) {
-	var spec LearningUnitSpec
-	if err := decodeStoredSpec(path, data, &spec); err != nil {
-		return LearningUnitSpec{}, err
-	}
-	return spec, verifySpecHash(path, spec, spec.ContentHash)
-}
-
-// DecodeCurriculumSpec parses a stored Curriculum Specification and verifies
-// its content hash.
-func DecodeCurriculumSpec(path string, data []byte) (CurriculumSpec, error) {
-	var spec CurriculumSpec
-	if err := decodeStoredSpec(path, data, &spec); err != nil {
-		return CurriculumSpec{}, err
-	}
-	return spec, verifySpecHash(path, spec, spec.ContentHash)
-}
-
-func decodeStoredSpec(path string, data []byte, into any) error {
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(into); err != nil {
-		return &Error{Code: CodeSpecIntegrity, Message: fmt.Sprintf("stored specification %s cannot be read: %v", path, err)}
-	}
-	return nil
-}
-
-func verifySpecHash(path string, spec any, recorded string) error {
-	hash, err := specHash(spec)
-	if err != nil {
-		return err
-	}
-	if hash != recorded {
-		return &Error{Code: CodeSpecIntegrity, Message: fmt.Sprintf(
-			"stored specification %s was modified: its content hashes to %s, not its recorded %s; specification versions are immutable", path, hash, recorded)}
-	}
-	return nil
 }

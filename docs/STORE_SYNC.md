@@ -69,6 +69,8 @@ Examples:
 
 Reconcile by stable collision-resistant identity.
 
+Platform Account Links have a deterministic identity (`{platform, instance, platform user ID}`), so the same account linked on two devices yields one identity with different confirmation timestamps. Sync keeps the earliest confirmed link when both name the same learner, and stops for learner resolution when they name different learners.
+
 ### Human-maintained canonical documents
 
 Examples:

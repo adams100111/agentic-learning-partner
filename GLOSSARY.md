@@ -68,7 +68,7 @@ A platform-neutral specification for one learner-facing unit. It describes compe
 
 ## Teaching Shape
 
-The persona-derived part of a Learning Unit Specification's teaching intent: pace, preferred activity types, avoid and emphasis constraints, feedback style, and per-competency analogy sources (stacks). It is derived deterministically from the effective Global and Domain Persona and the Learner Profile, and is learner-free; the learner's risks, experience levels and raw persona text stay in the specification's private persona basis.
+The persona-derived part of a Learning Unit Specification's teaching intent: pace, preferred activity types, avoid and emphasis constraints, feedback style, and per-competency analogy sources (stacks). It is derived deterministically from the effective Global and Domain Persona and the Learner Profile, and is learner-free. The learner's risks, experience levels and persona reasons form the private persona view, which `alp platform plan` re-derives from the live persona and profile on every run and never stores in a specification version.
 
 ## Authoring Plan
 
@@ -101,6 +101,14 @@ The record on a Learning Unit Specification of which declared-stable platform it
 ## Platform Gate Result
 
 Structured output of a Platform Validator: per-gate ID, status (pass/fail/warn/skipped), platform-native command/version provenance, checked artifacts, item-referenced diagnostics, and an overall `publishable` flag. ALP consumes it without interpreting platform-native formats.
+
+## Platform Gate Record
+
+ALP's canonical, append-only record of one Platform Gate Result attached to the Authoring Plan it was produced for (`authoring-plans/<plan>/gate-results/<id>.json`). It keeps the result verbatim and decides, per unit specification version in the plan, whether that version is realized or unrealized and why. Only ALP's orchestration skill records it (`alp platform gates record`); the platform's authoring target skill hands the result back and never records. Not the Platform Gate Result itself, which is the platform's output.
+
+## Realization Report
+
+What a platform's authoring target skill hands back about the content it realized for an Authoring Plan: per unit specification, the declared-stable items that realize it and the source provenance of its claims. ALP checks it against the post-authoring curriculum export when recording a Platform Gate Record and turns each realized unit into a Realization Link. Platform-produced input, not an ALP record.
 
 ## Authoring Intent
 

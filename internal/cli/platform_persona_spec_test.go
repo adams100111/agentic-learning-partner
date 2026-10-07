@@ -151,12 +151,13 @@ func TestPlatformPlanShapesUnitTeachingFromTheLearnersPersonasAndProfile(t *test
 		t.Fatalf("scheduler analogies = %#v", analogies)
 	}
 
-	// Risks are private. Every risk of the unit's Global and Domain Personas
-	// is relevant (dropping one is worse than keeping one); each names the
-	// unit concepts it mentions, so general risks name none.
-	persona, ok := goroutines["adaptation"].(map[string]any)["persona"].(map[string]any)
-	if !ok {
-		t.Fatalf("unit adaptation has no persona basis: %#v", goroutines["adaptation"])
+	// Risks are private and re-derived on every plan from the live personas,
+	// never stored. Every risk of the unit's Global and Domain Personas is
+	// relevant (dropping one is worse than keeping one); each names the unit
+	// concepts it mentions, so general risks name none.
+	persona := unitSpecFor(t, specs, "go-alp-a2-goroutines").Persona
+	if persona == nil {
+		t.Fatalf("plan output has no private persona view for the unit")
 	}
 	wantRisks := []any{
 		map[string]any{"risk": "disengaging when material turns into beginner instruction", "concepts": []any{}},
@@ -166,7 +167,68 @@ func TestPlatformPlanShapesUnitTeachingFromTheLearnersPersonasAndProfile(t *test
 	if !reflect.DeepEqual(persona["risks"], wantRisks) {
 		t.Fatalf("risks = %#v", persona["risks"])
 	}
+	wantReasons := []any{map[string]any{"domain": "go", "competency": "go.concurrency.goroutines", "concept": "concurrency", "layer": "domain", "reason": "Compare coroutines and the event loop."},
+		map[string]any{"domain": "go", "competency": "go.concurrency.races-deadlocks-leaks", "concept": "concurrency", "layer": "domain", "reason": "Compare coroutines and the event loop."}}
+	if !reflect.DeepEqual(persona["analogyReasons"], wantReasons) {
+		t.Fatalf("analogy reasons = %#v", persona["analogyReasons"])
+	}
+	if want := []any{map[string]any{"source": "typescript", "stack": "typescript", "level": "strong", "relativeRank": float64(2)}}; !reflect.DeepEqual(persona["sourceExperience"], want) {
+		t.Fatalf("source experience = %#v", persona["sourceExperience"])
+	}
 	requireValidWorkspace(t, root)
+}
+
+// Persona-derived private content must stay removable (PRIVACY.md): stored
+// specification versions keep only persona document references and hashes.
+func TestPlatformPlanStoresNoPersonaDerivedPrivateContentInSpecifications(t *testing.T) {
+	root := adaWithPersonas(t)
+	specs := specsOf(t, requirePlan(t, planTarget(t, root, "--intent", "curriculum")))
+	for _, unit := range specs.Units {
+		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(unit.Path)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, ok := decodeJSON(t, data)["adaptation"].(map[string]any)["persona"]; ok {
+			t.Fatalf("%s stores a private persona basis", unit.Path)
+		}
+		for _, private := range []string{
+			"Ada Example", "unbounded goroutines", "beginner instruction", "interfaces before a consumer",
+			"CancellationToken", "Compare coroutines", "\"risks\"", "analogyReasons", "sourceExperience", "relativeRank",
+		} {
+			if strings.Contains(string(data), private) {
+				t.Fatalf("%s stores persona-derived private content %q", unit.Path, private)
+			}
+		}
+	}
+	paths, err := filepath.Glob(filepath.Join(root, "authoring-plans", "*.json"))
+	if err != nil || len(paths) == 0 {
+		t.Fatalf("authoring plans = %v, %v", paths, err)
+	}
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(string(data), "unbounded goroutines") || strings.Contains(string(data), "Compare coroutines") {
+			t.Fatalf("%s stores persona-derived private content", path)
+		}
+	}
+}
+
+// A risk edit changes the private persona view, which every plan re-derives,
+// but not the stored specification, which no longer holds risks.
+func TestPlatformPlanRederivesThePrivatePersonaViewFromTheLivePersona(t *testing.T) {
+	root := adaWithPersonas(t)
+	requirePlan(t, planTarget(t, root))
+	writeWorkspaceFile(t, root, "personas/domains/go.yaml", strings.Replace(personaGoFixture, "unbounded goroutines or hidden goroutine ownership", "leaking goroutines without an owner", 1))
+	specs := specsOf(t, requirePlan(t, planTarget(t, root)))
+	unit := unitSpecFor(t, specs, "go-alp-a2-goroutines")
+	if unit.Status != "unchanged" {
+		t.Fatalf("a risk edit re-versioned the unit: %#v", unit)
+	}
+	if !containsJSON(unit.Persona["risks"].([]any), map[string]any{"risk": "leaking goroutines without an owner", "concepts": []any{"goroutines"}}) {
+		t.Fatalf("persona view was not re-derived from the live persona: %#v", unit.Persona["risks"])
+	}
 }
 
 func TestPlatformPlanUsesDocumentedDefaultsWhenPersonasAreMissing(t *testing.T) {
@@ -347,4 +409,53 @@ func TestPlatformPlanReshapesSpecificationVersionsCreatedBeforeTeachingShapes(t 
 	if change := readSpecFile(t, root, revised.Path)["change"]; !reflect.DeepEqual(change, map[string]any{"materialFields": []any{"teachingShape"}, "evidenceLinked": false}) {
 		t.Fatalf("change = %#v", change)
 	}
+}
+
+// Versions written before persona privacy stored the private persona basis in
+// adaptation.persona. They stay valid and readable; plan keeps them while
+// their teaching shape is unchanged, and new versions omit the basis.
+func TestPlatformPlanReadsVersionsThatStoredThePrivatePersonaBasis(t *testing.T) {
+	root := adaWithPersonas(t)
+	entry := unitSpecFor(t, specsOf(t, requirePlan(t, planTarget(t, root))), "go-alp-a2-goroutines")
+	path := filepath.Join(root, filepath.FromSlash(entry.Path))
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stored, err := platform.DecodeUnitSpec(entry.Path, data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stored.Adaptation.Persona = &platform.PersonaBasis{
+		Risks:            []platform.UnitRisk{{Risk: "unbounded goroutines or hidden goroutine ownership", Concepts: []string{"goroutines"}}},
+		AnalogyReasons:   []platform.AnalogyReason{},
+		SourceExperience: []platform.SourceExperience{{Source: "typescript", Stack: "typescript", Level: "strong", RelativeRank: 2}},
+	}
+	legacy, err := platform.ReviseUnitSpec(stored, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := platform.EncodeSpec(legacy.Spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, encoded, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	requireValidWorkspace(t, root)
+
+	kept := unitSpecFor(t, specsOf(t, requirePlan(t, planTarget(t, root))), "go-alp-a2-goroutines")
+	if kept.Status != "unchanged" || kept.Version != 1 {
+		t.Fatalf("legacy version was not kept: %#v", kept)
+	}
+
+	writeWorkspaceFile(t, root, "personas/domains/go.yaml", strings.Replace(personaGoFixture, "emphasis: [concurrency]", "emphasis: [concurrency, testing]", 1))
+	revised := unitSpecFor(t, specsOf(t, requirePlan(t, planTarget(t, root))), "go-alp-a2-goroutines")
+	if revised.Version != 2 {
+		t.Fatalf("shape change did not version the unit: %#v", revised)
+	}
+	if _, ok := readSpecFile(t, root, revised.Path)["adaptation"].(map[string]any)["persona"]; ok {
+		t.Fatalf("the new version %s stores the private persona basis", revised.Path)
+	}
+	requireValidWorkspace(t, root)
 }

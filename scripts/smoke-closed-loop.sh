@@ -6,8 +6,9 @@
 #
 # Builds alp from this tree and runs internal/e2e TestClosedLoopGoALP (build tag
 # `closedloop`) against the PyLearn checkout, a fresh synthetic workspace and a
-# throwaway PyLearn database. Local only: no CI, and no real Claude/Codex
-# harness is run.
+# throwaway PyLearn database. The authoring commit is made in a temporary
+# detached worktree of the checkout, removed afterwards; no ref is created.
+# Local only: no CI, and no real Claude/Codex harness is run.
 set -euo pipefail
 
 if [[ $# -ne 1 ]]; then

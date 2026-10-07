@@ -21,10 +21,13 @@ const (
 // platformWorkspace is a learner workspace opened for a platform mutation.
 type platformWorkspace struct {
 	learnerID string
-	engine    state.Store
-	expected  string
-	finish    func(changed bool, message string) error
-	abandon   func()
+	// packs is the domain pack registry every platform command in this
+	// workspace reads: the Store catalog, projections and specifications.
+	packs    domain.Registry
+	engine   state.Store
+	expected string
+	finish   func(changed bool, message string) error
+	abandon  func()
 }
 
 // openPlatformWorkspace resolves and validates the learner workspace and
@@ -51,6 +54,7 @@ func (a App) openPlatformWorkspace(explicit, kind string) (platformWorkspace, in
 	if err != nil {
 		return platformWorkspace{}, a.platformFailure(err), false
 	}
+	packs := domain.NewRegistry()
 	abandon := func() {
 		if !activeSession {
 			_ = tx.Rollback()
@@ -58,8 +62,9 @@ func (a App) openPlatformWorkspace(explicit, kind string) (platformWorkspace, in
 	}
 	return platformWorkspace{
 		learnerID: manifest.LearnerID,
+		packs:     packs,
 		engine: state.Store{
-			Root: tx.StageRoot(), Catalog: domain.NewRegistry(), Validator: validator,
+			Root: tx.StageRoot(), Catalog: packs, Validator: validator,
 			RevisionProvider: func() (string, error) { return string(expected), nil },
 		},
 		expected: string(expected),

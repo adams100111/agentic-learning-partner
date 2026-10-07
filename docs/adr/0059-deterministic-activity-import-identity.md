@@ -27,3 +27,7 @@ PyLearn has no activity event log: `progress`, `quiz_answers`, `concept_mastery`
 
 - Require every platform to add an event log first: blocks integration on platform redesign.
 - Timestamp-based identity: non-deterministic across re-exports.
+
+## Notes
+
+- **2026-10-07 — "higher revision" is ordered by `observedAt`.** A synthetic event revision is a content hash, so revisions have no intrinsic order. "A higher revision of the same event supersedes prior evidence" is decided by the record's `observedAt`, the time the platform row last changed: a different revision with a later `observedAt` supersedes the event's active evidence, an earlier one is skipped as `stale-revision`, and an equal `observedAt` is skipped as `revision-conflict` (ALP does not guess). `observedAt` orders revisions but is never part of identity. Platforms with real, ordered event revisions are ordered the same way through `observedAt`. See `docs/integrations/PYLEARN_EXPORT.md`. This note clarifies the decision; it does not change it.

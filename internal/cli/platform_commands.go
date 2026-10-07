@@ -44,7 +44,11 @@ type platformCommand struct {
 	// targetless commands act on a platform account rather than a Learning
 	// Target, so they take no --target.
 	targetless bool
-	run        func(a App, adapter platform.Adapter, target string, flags platformFlags) int
+	// flags are the command's flags besides --adapter and --target; any other
+	// flag is a usage error, so a flag the command would ignore (for example
+	// `inspect --confirm`) is never silently accepted.
+	flags []string
+	run   func(a App, adapter platform.Adapter, target string, flags platformFlags) int
 }
 
 type platformFlags struct {
@@ -74,27 +78,27 @@ type platformFlags struct {
 
 // platformCommands is keyed by the command words, e.g. "mapping validate".
 var platformCommands = map[string]platformCommand{
-	"inspect": {capabilities: []platform.Capability{platform.CurriculumReader}, run: runPlatformInspect},
+	"inspect": {capabilities: []platform.Capability{platform.CurriculumReader}, flags: []string{"curriculum"}, run: runPlatformInspect},
 	// Mapping validation needs the curriculum: it is the only source of which
 	// items are declared-stable (ADR-0057).
-	"mapping validate": {capabilities: []platform.Capability{platform.ContentMapper, platform.CurriculumReader}, run: runPlatformMappingValidate},
+	"mapping validate": {capabilities: []platform.Capability{platform.ContentMapper, platform.CurriculumReader}, flags: []string{"curriculum", "mapping"}, run: runPlatformMappingValidate},
 	// Account links exist only so activity can be imported for a learner.
-	"account link": {capabilities: []platform.Capability{platform.ActivitySource}, targetless: true, run: runPlatformAccountLink},
+	"account link": {capabilities: []platform.Capability{platform.ActivitySource}, targetless: true, flags: []string{"instance", "user", "confirm", "workspace"}, run: runPlatformAccountLink},
 	// Import grades activity through the target's mapping, which is validated
 	// against the curriculum export.
-	"import": {capabilities: []platform.Capability{platform.ActivitySource, platform.ContentMapper, platform.CurriculumReader}, run: runPlatformImport},
+	"import": {capabilities: []platform.Capability{platform.ActivitySource, platform.ContentMapper, platform.CurriculumReader}, flags: []string{"curriculum", "mapping", "export", "cursor", "workspace"}, run: runPlatformImport},
 	// Planning projects learner state onto the target's mapped curriculum and
 	// derives Curriculum/Learning Unit Specifications and an Authoring Plan
 	// realized by the platform-declared authoring target skill.
-	"plan": {capabilities: []platform.Capability{platform.ContentMapper, platform.CurriculumReader, platform.AuthoringTarget}, run: runPlatformPlan},
+	"plan": {capabilities: []platform.Capability{platform.ContentMapper, platform.CurriculumReader, platform.AuthoringTarget}, flags: []string{"curriculum", "mapping", "constraints", "intent", "unit", "workspace"}, run: runPlatformPlan},
 	// Decisions are confirmed against the projection plan rebuilds, so they
 	// need the same inputs.
-	"decision accept": {capabilities: []platform.Capability{platform.ContentMapper, platform.CurriculumReader}, run: runPlatformDecisionAccept},
-	"decision revoke": {capabilities: []platform.Capability{platform.ContentMapper, platform.CurriculumReader}, run: runPlatformDecisionRevoke},
+	"decision accept": {capabilities: []platform.Capability{platform.ContentMapper, platform.CurriculumReader}, flags: []string{"curriculum", "mapping", "constraints", "unit", "mode", "basis", "confirm", "reason", "workspace"}, run: runPlatformDecisionAccept},
+	"decision revoke": {capabilities: []platform.Capability{platform.ContentMapper, platform.CurriculumReader}, flags: []string{"curriculum", "mapping", "constraints", "decision", "basis", "confirm", "reason", "workspace"}, run: runPlatformDecisionRevoke},
 	// Gate results attach to Authoring Plans the authoring target realized;
 	// Realization Links are checked against the curriculum export, the only
 	// source of which items are declared-stable.
-	"gates record": {capabilities: []platform.Capability{platform.PlatformValidator, platform.AuthoringTarget, platform.CurriculumReader}, run: runPlatformGatesRecord},
+	"gates record": {capabilities: []platform.Capability{platform.PlatformValidator, platform.AuthoringTarget, platform.CurriculumReader}, flags: []string{"curriculum", "plan", "result", "realization", "workspace"}, run: runPlatformGatesRecord},
 }
 
 // platformCommandGroups are first words that take a second command word.
@@ -123,6 +127,9 @@ func (a App) runPlatform(args []string) int {
 	if flags.NArg() != 0 {
 		return a.platformUsageError(fmt.Sprintf("unexpected argument %q", flags.Arg(0)))
 	}
+	if unexpected := unexpectedFlags(flags, command); len(unexpected) != 0 {
+		return a.platformUsageError(fmt.Sprintf("platform %s does not take %s", name, strings.Join(unexpected, ", ")))
+	}
 	flags.Visit(func(set *flag.Flag) {
 		if set.Name == "cursor" {
 			parsed.cursorSet = true
@@ -147,6 +154,23 @@ func (a App) runPlatform(args []string) int {
 	return command.run(a, adapter, parsed.target, parsed.platformFlags)
 }
 
+// unexpectedFlags returns the set flags, as "--name", that command does not
+// take, in flag-name order. Every command takes --adapter; only targetless
+// commands refuse --target, which runPlatform reports itself.
+func unexpectedFlags(flags *flag.FlagSet, command platformCommand) []string {
+	allowed := map[string]bool{"adapter": true, "target": true}
+	for _, name := range command.flags {
+		allowed[name] = true
+	}
+	var unexpected []string
+	flags.Visit(func(set *flag.Flag) {
+		if !allowed[set.Name] {
+			unexpected = append(unexpected, "--"+set.Name)
+		}
+	})
+	return unexpected
+}
+
 // platformArgs are the parsed flags of one `alp platform` command.
 type platformArgs struct {
 	adapter string
@@ -155,7 +179,8 @@ type platformArgs struct {
 }
 
 // newPlatformFlagSet defines every `alp platform` flag on a new flag set that
-// parses into args. platformUsage documents which flags each command takes.
+// parses into args. platformCommands lists which flags each command takes and
+// platformUsage documents them.
 func newPlatformFlagSet(name string, args *platformArgs) *flag.FlagSet {
 	flags := flag.NewFlagSet("platform "+name, flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
@@ -232,6 +257,43 @@ func (a App) readCurriculum(adapter platform.Adapter, target string, flags platf
 	return curriculum, 0, true
 }
 
+// readMapping reads the --mapping file and validates it against the
+// curriculum export. On failure it has already written the error.
+func (a App) readMapping(adapter platform.Adapter, flags platformFlags, curriculum platform.Curriculum) (platform.MappingReport, int, bool) {
+	if flags.mapping == "" {
+		return platform.MappingReport{}, a.platformUsageError("--mapping is required: pass the platform's content mapping file"), false
+	}
+	validator, ok := adapter.(platform.ContentMappingValidator)
+	if !ok {
+		return platform.MappingReport{}, a.platformFailure(fmt.Errorf("platform adapter %q declares %s but does not implement it", adapter.ID(), platform.ContentMapper)), false
+	}
+	data, err := os.ReadFile(flags.mapping)
+	if err != nil {
+		return platform.MappingReport{}, a.platformFailure(fmt.Errorf("read mapping: %w", err)), false
+	}
+	report, err := validator.ValidateContentMapping(data, filepath.Base(flags.mapping), curriculum)
+	if err != nil {
+		return platform.MappingReport{}, a.platformFailure(err), false
+	}
+	return report, 0, true
+}
+
+// readValidMapping is readMapping for commands that act through the mapping:
+// it refuses a mapping with errors (invalid-mapping).
+func (a App) readValidMapping(adapter platform.Adapter, target string, flags platformFlags, curriculum platform.Curriculum) (platform.MappingReport, int, bool) {
+	report, code, ok := a.readMapping(adapter, flags, curriculum)
+	if !ok {
+		return platform.MappingReport{}, code, false
+	}
+	if !report.Valid {
+		return platform.MappingReport{}, a.platformFailure(&platform.Error{
+			Code: platform.CodeInvalidMapping, Adapter: adapter.ID(), Target: target,
+			Message: fmt.Sprintf("platform mapping %s is not valid (%d errors); run alp platform mapping validate", filepath.Base(flags.mapping), report.Summary.Errors),
+		}), false
+	}
+	return report, 0, true
+}
+
 func runPlatformInspect(a App, adapter platform.Adapter, target string, flags platformFlags) int {
 	curriculum, code, ok := a.readCurriculum(adapter, target, flags)
 	if !ok {
@@ -283,21 +345,13 @@ func runPlatformMappingValidate(a App, adapter platform.Adapter, target string, 
 	if flags.mapping == "" {
 		return a.platformUsageError("--mapping is required: pass the platform's content mapping file")
 	}
-	validator, ok := adapter.(platform.ContentMappingValidator)
-	if !ok {
-		return a.platformFailure(fmt.Errorf("platform adapter %q declares %s but does not implement it", adapter.ID(), platform.ContentMapper))
-	}
 	curriculum, code, ok := a.readCurriculum(adapter, target, flags)
 	if !ok {
 		return code
 	}
-	data, err := os.ReadFile(flags.mapping)
-	if err != nil {
-		return a.platformFailure(fmt.Errorf("read mapping: %w", err))
-	}
-	report, err := validator.ValidateContentMapping(data, filepath.Base(flags.mapping), curriculum)
-	if err != nil {
-		return a.platformFailure(err)
+	report, code, ok := a.readMapping(adapter, flags, curriculum)
+	if !ok {
+		return code
 	}
 	output := mappingValidateOutput{
 		SchemaVersion:    1,

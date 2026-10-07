@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/adams100111/agentic-learning-partner/internal/platform"
 	"github.com/adams100111/agentic-learning-partner/internal/workspace"
@@ -174,10 +176,49 @@ func signalFor(record activityRecord) (platform.Signal, bool) {
 
 func failedAttempt(what string, record activityRecord) string {
 	observation := "PyLearn exercise variant " + record.Variant + " " + what + "."
-	if failure := strings.TrimSpace(record.Failure); failure != "" {
+	if failure := failureSummary(record.Failure); failure != "" {
 		observation += " First failure: " + failure
 	}
 	return observation
+}
+
+// maxFailureSummaryRunes bounds the failure text kept as evidence.
+const maxFailureSummaryRunes = 200
+
+var (
+	terminalEscape = regexp.MustCompile(`\x1b\[[0-9;?]*[ -/]*[@-~]`)
+	// localPath matches an absolute filesystem path (POSIX or Windows) that
+	// starts a word; it keeps only the file name.
+	localPath = regexp.MustCompile(`(^|[\s"'(=])(?:[A-Za-z]:[\\/]|/)(?:[^\s"'()/\\]+[\\/])+([^\s"'()/\\]*)`)
+)
+
+// failureSummary minimizes a failed attempt's failure output (PRIVACY.md):
+// assessment needs what failed, not the raw runner output, which can carry
+// local paths, environment values and unrelated logs. It keeps the first
+// non-empty line, drops terminal escapes and control characters, reduces
+// absolute paths to their file name, collapses whitespace and bounds the
+// result to maxFailureSummaryRunes runes.
+func failureSummary(failure string) string {
+	var line string
+	for _, candidate := range strings.Split(failure, "\n") {
+		if strings.TrimSpace(candidate) != "" {
+			line = candidate
+			break
+		}
+	}
+	line = terminalEscape.ReplaceAllString(line, "")
+	line = strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return ' '
+		}
+		return r
+	}, line)
+	line = localPath.ReplaceAllString(line, "${1}${2}")
+	line = strings.Join(strings.Fields(line), " ")
+	if runes := []rune(line); len(runes) > maxFailureSummaryRunes {
+		line = strings.TrimSpace(string(runes[:maxFailureSummaryRunes-1])) + "…"
+	}
+	return line
 }
 
 func invalidActivity(target string, problems []string) error {

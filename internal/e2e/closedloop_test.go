@@ -7,12 +7,14 @@
 //
 // Everything learner-side is synthetic and throwaway: a fresh workspace with
 // a synthetic profile and personas, an isolated HOME, and a throwaway PyLearn
-// libSQL (SQLite file) database. The PyLearn checkout is only read, except
-// for the files its own gates regenerate, which are restored afterwards; the
-// smoke fails if it leaves the checkout's git status changed.
+// libSQL (SQLite file) database. The PyLearn checkout is only read; the smoke
+// fails if it leaves the checkout's git status changed. The authoring commit
+// happens in a temporary detached worktree of the checkout, removed
+// afterwards; no ref is created.
 //
 // Real Claude/Codex harness runs are out of scope: the authoring and
 // assessing agents are played by this test with fixed synthetic inputs.
+// Agent authoring itself is proven by PyLearn #47's real run.
 package e2e
 
 import (
@@ -41,6 +43,9 @@ const (
 	realizedLesson      = "go-alp-a3-sync-primitives"
 	realizedCompetency  = "go.concurrency.sync"
 	realizedQuizConcept = "go-alp-sync-primitives"
+	// Where the smoke commits the realization report in its temporary
+	// authoring worktree of the PyLearn checkout.
+	smokeRealizationPath = ".alp-smoke/realization.json"
 	// Files PyLearn's gates rewrite in place (compile:go's wasm manifest).
 	pylearnGeneratedManifest = "apps/web/public/wasm/go/manifest.json"
 	// PyLearn writes timestamps at second precision; a fixed answer time keeps
@@ -215,10 +220,22 @@ func TestClosedLoopGoALP(t *testing.T) {
 	interimUnit := interim.unitAt(t, realizedLesson)
 	t.Logf("re-plan before gates record: %s appears as %s (realized: %v)", realizedLesson, interimUnit.ID, interimUnit.Realized)
 
-	// Step 3: the already-realized unit. Gates, then gates record.
-	s.step(3, "validate:platform and gates record for the realized unit")
+	// Step 3: the already-realized unit, authored as the authoring target
+	// skill would leave it: commit the realization report in a temporary
+	// detached worktree, run the gates there, then gates record.
+	s.step(3, "authoring worktree, validate:platform and gates record for the realized unit")
+	authoring := s.authoringWorktree()
+	realization := filepath.Join(authoring, filepath.FromSlash(smokeRealizationPath))
+	if err := os.MkdirAll(filepath.Dir(realization), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	s.write(realization, s.realizationReport(skeletonPlan, proposed.ID, skeleton))
+	commit := s.commitInAuthoringWorktree(authoring, smokeRealizationPath, "test(alp-smoke): realization report for "+proposed.ID)
+	s.curriculum = s.path("curriculum-authoring.json")
+	s.write(s.curriculum, s.pylearnRunIn(authoring, "bun", "run", "--cwd", "apps/web", "export:curriculum", "--course", smokeTarget))
+	t.Logf("authoring worktree %s: realization report committed on its detached HEAD as %s", authoring, commit)
 	gateResult := s.path("gate-result.json")
-	s.write(gateResult, s.pylearnGates())
+	s.write(gateResult, s.pylearnGates(authoring))
 	var gates struct {
 		Target      string
 		Publishable bool
@@ -228,8 +245,6 @@ func TestClosedLoopGoALP(t *testing.T) {
 	if !gates.Publishable || gates.Target != smokeTarget {
 		t.Fatalf("validate:platform = %s", s.read(gateResult))
 	}
-	realization := s.path("realization.json")
-	s.write(realization, s.realizationReport(skeletonPlan, proposed.ID, skeleton))
 	record := s.gatesRecord(skeletonPlan, gateResult, realization)
 	if record.Status != "recorded" {
 		t.Fatalf("gates record status = %s", record.Status)
@@ -477,32 +492,91 @@ func (s *smoke) decode(data []byte, target any) {
 // database and returns its stdout; any failure fails the smoke.
 func (s *smoke) pylearnRun(args ...string) []byte {
 	s.t.Helper()
-	stdout, stderr, err := s.pylearnExec(args...)
+	return s.pylearnRunIn(s.pylearn, args...)
+}
+
+// pylearnRunIn is pylearnRun in another PyLearn worktree.
+func (s *smoke) pylearnRunIn(dir string, args ...string) []byte {
+	s.t.Helper()
+	stdout, stderr, err := s.pylearnExecIn(dir, args...)
 	if err != nil {
 		s.t.Fatalf("PyLearn %v: %v\nstdout:\n%s\nstderr:\n%s", args, err, stdout, stderr)
 	}
 	return stdout
 }
 
-func (s *smoke) pylearnExec(args ...string) ([]byte, []byte, error) {
+func (s *smoke) pylearnExecIn(dir string, args ...string) ([]byte, []byte, error) {
 	command := exec.Command("devenv", append([]string{"shell", "--"}, args...)...)
-	command.Dir = s.pylearn
-	command.Env = append(os.Environ(), "DATABASE_URL="+s.dbURL, "ALP_BIN="+s.alpBin)
+	command.Dir = dir
+	// gitexec.Env: git run inside PyLearn's devenv (its hooks need bun) must
+	// target the checkout, never an inherited GIT_DIR.
+	command.Env = append(gitexec.Env(), "DATABASE_URL="+s.dbURL, "ALP_BIN="+s.alpBin)
 	var stdout, stderr bytes.Buffer
 	command.Stdout, command.Stderr = &stdout, &stderr
 	err := command.Run()
 	return stdout.Bytes(), stderr.Bytes(), err
 }
 
-// pylearnGates runs validate:platform and returns its result. compile:go
-// rewrites its wasm manifest with toolchain-dependent sizes; the file is put
-// back as it was so the smoke never edits the checkout.
-func (s *smoke) pylearnGates() []byte {
+// pylearnGates runs validate:platform in a PyLearn worktree and returns its
+// result. compile:go rewrites its wasm manifest with toolchain-dependent
+// sizes; the file is put back as it was so the gates leave the worktree clean.
+func (s *smoke) pylearnGates(dir string) []byte {
 	s.t.Helper()
-	manifest := filepath.Join(s.pylearn, pylearnGeneratedManifest)
+	manifest := filepath.Join(dir, pylearnGeneratedManifest)
 	saved := s.read(manifest)
 	defer s.write(manifest, saved)
-	return s.pylearnRun("bun", "run", "validate:platform", "--target", smokeTarget)
+	return s.pylearnRunIn(dir, "bun", "run", "validate:platform", "--target", smokeTarget)
+}
+
+// authoringWorktree adds a temporary detached worktree of the PyLearn
+// checkout's HEAD, where the authoring target skill's commit is played out,
+// and installs PyLearn's dependencies in it. It creates no ref, so nothing
+// needs deleting: at cleanup, success or failure, it is removed with a plain
+// `git worktree remove` (never forced); a failed removal is reported and the
+// worktree is left for inspection.
+func (s *smoke) authoringWorktree() string {
+	s.t.Helper()
+	parent, err := os.MkdirTemp("", "alp-smoke-authoring-")
+	if err != nil {
+		s.t.Fatal(err)
+	}
+	dir := filepath.Join(parent, "pylearn")
+	if output, err := gitexec.Command(context.Background(), s.pylearn, "worktree", "add", "--detach", dir, "HEAD").CombinedOutput(); err != nil {
+		s.t.Fatalf("git worktree add in %s: %v\n%s", s.pylearn, err, output)
+	}
+	s.t.Cleanup(func() {
+		output, err := gitexec.Command(context.Background(), s.pylearn, "worktree", "remove", dir).CombinedOutput()
+		if err != nil {
+			s.t.Errorf("git worktree remove %s: %v\n%s(left in place; the smoke never removes it with --force)", dir, err, output)
+			return
+		}
+		if err := os.Remove(parent); err != nil {
+			s.t.Errorf("remove %s: %v", parent, err)
+		}
+	})
+	s.pylearnRunIn(dir, "bun", "install", "--frozen-lockfile")
+	return dir
+}
+
+// commitInAuthoringWorktree formats one file with PyLearn's biome and commits
+// it on the authoring worktree's detached HEAD through PyLearn's own commit
+// hooks; it returns the commit.
+func (s *smoke) commitInAuthoringWorktree(dir, path, message string) string {
+	s.t.Helper()
+	git := func(args ...string) string {
+		return strings.TrimSpace(string(s.pylearnRunIn(dir, append([]string{"git"}, args...)...)))
+	}
+	s.pylearnRunIn(dir, "bunx", "biome", "format", "--write", path)
+	git("add", "--", path)
+	git("-c", "user.name=ALP closed-loop smoke", "-c", "user.email=closed-loop-smoke@alp.invalid",
+		"commit", "--quiet", "--message", message, "--", path)
+	if changed := git("show", "--name-only", "--format=", "HEAD"); changed != path {
+		s.t.Fatalf("authoring commit changed %q, want only %s", changed, path)
+	}
+	if branch, _, err := s.pylearnExecIn(dir, "git", "symbolic-ref", "--quiet", "HEAD"); err == nil {
+		s.t.Fatalf("authoring worktree is on branch %s, want a detached HEAD", strings.TrimSpace(string(branch)))
+	}
+	return git("rev-parse", "--short", "HEAD")
 }
 
 func (s *smoke) pylearnStatus() string {

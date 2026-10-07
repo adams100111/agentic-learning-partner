@@ -51,15 +51,17 @@ Done when one skill name comes from the platform's declaration and matches the p
 
 ### 3. Hand the plan to that skill
 
-Invoke the declared skill with the Authoring Plan file. It works in the platform's own repository: it realizes the plan's `public` face, re-verifies the plan's claims, runs the platform's gates and opens the platform's normal review. Only `public` may appear in platform content or PRs; the rest of the plan is the learner's private record.
+Invoke the declared skill with the Authoring Plan file and, for each unit in the plan, its private persona view from the `plan` output (`specifications.units[].persona`; re-run step 1's command when you started from an `apl_…` ID — the same inputs give the same plan). It works in the platform's own repository: it realizes the plan's `public` face, re-verifies the plan's claims, runs the platform's gates and opens the platform's normal review. Only `public` may appear in platform content or PRs; the rest of the plan and the persona view are the learner's private record: do not write the persona view to a file in the platform repository.
 
 The skill is the platform's, installed from the platform's repository, so this harness may not have it. When you cannot invoke it, give the learner its name, the plan path and the hand-back below, and stop here; step 4 resumes in any harness once the hand-back exists.
 
-The hand-back is three files:
+The authoring target skill returns exactly three files, its hand-back:
 
 - **gate result**: the platform validator's JSON output, verbatim (`schemas/platform-gate-result.schema.json`), kept even when it is not publishable;
 - **curriculum after authoring**: the platform's curriculum export taken on the authoring branch;
 - **realization report**: per realized unit, its declared-stable items and the source provenance of its claims (`schemas/platform-realization-report.schema.json`).
+
+This skill is the sole recorder of gate results (Q24): the authoring target skill returns the hand-back and never runs `alp platform gates record` or writes to the learner workspace. When the platform skill offers to record, decline and record it yourself in step 4, so each result is recorded once, against the plan you handed over.
 
 Done when you hold all three files, or the learner has the hand-off.
 

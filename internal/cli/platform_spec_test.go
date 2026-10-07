@@ -24,6 +24,9 @@ type specRef struct {
 	Title        string          `json:"title"`
 	Group        string          `json:"group"`
 	PlatformItem *map[string]any `json:"platformItem"`
+	// Persona is the unit's private persona view, re-derived from the live
+	// persona and profile documents on every plan and never stored.
+	Persona map[string]any `json:"persona"`
 }
 
 type planSpecs struct {

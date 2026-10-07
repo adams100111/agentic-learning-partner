@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/adams100111/agentic-learning-partner/internal/platform"
 )
@@ -39,27 +38,13 @@ func runPlatformImport(a App, adapter platform.Adapter, target string, flags pla
 	if !ok {
 		return a.platformFailure(fmt.Errorf("platform adapter %q declares %s but does not implement it", adapter.ID(), platform.ActivitySource))
 	}
-	mapper, ok := adapter.(platform.ContentMappingValidator)
-	if !ok {
-		return a.platformFailure(fmt.Errorf("platform adapter %q declares %s but does not implement it", adapter.ID(), platform.ContentMapper))
-	}
 	curriculum, code, ok := a.readCurriculum(adapter, target, flags)
 	if !ok {
 		return code
 	}
-	mappingData, err := os.ReadFile(flags.mapping)
-	if err != nil {
-		return a.platformFailure(fmt.Errorf("read mapping: %w", err))
-	}
-	mapping, err := mapper.ValidateContentMapping(mappingData, filepath.Base(flags.mapping), curriculum)
-	if err != nil {
-		return a.platformFailure(err)
-	}
-	if !mapping.Valid {
-		return a.platformFailure(&platform.Error{
-			Code: platform.CodeInvalidMapping, Adapter: adapter.ID(), Target: target,
-			Message: fmt.Sprintf("platform mapping %s is not valid (%d errors); run alp platform mapping validate", filepath.Base(flags.mapping), mapping.Summary.Errors),
-		})
+	mapping, code, ok := a.readValidMapping(adapter, target, flags, curriculum)
+	if !ok {
+		return code
 	}
 	exportData, err := os.ReadFile(flags.export)
 	if err != nil {

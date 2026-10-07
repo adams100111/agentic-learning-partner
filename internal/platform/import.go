@@ -342,6 +342,9 @@ func (p *importPlanner) planFacet(record ActivityRecord, entry MappedItem, group
 	active := p.active(key)
 	if len(active) != 0 {
 		latest := active[0]
+		// Revisions may be content hashes (Synthetic Event Identity), which
+		// have no order: observedAt decides which revision is later
+		// (ADR-0059, Notes 2026-10-07).
 		switch {
 		case latest.revision == record.Event.Revision:
 			return nil, ReasonAlreadyImported, nil
