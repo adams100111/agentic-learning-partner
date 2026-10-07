@@ -25,6 +25,9 @@ Platform adaptation contracts (spec #66, ADR-0054, ADR-0057):
 - `curriculum-specification.schema.json`: one immutable version (`specifications/curricula/<id>-v<n>.json`) of a learner's Curriculum Specification for a shared target: goal, groups and the unit specification versions in sequence order.
 - `authoring-plan.schema.json`: an immutable, content-addressed Authoring Plan (`authoring-plans/<id>.json`): an Authoring Intent over specific specification versions, the platform-declared authoring target skill, and the learner-free `public` face (spec IDs/versions/hashes and teaching intent) that is the only part allowed in platform content or PRs.
 - `platform-gate-result.schema.json`: a Platform Validator's per-gate results (status, provenance, artifacts, diagnostics) and overall `publishable` flag. An example lives in `testdata/`.
+- `platform-realization-report.schema.json`: what an authoring target skill realized for an Authoring Plan, passed to `alp platform gates record --realization`: per unit specification, the declared-stable items realizing it and the source provenance (URL, version, date) of its claims.
+- `platform-gate-record.schema.json`: the canonical, append-only record (`authoring-plans/<plan id>/gate-results/<id>.json`) of a Platform Gate Result attached to an Authoring Plan, stored verbatim with each unit's realization outcome and reasons.
+- `realization-link.schema.json`: the canonical, append-only Realization Link (`specifications/realizations/<id>.json`) of a realized Learning Unit Specification version: its unit-level item, every realizing item and its claims' source provenance. See `docs/TARGET_ADAPTATION.md`.
 
 Canonical learner files may be YAML; validation operates on the parsed data model.
 

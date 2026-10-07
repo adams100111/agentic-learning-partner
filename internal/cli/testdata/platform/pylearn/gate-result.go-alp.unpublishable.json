@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "platform": "pylearn",
+  "target": "go-alp",
+  "publishable": false,
+  "gates": [
+    {
+      "id": "compile:go",
+      "status": "pass",
+      "provenance": {
+        "command": "bun run --cwd apps/web compile:go",
+        "version": "pylearn@9c7ba35",
+        "exitCode": 0,
+        "startedAt": "2026-10-07T00:25:49.427Z",
+        "finishedAt": "2026-10-07T00:25:53.315Z"
+      },
+      "artifacts": [],
+      "diagnostics": []
+    },
+    {
+      "id": "gate:reels",
+      "status": "fail",
+      "provenance": {
+        "command": "bun run --cwd apps/web gate:reels --json --course go-alp",
+        "version": "pylearn@9c7ba35",
+        "exitCode": 1,
+        "startedAt": "2026-10-07T00:25:53.315Z",
+        "finishedAt": "2026-10-07T00:25:53.440Z"
+      },
+      "artifacts": [],
+      "diagnostics": [
+        {
+          "severity": "error",
+          "code": "gate-output-invalid",
+          "message": "bun run --cwd apps/web gate:reels --json --course go-alp exited 1 without printing a gate:reels gate as JSON:\n$ bun run scripts/gate-reels.ts --json --course go-alp\n--course \"go-alp\" is not a declared course (pylearn, go)\nerror: script \"gate:reels\" exited with code 1"
+        }
+      ]
+    },
+    {
+      "id": "lint:lessons",
+      "status": "fail",
+      "provenance": {
+        "command": "bun run --cwd apps/web lint:lessons --json --course go-alp",
+        "version": "pylearn@9c7ba35",
+        "exitCode": 1,
+        "startedAt": "2026-10-07T00:25:53.440Z",
+        "finishedAt": "2026-10-07T00:25:53.586Z"
+      },
+      "artifacts": [],
+      "diagnostics": [
+        {
+          "severity": "error",
+          "code": "gate-output-invalid",
+          "message": "bun run --cwd apps/web lint:lessons --json --course go-alp exited 1 without printing a lint:lessons gate as JSON:\n$ bun run scripts/lint-lessons.ts --json --course go-alp\n--course \"go-alp\" is not a declared course (pylearn, go)\nerror: script \"lint:lessons\" exited with code 1"
+        }
+      ]
+    },
+    {
+      "id": "typecheck",
+      "status": "pass",
+      "provenance": {
+        "command": "bun run typecheck",
+        "version": "pylearn@9c7ba35",
+        "exitCode": 0,
+        "startedAt": "2026-10-07T00:25:53.586Z",
+        "finishedAt": "2026-10-07T00:26:00.393Z"
+      },
+      "artifacts": [],
+      "diagnostics": []
+    },
+    {
+      "id": "gate:alp-mapping",
+      "status": "fail",
+      "provenance": {
+        "command": "bun run --cwd apps/web gate:alp-mapping --json --course go-alp --required",
+        "version": "pylearn@9c7ba35",
+        "exitCode": 2,
+        "startedAt": "2026-10-07T00:26:00.393Z",
+        "finishedAt": "2026-10-07T00:26:00.544Z"
+      },
+      "artifacts": [],
+      "diagnostics": [
+        {
+          "severity": "error",
+          "code": "gate-output-invalid",
+          "message": "bun run --cwd apps/web gate:alp-mapping --json --course go-alp --required exited 2 without printing a gate:alp-mapping gate as JSON:\n$ bun run scripts/gate-alp-mapping.ts --json --course go-alp --required\n--course \"go-alp\" is not a declared course (pylearn, go)\nusage: bun run gate:alp-mapping --course <id> [--json] [--required | --optional] [--base <ref>]"
+        }
+      ]
+    }
+  ]
+}

@@ -88,6 +88,7 @@ The 2026-10 platform adaptation grill settled every gap below. Spec: adams100111
 - Declared-stable identifiers: lesson front-matter `id`, explicit Scene `id`, quiz/question IDs. Section IDs (slugified headings) and positional scene IDs are unstable.
 - The only content → concept link is free-text `concept="..."` on Quiz/SectionQuiz; it doubles as quiz ID and `concept_mastery` key. It is platform-local, not the ALP mapping.
 - `lint:lessons` and `gate:reels` print text and exit non-zero on failure; an internal gate report type exists but is not emitted as JSON.
+  Since PyLearn #44, `gate:reels --json`, `lint:lessons --json` and `validate:platform --target <id>` emit Platform Gate Results; the PyLearn adapter declares Platform Validator and `alp platform gates record` consumes the `validate:platform` JSON as is (ALP #73).
 - All content is static MDX shared by every user.
 
 ## Existing PyLearn Go course

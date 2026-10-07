@@ -29,6 +29,9 @@ const (
 	SpecCreated   = "created"
 	SpecRevised   = "revised"
 	SpecUnchanged = "unchanged"
+	// SpecHeld: a realized unit changed materially without new evidence, so
+	// its stored version (and its platform content) stands.
+	SpecHeld = "held"
 )
 
 // minimumEvidenceLevel is the level required evidence must show for a unit to
@@ -219,6 +222,9 @@ type SpecRequest struct {
 	Packs        PackLoader
 	LearnerState state.Projection
 	Constraints  *TargetConstraints
+	// Realizations are the target's recorded Realization Links: a unit-level
+	// item that realized a specification keeps that specification's ID.
+	Realizations Realizations
 }
 
 // SpecDraft is the current derivation of a target's specifications, before
@@ -289,6 +295,7 @@ func DraftSpecifications(request SpecRequest) (SpecDraft, error) {
 		target: target, learnerID: projection.LearnerID, provenance: provenance, packs: packs,
 		learner: newLearnerView(request.LearnerState), constraints: request.Constraints,
 		covered: map[string]bool{}, assessed: assessedByUnit(request.Curriculum, request.Mapping),
+		realizations: request.Realizations,
 	}
 
 	goal, err := resolveGoal(request)
@@ -450,8 +457,10 @@ func DraftSpecifications(request SpecRequest) (SpecDraft, error) {
 // specification versions, in draft order.
 func ComposeCurriculum(draft CurriculumSpec, units []LearningUnitSpec, phases []Phase) CurriculumSpec {
 	phaseTitles := map[string]string{}
+	isPhase := map[string]bool{}
 	for _, phase := range phases {
 		phaseTitles[phase.ID] = phase.Title
+		isPhase[phase.ID] = true
 	}
 	groups := map[string]int{}
 	newTarget := true
@@ -470,7 +479,9 @@ func ComposeCurriculum(draft CurriculumSpec, units []LearningUnitSpec, phases []
 		index, ok := groups[entry.Group]
 		if !ok {
 			group := SpecGroup{ID: entry.Group, Title: stageTitle(entry.Group), Units: []string{}}
-			if unit.Unit.PlatformItem != nil {
+			// A realized proposed unit keeps its ALP stage group until a new
+			// version places it in its platform phase.
+			if unit.Unit.PlatformItem != nil && isPhase[entry.Group] {
 				group.Title, group.PlatformPhase = phaseTitles[entry.Group], entry.Group
 				if group.Title == "" {
 					group.Title = entry.Group
@@ -517,7 +528,8 @@ type specBuilder struct {
 	constraints *TargetConstraints
 	covered     map[string]bool
 	// assessed maps each unit item to the competencies its item tree assesses.
-	assessed map[string]map[string]bool
+	assessed     map[string]map[string]bool
+	realizations Realizations
 }
 
 func (b specBuilder) definition(domainName, id string) (domain.Competency, bool) {
@@ -556,7 +568,14 @@ func (b specBuilder) newUnit(id string) LearningUnitSpec {
 // existingUnit specifies an existing unit of the target from its projection.
 func (b specBuilder) existingUnit(unit AdaptedUnit) LearningUnitSpec {
 	item := unit.Item
-	spec := b.newUnit(unitSpecID(b.target, "item", item.Item))
+	id := unitSpecID(b.target, "item", item.Item)
+	// A unit-level item that realized a specification (for example a
+	// proposed unit the authoring target created) keeps that specification's
+	// ID, so the Realization Link stays the path back to it.
+	if realized, ok := b.realizations.RootItemOf(item.Item); ok {
+		id = realized
+	}
+	spec := b.newUnit(id)
 	spec.Unit = SpecUnit{PlatformItem: &item, Group: unit.Phase}
 	spec.Teaching.Title = unit.Title
 	spec.Adaptation.Mode, spec.Adaptation.ProposedMode, spec.Adaptation.Rationale = unit.Mode, unit.ProposedMode, unit.Rationale
@@ -758,16 +777,29 @@ func contains(values []string, value string) bool {
 	return false
 }
 
+// UnitRevision is a unit draft reconciled with its latest stored version.
+type UnitRevision struct {
+	Spec   LearningUnitSpec
+	Status string
+	// HeldFields are the material fields that changed without new evidence
+	// for a realized unit, so its stored version was kept (SpecHeld).
+	HeldFields []string
+}
+
 // ReviseUnitSpec reconciles a unit draft with the latest stored version under
 // the regeneration policy: a new version only when a material field changed
 // (competencies, prerequisites, adaptation mode, misconceptions, required
-// evidence). Otherwise the stored version stands, with its provenance.
-func ReviseUnitSpec(draft LearningUnitSpec, latest *LearningUnitSpec) (LearningUnitSpec, string, error) {
+// evidence). Otherwise the stored version stands, with its provenance. Once a
+// unit is realized its content exists on the platform, so a material change
+// produces a new version (and so a content change) only when it is
+// evidence-linked: the learner state changed with it. Other material changes
+// to a realized unit are held.
+func ReviseUnitSpec(draft LearningUnitSpec, latest *LearningUnitSpec, realized bool) (UnitRevision, error) {
 	if latest == nil {
 		draft.Version = 1
 		hash, err := specHash(draft)
 		draft.ContentHash = hash
-		return draft, SpecCreated, err
+		return UnitRevision{Spec: draft, Status: SpecCreated}, err
 	}
 	changed := changedFields([]materialField{
 		{"competencies", materialCompetencies(draft.Teaching.Competencies), materialCompetencies(latest.Teaching.Competencies)},
@@ -777,14 +809,18 @@ func ReviseUnitSpec(draft LearningUnitSpec, latest *LearningUnitSpec) (LearningU
 		{"requiredEvidence", draft.Teaching.RequiredEvidence, latest.Teaching.RequiredEvidence},
 	})
 	if len(changed) == 0 {
-		return *latest, SpecUnchanged, nil
+		return UnitRevision{Spec: *latest, Status: SpecUnchanged}, nil
+	}
+	evidenceLinked := draft.Provenance.LearnerStateRevision != latest.Provenance.LearnerStateRevision
+	if realized && !evidenceLinked {
+		return UnitRevision{Spec: *latest, Status: SpecHeld, HeldFields: changed}, nil
 	}
 	draft.Version = latest.Version + 1
 	draft.Supersedes = &SpecVersionRef{Version: latest.Version, ContentHash: latest.ContentHash}
-	draft.Change = &SpecChange{MaterialFields: changed, EvidenceLinked: draft.Provenance.LearnerStateRevision != latest.Provenance.LearnerStateRevision}
+	draft.Change = &SpecChange{MaterialFields: changed, EvidenceLinked: evidenceLinked}
 	hash, err := specHash(draft)
 	draft.ContentHash = hash
-	return draft, SpecRevised, err
+	return UnitRevision{Spec: draft, Status: SpecRevised}, err
 }
 
 // ReviseCurriculumSpec reconciles a composed curriculum with the latest stored

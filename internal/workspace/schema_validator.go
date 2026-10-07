@@ -98,6 +98,8 @@ var workspaceDocumentRules = []documentRule{
 	{Pattern: "specifications/curricula/*.json", Schema: "curriculum-specification.schema.json"},
 	{Pattern: "specifications/units/*.json", Schema: "learning-unit-specification.schema.json"},
 	{Pattern: "authoring-plans/*.json", Schema: "authoring-plan.schema.json"},
+	{Pattern: "authoring-plans/*/gate-results/*.json", Schema: "platform-gate-record.schema.json"},
+	{Pattern: "specifications/realizations/*.json", Schema: "realization-link.schema.json"},
 	{Pattern: "state/target-adaptations/*.json", Schema: "target-adaptation-projection.schema.json"},
 	{Pattern: "state/competencies.yaml", Schema: "projection.schema.json"},
 	{Pattern: "state/competencies.json", Schema: "projection.schema.json"},

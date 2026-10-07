@@ -19,6 +19,11 @@ type planSpecEntry struct {
 	PlatformItem *platform.ExternalID `json:"platformItem,omitempty"`
 	Group        string               `json:"group,omitempty"`
 	Mode         string               `json:"mode,omitempty"`
+	// HeldFields are material changes held back for a realized unit because
+	// no new evidence motivated them (status held).
+	HeldFields []string `json:"heldFields,omitempty"`
+	// Realized reports whether this version is realized on the platform.
+	Realized bool `json:"realized,omitempty"`
 }
 
 type planSpecifications struct {
@@ -46,6 +51,11 @@ func specifyTarget(ws platformWorkspace, adapter platform.Adapter, inputs adapta
 	if err != nil {
 		return planSpecifications{}, platform.AuthoringOutcome{}, nil, err
 	}
+	links, err := loadRealizations(ws)
+	if err != nil {
+		return planSpecifications{}, platform.AuthoringOutcome{}, nil, err
+	}
+	realizations := platform.IndexRealizations(links, projection.Target)
 	draft, err := platform.DraftSpecifications(platform.SpecRequest{
 		Projection:   projection,
 		Curriculum:   inputs.curriculum,
@@ -53,6 +63,7 @@ func specifyTarget(ws platformWorkspace, adapter platform.Adapter, inputs adapta
 		Packs:        domain.NewRegistry(),
 		LearnerState: learnerState,
 		Constraints:  inputs.constraints,
+		Realizations: realizations,
 	})
 	if err != nil {
 		return planSpecifications{}, platform.AuthoringOutcome{}, nil, err
@@ -73,18 +84,21 @@ func specifyTarget(ws platformWorkspace, adapter platform.Adapter, inputs adapta
 			}
 			latest = &stored
 		}
-		spec, status, err := platform.ReviseUnitSpec(unitDraft, latest)
+		revision, err := platform.ReviseUnitSpec(unitDraft, latest, realizations.Realized(unitDraft.ID))
 		if err != nil {
 			return planSpecifications{}, platform.AuthoringOutcome{}, nil, err
 		}
+		spec, status := revision.Spec, revision.Status
 		path, err = writeSpec(ws, state.UnitSpecs, spec.ID, spec.Version, status, spec)
 		if err != nil {
 			return planSpecifications{}, platform.AuthoringOutcome{}, nil, err
 		}
+		spec = realizedView(spec, unitDraft, status, realizations)
 		units = append(units, spec)
 		output.Units = append(output.Units, planSpecEntry{
 			ID: spec.ID, Version: spec.Version, ContentHash: spec.ContentHash, Path: path, Status: status,
 			Title: spec.Teaching.Title, PlatformItem: spec.Unit.PlatformItem, Group: spec.Unit.Group, Mode: spec.Adaptation.Mode,
+			HeldFields: revision.HeldFields, Realized: realizations.VersionRealized(spec.ID, spec.Version),
 		})
 	}
 
@@ -111,6 +125,11 @@ func specifyTarget(ws platformWorkspace, adapter platform.Adapter, inputs adapta
 	}
 	output.Curriculum = planSpecEntry{ID: curriculum.ID, Version: curriculum.Version, ContentHash: curriculum.ContentHash, Path: path, Status: status, Title: curriculum.Title}
 
+	// A kept curriculum version justifies what its units justify now: once
+	// a new target's skeleton is realized it is no longer a new target.
+	if status == platform.SpecUnchanged {
+		curriculum.AuthoringIntent = composed.AuthoringIntent
+	}
 	outcome, err := platform.PlanAuthoring(platform.AuthoringRequest{
 		Curriculum: curriculum, Units: units, Intent: flags.intent, Unit: flags.unit, Skill: declaration.AuthoringSkill(),
 	})
@@ -135,10 +154,33 @@ func specifyTarget(ws platformWorkspace, adapter platform.Adapter, inputs adapta
 	return output, outcome, record, nil
 }
 
+// realizedView is how planning sees a stored unit version once the unit is
+// realized: placed at the unit-level item that realized it (its Realization
+// Link), and, when the stored version was kept, justifying only what the
+// current draft of the realized unit justifies, so realized content is never
+// authored again. The stored version itself is immutable and unchanged.
+func realizedView(spec, draft platform.LearningUnitSpec, status string, realizations platform.Realizations) platform.LearningUnitSpec {
+	root, realized := realizations.ByUnit[spec.ID]
+	if !realized {
+		return spec
+	}
+	if spec.Unit.PlatformItem == nil {
+		item := root
+		spec.Unit.PlatformItem = &item
+	}
+	if status == platform.SpecUnchanged || status == platform.SpecHeld {
+		spec.AuthoringIntent = platform.IntentNone
+		if draft.Unit.PlatformItem != nil {
+			spec.AuthoringIntent = draft.AuthoringIntent
+		}
+	}
+	return spec
+}
+
 // writeSpec appends a new specification version, or returns the path of the
 // stored version a plan kept unchanged.
 func writeSpec(ws platformWorkspace, kind, id string, version int, status string, spec any) (string, error) {
-	if status == platform.SpecUnchanged {
+	if status == platform.SpecUnchanged || status == platform.SpecHeld {
 		return state.SpecificationPath(kind, id, version), nil
 	}
 	data, err := platform.EncodeSpec(spec)

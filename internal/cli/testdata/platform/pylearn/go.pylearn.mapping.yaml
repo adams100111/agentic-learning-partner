@@ -1,0 +1,265 @@
+# ALP content mapping for the `go` course (Learning Target `go`).
+#
+# PyLearn owns this file (ALP ADR-0017); its format is ALP's platform mapping
+# schema v2 (ADR-0058, `schemas/platform-mapping.schema.json`). It maps the
+# course's declared-stable items — the ids `bun run export:curriculum --course go`
+# lists — to Go domain-pack competencies, each with a Mapping Role:
+#
+#   teaches     the lesson introduces the competency      → exposure evidence
+#   reinforces  the item practises it, never proves it    → practice evidence
+#   assesses    answering it can demonstrate it           → assessment evidence
+#
+# Granularity: every lesson and every quiz is mapped. ALP grades a question's
+# answer through its nearest mapped ancestor (question → quiz → lesson), so a
+# question gets its own entry only when it assesses less than its whole quiz,
+# or asks about the PyLearn runtime rather than Go (those only `reinforce`, so a
+# correct answer never counts as assessment of a Go competency).
+#
+# Quiz `concept` tags and concept_mastery stay platform-local: they name quizzes
+# here, never competencies. Checks: `bun run lint:lessons` (ids exist and are
+# declared-stable) and `bun run gate:alp-mapping --course go` (ALP's validator).
+schemaVersion: 2
+platform: pylearn
+target: go
+packs:
+  - domain: go
+    packVersion: ">=0.1.0 <0.2.0"
+entries:
+  # A1 — `go mod init`, a Delivery struct literal, a net/http POST with a timeout.
+  - item: go-a1-first-delivery
+    competencies:
+      - id: go.language.packages-modules
+        role: teaches
+      - id: go.language.syntax
+        role: teaches
+      - id: go.backend.http-stdlib
+        role: teaches
+  - item: go-a1-first-delivery#quiz:go-module-basics
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.packages-modules
+        role: assesses
+  # q2 asks why the network snippet cannot run in PyLearn's WASM sandbox.
+  - item: go-a1-first-delivery#quiz:go-module-basics/q2
+    competencies:
+      - id: go.backend.http-stdlib
+        role: reinforces
+
+  # A2 — structs, zero values, composite literals, value vs pointer receivers.
+  - item: go-a2-model-the-domain
+    competencies:
+      - id: go.language.structs-methods
+        role: teaches
+      - id: go.language.pointers
+        role: teaches
+      - id: go.language.types
+        role: teaches
+  - item: go-a2-model-the-domain#quiz:go-receivers
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.pointers
+        role: assesses
+      - id: go.language.structs-methods
+        role: assesses
+      - id: go.language.types
+        role: assesses
+  - item: go-a2-model-the-domain#quiz:go-receivers/q1
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.pointers
+        role: assesses
+      - id: go.language.structs-methods
+        role: assesses
+  - item: go-a2-model-the-domain#quiz:go-receivers/q2
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.types
+        role: assesses
+
+  # A3 — errors as values: sentinel and typed errors, %w, errors.Is/As/Join.
+  - item: go-a3-errors-as-values
+    competencies:
+      - id: go.language.errors
+        role: teaches
+      - id: go.language.structs-methods
+        role: reinforces
+  - item: go-a3-errors-as-values#quiz:go-errors
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.errors
+        role: assesses
+
+  # A4 — slices (nil, append aliasing), maps (random order), per-iteration loop vars.
+  - item: go-a4-collections
+    competencies:
+      - id: go.language.slices
+        role: teaches
+      - id: go.language.maps
+        role: teaches
+      - id: go.language.iteration-modern
+        role: teaches
+  - item: go-a4-collections#quiz:go-collections
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.slices
+        role: assesses
+      - id: go.language.maps
+        role: assesses
+  - item: go-a4-collections#quiz:go-collections/q1
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.slices
+        role: assesses
+  - item: go-a4-collections#quiz:go-collections/q2
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.maps
+        role: assesses
+
+  # A5 — implicit interfaces, small consumer-owned seams, accept interfaces/return structs.
+  - item: go-a5-interfaces
+    competencies:
+      - id: go.language.interfaces
+        role: teaches
+      - id: go.architecture.abstraction
+        role: teaches
+      - id: go.language.structs-methods
+        role: reinforces
+  - item: go-a5-interfaces#quiz:go-interfaces
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.interfaces
+        role: assesses
+      - id: go.architecture.abstraction
+        role: assesses
+  - item: go-a5-interfaces#quiz:go-interfaces/q1
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.interfaces
+        role: assesses
+
+  # A6 — encoding/json struct tags and exported fields; defer-closed files, os.Root.
+  - item: go-a6-persistence
+    competencies:
+      - id: go.language.defer-resource-lifetime
+        role: teaches
+      - id: go.language.structs-methods
+        role: reinforces
+      - id: go.language.interfaces
+        role: reinforces
+  - item: go-a6-persistence#quiz:go-json
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.structs-methods
+        role: assesses
+      - id: go.language.defer-resource-lifetime
+        role: assesses
+  - item: go-a6-persistence#quiz:go-json/q1
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.structs-methods
+        role: assesses
+  - item: go-a6-persistence#quiz:go-json/q2
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.defer-resource-lifetime
+        role: assesses
+
+  # A7 — stdlib flag, then cobra once the CLI is a command tree. The Go pack has
+  # no CLI competency; the quiz is a dependency-judgement check plus a PyLearn
+  # runtime question, so it only reinforces.
+  - item: go-a7-cli-surface
+    competencies:
+      - id: go.architecture.abstraction
+        role: reinforces
+      - id: go.language.packages-modules
+        role: reinforces
+  - item: go-a7-cli-surface#quiz:go-cli
+    competencies:
+      - id: go.architecture.abstraction
+        role: reinforces
+
+  # A8 — a generic Store[T any] and an iter.Seq[T] range-over-func iterator.
+  - item: go-a8-generics-iterators
+    competencies:
+      - id: go.language.generics
+        role: teaches
+      - id: go.language.iteration-modern
+        role: teaches
+      - id: go.language.interfaces
+        role: reinforces
+  - item: go-a8-generics-iterators#quiz:go-generics
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.generics
+        role: assesses
+      - id: go.language.iteration-modern
+        role: assesses
+  - item: go-a8-generics-iterators#quiz:go-generics/q1
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.generics
+        role: assesses
+  - item: go-a8-generics-iterators#quiz:go-generics/q2
+    strengthCeiling: moderate
+    competencies:
+      - id: go.language.iteration-modern
+        role: assesses
+
+  # A9 — table-driven tests, httptest as the fake endpoint, the tooling bar.
+  - item: go-a9-testing-tooling
+    competencies:
+      - id: go.testing.unit
+        role: teaches
+      - id: go.testing.http
+        role: teaches
+      - id: go.tooling.build-static-analysis
+        role: teaches
+  - item: go-a9-testing-tooling#quiz:go-testing
+    strengthCeiling: moderate
+    competencies:
+      - id: go.testing.unit
+        role: assesses
+      - id: go.testing.http
+        role: assesses
+  - item: go-a9-testing-tooling#quiz:go-testing/q1
+    strengthCeiling: moderate
+    competencies:
+      - id: go.testing.unit
+        role: assesses
+  - item: go-a9-testing-tooling#quiz:go-testing/q2
+    strengthCeiling: moderate
+    competencies:
+      - id: go.testing.http
+        role: assesses
+
+  # A10 — fan-out with goroutines, a WaitGroup and a results channel; a context
+  # timeout raced in select; the race detector; go build / go install.
+  - item: go-a10-concurrency-ship
+    competencies:
+      - id: go.concurrency.goroutines
+        role: teaches
+      - id: go.concurrency.channels
+        role: teaches
+      - id: go.concurrency.sync
+        role: teaches
+      - id: go.concurrency.select
+        role: teaches
+      - id: go.runtime.context
+        role: teaches
+      - id: go.concurrency.races-deadlocks-leaks
+        role: teaches
+      - id: go.tooling.build-static-analysis
+        role: reinforces
+  - item: go-a10-concurrency-ship#quiz:go-concurrency
+    strengthCeiling: moderate
+    competencies:
+      - id: go.concurrency.sync
+        role: assesses
+      - id: go.concurrency.channels
+        role: assesses
+  # q2 asks why -race cannot run in PyLearn's single-threaded WASM sandbox.
+  - item: go-a10-concurrency-ship#quiz:go-concurrency/q2
+    competencies:
+      - id: go.concurrency.races-deadlocks-leaks
+        role: reinforces
