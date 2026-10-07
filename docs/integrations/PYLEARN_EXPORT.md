@@ -86,6 +86,8 @@ alp platform account link --adapter pylearn --instance pylearn-local --user usr_
 
 The link (`schemas/platform-account-link.schema.json`) is an append-only workspace record in `platform-accounts/`. `--confirm` states the learner's explicit confirmation; agents must not link accounts on their own. Learners are never matched by email or name.
 
+The link's ID is derived from `{platform, instance, user.id}`, so linking the same account on two devices creates the same record with different confirmation timestamps. Git Store sync treats such links as equivalent when they name the same learner and keeps the earliest confirmed record on every device; the same account linked to two different learners is a sync conflict that needs the learner's resolution. Linking an account that is already linked reports `already-linked` and writes nothing.
+
 ## Import
 
 ```sh
@@ -102,10 +104,12 @@ Evidence identity is a hash of platform, instance, target, workspace learner, pl
 |---|---|
 | `imported` | New evidence for an event not seen before. |
 | `skipped` (`already-imported`) | The event's active evidence already has this revision. |
-| `skipped` (`stale-revision`) | The record is older than the event's active evidence (for example an old snapshot re-imported). |
+| `skipped` (`stale-revision`) | A different revision whose `observedAt` is earlier than the event's active evidence (for example an old snapshot re-imported). |
 | `skipped` (`revision-conflict`) | A different revision with the same `observedAt` as the active evidence; ALP does not guess which is newer. |
-| `superseded` | A later revision: new evidence whose `supersedes` lists the event's previously active evidence. An event that returns to an earlier revision is recorded again the same way. |
+| `superseded` | A different revision whose `observedAt` is later than the event's active evidence: new evidence whose `supersedes` lists the event's previously active evidence. An event that returns to an earlier revision content is recorded again the same way. |
 | `unmapped` (`not-mapped` / `not-in-curriculum`) | No mapped item at or above the record's item, or the item is not in the curriculum export. |
+
+**Revision order.** A synthetic `event.revision` is a content hash and has no order of its own, so "later revision" means later `observedAt`: ALP compares a record's `observedAt` with that of the event's active evidence (ADR-0059, Notes 2026-10-07). Later supersedes, earlier is `stale-revision`, equal with a different revision is `revision-conflict`. A platform must therefore set `observedAt` to when the row last changed, never to export time.
 
 Output is deterministic JSON: the target, the linked account, the curriculum export and mapping hashes, the cursor range (`since`, `next`), `counts` (`records`, `imported`, `skipped`, `superseded`, `unmapped`) and one entry per record with its outcome, reason, mapped item, written evidence IDs and superseded IDs. Records are reported sorted by item, event ID and time.
 

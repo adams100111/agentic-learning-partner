@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -263,5 +264,57 @@ func TestRunBoundedSyncRetriesPushRaceAtMostConfiguredLimit(t *testing.T) {
 	}
 	if attempts != 3 {
 		t.Fatalf("retry attempts = %d", attempts)
+	}
+}
+
+func platformAccountLinkRecord(learnerID, recordedAt string) []byte {
+	return []byte("schemaVersion: 1\nid: pal_0123456789abcdef01234567\nrecordedAt: " + recordedAt + "\nplatform: pylearn\ninstance: pylearn-local\nplatformUserId: user_1\nlearnerId: " + learnerID + "\nconfirmation:\n    confirmedBy: learner\n    confirmedAt: " + recordedAt + "\n")
+}
+
+const platformAccountLinkPath = "platform-accounts/pal_0123456789abcdef01234567.yaml"
+
+func TestGitSyncConvergesSamePlatformAccountLinkedOnTwoDevices(t *testing.T) {
+	_, a, b := makeTwoGitDevices(t)
+	ctx := context.Background()
+	earliest := platformAccountLinkRecord("learner", "2026-10-06T09:00:00Z")
+	later := platformAccountLinkRecord("learner", "2026-10-06T11:30:00Z")
+
+	// Device B links first in wall-clock time but pushes second.
+	revB, _ := b.Revision(ctx)
+	if _, err := b.Commit(ctx, revB, ChangeSet{Message: "link b", Mutations: []Mutation{{Path: platformAccountLinkPath, Data: earliest}}}); err != nil {
+		t.Fatal(err)
+	}
+	revA, _ := a.Revision(ctx)
+	if _, err := a.Commit(ctx, revA, ChangeSet{Message: "link a", Mutations: []Mutation{{Path: platformAccountLinkPath, Data: later}}}); err != nil {
+		t.Fatal(err)
+	}
+	if result, err := a.Push(ctx, SyncOptions{}); err != nil || result.Pending {
+		t.Fatalf("push A result=%#v err=%v", result, err)
+	}
+
+	if result, err := b.Sync(ctx, SyncOptions{}); err != nil || result.Pending {
+		t.Fatalf("sync B result=%#v err=%v", result, err)
+	}
+	if _, err := a.Sync(ctx, SyncOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	for name, device := range map[string]*Git{"A": a, "B": b} {
+		data, err := os.ReadFile(filepath.Join(device.Root(), filepath.FromSlash(platformAccountLinkPath)))
+		if err != nil {
+			t.Fatalf("device %s: %v", name, err)
+		}
+		if string(data) != string(earliest) {
+			t.Fatalf("device %s kept\n%s\nwant the earliest confirmed link\n%s", name, data, earliest)
+		}
+	}
+}
+
+func TestReconcileRefusesSamePlatformAccountLinkedToDifferentLearners(t *testing.T) {
+	_, err := ReconcileCanonical(map[string][]byte{},
+		map[string][]byte{platformAccountLinkPath: platformAccountLinkRecord("learner", "2026-10-06T09:00:00Z")},
+		map[string][]byte{platformAccountLinkPath: platformAccountLinkRecord("someone-else", "2026-10-06T11:30:00Z")})
+	var conflict SemanticConflict
+	if !errors.As(err, &conflict) || conflict.Path != platformAccountLinkPath {
+		t.Fatalf("expected a semantic conflict on %s, got %v", platformAccountLinkPath, err)
 	}
 }
