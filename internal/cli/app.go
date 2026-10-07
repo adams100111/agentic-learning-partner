@@ -40,6 +40,8 @@ func (a App) Run(args []string) int {
 	}
 
 	switch args[0] {
+	case "version":
+		return a.runVersion(args[1:])
 	case "validate":
 		return a.runValidate(args[1:])
 	case "workspace":
@@ -533,5 +535,5 @@ func (a App) resolveAndInspect(explicit string) (workspace.Resolution, workspace
 
 func (a App) usage() {
 	fmt.Fprintln(a.ErrOut, "usage: alp <command>")
-	fmt.Fprintln(a.ErrOut, "commands: validate, workspace init, workspace connect, workspace clone, workspace list, workspace use, workspace status, workspace sync, workspace export, workspace verify, workspace restore, workspace move, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, session begin, session status, session put, session delete, session flush, session close, session abort, session recover-sync, plan build, diagnostic, platform inspect, platform mapping validate, platform account link, platform import, platform plan, platform decision accept, platform decision revoke, platform gates record")
+	fmt.Fprintln(a.ErrOut, "commands: version, validate, workspace init, workspace connect, workspace clone, workspace list, workspace use, workspace status, workspace sync, workspace export, workspace verify, workspace restore, workspace move, workspace check, workspace migrate, domain list, domain info, context build, context inspect, persona show, status, competency show, evidence show, evidence add, assessment add, state rebuild, session begin, session status, session put, session delete, session flush, session close, session abort, session recover-sync, plan build, diagnostic, platform inspect, platform mapping validate, platform account link, platform import, platform plan, platform decision accept, platform decision revoke, platform gates record")
 }
