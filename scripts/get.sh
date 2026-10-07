@@ -7,6 +7,9 @@
 # env: ALP_INSTALL_DIR     install dir (default: $HOME/.local/bin)
 #      GITHUB_TOKEN/GH_TOKEN  optional; only sent to api.github.com to avoid
 #                             anonymous API rate limits when resolving "latest".
+#      ALP_GET_TEST_BASE_URL   TEST ONLY: fetch <url>/<version>/<asset> instead of
+#                             GitHub Releases, and allow http. Never set in real use.
+# Exit status 44: the requested release is not published (HTTP 404).
 # No sudo. Idempotent. Refuses on checksum mismatch.
 set -euo pipefail
 
@@ -16,8 +19,19 @@ GS_TMP=""
 gs_err() { echo "get.sh: $*" >&2; }
 gs_cleanup() { if [ -n "$GS_TMP" ]; then rm -rf "$GS_TMP"; GS_TMP=""; fi; }
 
-gs_fetch() { # URL OUT
-  curl -fsSL --proto '=https' --proto-redir '=https' "$1" -o "$2"
+GS_NOT_FOUND=44
+
+# gs_fetch URL OUT — bounded download; returns GS_NOT_FOUND on HTTP 404.
+gs_fetch() {
+  local proto=(--proto '=https' --proto-redir '=https' --tlsv1.2) code
+  [ -z "${ALP_GET_TEST_BASE_URL:-}" ] || proto=()
+  code="$(curl -sSL ${proto[@]+"${proto[@]}"} --connect-timeout 10 --max-time 60 \
+    --retry 2 --retry-connrefused -w '%{http_code}' "$1" -o "$2")" || return 1
+  case "$code" in
+    200) return 0 ;;
+    404) return "$GS_NOT_FOUND" ;;
+    *) return 1 ;;
+  esac
 }
 
 gs_sha256() {
@@ -30,11 +44,11 @@ gs_sha256() {
 gs_latest_tag() {
   local token="${GH_TOKEN:-${GITHUB_TOKEN:-}}" json
   if [ -n "$token" ]; then
-    json="$(curl -fsSL --proto '=https' --proto-redir '=https' \
+    json="$(curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 10 --max-time 60 \
       -H @<(printf 'Authorization: Bearer %s\n' "$token") \
       "https://api.github.com/repos/${GS_REPO}/releases/latest")"
   else
-    json="$(curl -fsSL --proto '=https' --proto-redir '=https' \
+    json="$(curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 --connect-timeout 10 --max-time 60 \
       "https://api.github.com/repos/${GS_REPO}/releases/latest")"
   fi
   printf '%s\n' "$json" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1
@@ -65,13 +79,23 @@ gs_main() {
 
   asset="alp_${version}_${os}_${arch}.tar.gz"
   base="https://github.com/${GS_REPO}/releases/download/${version}"
+  [ -z "${ALP_GET_TEST_BASE_URL:-}" ] || base="${ALP_GET_TEST_BASE_URL}/${version}"
   trap 'gs_cleanup' EXIT
   GS_TMP="$(mktemp -d)"
   chmod 700 "$GS_TMP"
 
   gs_err "downloading ${asset}..."
-  gs_fetch "${base}/${asset}" "$GS_TMP/$asset" || { gs_err "download failed: ${base}/${asset}"; return 1; }
-  gs_fetch "${base}/SHA256SUMS" "$GS_TMP/SHA256SUMS" || { gs_err "download failed: ${base}/SHA256SUMS"; return 1; }
+  local rc=0
+  gs_fetch "${base}/${asset}" "$GS_TMP/$asset" || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    [ "$rc" -eq "$GS_NOT_FOUND" ] && { gs_err "release ${version} is not published (404): ${base}/${asset}"; return "$GS_NOT_FOUND"; }
+    gs_err "download failed: ${base}/${asset}"; return 1
+  fi
+  gs_fetch "${base}/SHA256SUMS" "$GS_TMP/SHA256SUMS" || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    [ "$rc" -eq "$GS_NOT_FOUND" ] && { gs_err "release ${version} is not published (404): ${base}/SHA256SUMS"; return "$GS_NOT_FOUND"; }
+    gs_err "download failed: ${base}/SHA256SUMS"; return 1
+  fi
 
   expected="$(awk -v f="$asset" '$2 == f || $2 == "*" f { print $1; exit }' "$GS_TMP/SHA256SUMS")"
   [ -n "$expected" ] || { gs_err "${asset} is not listed in SHA256SUMS"; return 1; }

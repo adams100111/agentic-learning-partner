@@ -18,7 +18,9 @@ The hook runs the plugin's own `scripts/get.sh` pinned to the plugin's tag, so t
 
 - Opt out: set `ALP_SKIP_CLI_INSTALL=1`. The `setup-learning-workspace` skill then reports a missing or mismatched CLI instead.
 - Install location: `~/.local/bin`, or `ALP_INSTALL_DIR`. The hook warns once if it is not on your `PATH`.
-- A locally built `alp` (`go install`, version `dev`) is never replaced.
+- A locally built `alp` (`go install`, version `dev`) is never replaced, and a CLI newer than the plugin is never downgraded (you get one warning).
+- If an older `alp` earlier on `PATH` shadows the installed one, you get one warning naming it; put `~/.local/bin` first or remove the older one.
+- Right after a version bump merges and before its release is published, sessions say the release is "not published yet" and retry next session.
 
 Troubleshooting:
 
@@ -60,7 +62,7 @@ To build from a checkout instead of a release (version reports `dev`):
 
 ### Releasing (maintainers)
 
-Releases are cut locally with `scripts/release.sh <vX.Y.Z>`; there is no CI. Bump the version in `plugin.json`, `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`, merge to `main`, then run it from a clean, up-to-date `main`. It vets and tests, cross-compiles the four targets into `dist/`, uploads to a draft GitHub Release, verifies the downloaded assets against `SHA256SUMS`, then tags and publishes. Use `--dry-run` to build and checksum without tagging or publishing.
+Releases are cut locally with `scripts/release.sh <vX.Y.Z>`; there is no CI. Bump the version in `plugin.json`, `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`, merge to `main`, then run it from a clean, up-to-date `main` immediately: between the merge and the published release, plugin sessions find no release for the new version, report it as not yet published, and retry next session. It vets and tests, cross-compiles the four targets into `dist/`, uploads to a draft GitHub Release, verifies the downloaded assets against `SHA256SUMS`, then tags and publishes. Use `--dry-run` to build and checksum without tagging or publishing.
 
 ## Learner workspace
 
