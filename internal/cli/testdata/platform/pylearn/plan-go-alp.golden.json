@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "adapter": "pylearn",
+  "target": {
+    "platform": "pylearn",
+    "target": "go-alp"
+  },
+  "path": "state/target-adaptations/tap_052c4e3a6565c06aee6ea2b9.json",
+  "projection": {
+    "schemaVersion": 1,
+    "id": "tap_052c4e3a6565c06aee6ea2b9",
+    "revision": "tapr_1c5d12b733cb10f7945ed86d",
+    "learnerId": "ada",
+    "target": {
+      "platform": "pylearn",
+      "target": "go-alp"
+    },
+    "inputs": {
+      "curriculum": {
+        "schemaVersion": 1,
+        "contentHash": "sha256:5d1e7c0b9a8f6e4d2c0b8a6f4e2d0c8b6a4f2e0d8c6b4a2f0e8d6c4b2a0f8e6d"
+      },
+      "mapping": {
+        "schemaVersion": 2,
+        "contentHash": "sha256:d0726d5916a9faeebdee23b797a395852c4b25b7ed6d0e76e926d31a0027b00a"
+      },
+      "packs": [
+        {
+          "domain": "go",
+          "version": "0.1.0"
+        }
+      ],
+      "constraints": null,
+      "decisions": []
+    },
+    "units": [
+      {
+        "item": {
+          "platform": "pylearn",
+          "target": "go-alp",
+          "item": "go-alp-a1-context"
+        },
+        "phase": "A",
+        "title": "Context and Cancellation",
+        "competencies": [
+          {
+            "id": "go.runtime.context",
+            "domain": "go",
+            "roles": [
+              "teaches",
+              "assesses"
+            ],
+            "status": "demonstrated",
+            "level": "strong",
+            "confidence": "high",
+            "assessmentId": "asmt_seed_676f2e72756e74696d652e636f6e74657874323032362d31302d30315430393a30303a30305a"
+          }
+        ],
+        "proposedMode": "skip",
+        "mode": "skip",
+        "rationale": "Already demonstrated: go.runtime.context."
+      },
+      {
+        "item": {
+          "platform": "pylearn",
+          "target": "go-alp",
+          "item": "go-alp-a2-goroutines"
+        },
+        "phase": "A",
+        "title": "Goroutine Lifetimes",
+        "competencies": [
+          {
+            "id": "go.concurrency.goroutines",
+            "domain": "go",
+            "roles": [
+              "teaches",
+              "assesses"
+            ],
+            "status": "functional",
+            "level": "functional",
+            "confidence": "medium",
+            "assessmentId": "asmt_seed_676f2e636f6e63757272656e63792e676f726f7574696e6573323032362d31302d30315430393a30353a30305a"
+          },
+          {
+            "id": "go.concurrency.races-deadlocks-leaks",
+            "domain": "go",
+            "roles": [
+              "reinforces"
+            ],
+            "status": "unassessed"
+          }
+        ],
+        "proposedMode": "skim",
+        "mode": "skim",
+        "rationale": "Assessed functional: go.concurrency.goroutines."
+      },
+      {
+        "item": {
+          "platform": "pylearn",
+          "target": "go-alp",
+          "item": "go-alp-a3-generics"
+        },
+        "phase": "A",
+        "title": "Generics",
+        "competencies": [],
+        "proposedMode": "full",
+        "mode": "full",
+        "rationale": "The unit maps to no competencies, so learner state cannot justify adapting it."
+      }
+    ],
+    "sequence": [
+      "go-alp-a2-goroutines",
+      "go-alp-a3-generics"
+    ],
+    "reinforcement": [],
+    "gaps": [
+      {
+        "competency": "go.concurrency.channels",
+        "domain": "go",
+        "status": "unassessed",
+        "requiredBy": [
+          "go.concurrency.races-deadlocks-leaks"
+        ]
+      },
+      {
+        "competency": "go.concurrency.sync",
+        "domain": "go",
+        "status": "unassessed",
+        "requiredBy": [
+          "go.concurrency.races-deadlocks-leaks"
+        ]
+      },
+      {
+        "competency": "go.runtime.scheduler",
+        "domain": "go",
+        "status": "unassessed",
+        "requiredBy": [
+          "go.concurrency.goroutines"
+        ]
+      }
+    ]
+  }
+}
