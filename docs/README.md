@@ -38,3 +38,4 @@ When documents disagree: accepted ADRs define the decision, then product invaria
 
 Integration contract:
 - [PyLearn Export and Evidence Mapping](integrations/PYLEARN_EXPORT.md)
+- [Closed-loop smoke: ALP × PyLearn go-alp](integrations/CLOSED_LOOP_SMOKE.md)
