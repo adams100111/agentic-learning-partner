@@ -24,6 +24,9 @@ type planSpecEntry struct {
 type planSpecifications struct {
 	Curriculum planSpecEntry   `json:"curriculum"`
 	Units      []planSpecEntry `json:"units"`
+	// Persona reports the persona documents that shaped unit teaching and
+	// the documented defaults that stood in for missing ones.
+	Persona platform.PersonaReport `json:"persona"`
 }
 
 // planAuthoringRecord is the Authoring Plan with where it is recorded.
@@ -46,6 +49,18 @@ func specifyTarget(ws platformWorkspace, adapter platform.Adapter, inputs adapta
 	if err != nil {
 		return planSpecifications{}, platform.AuthoringOutcome{}, nil, err
 	}
+	domains := make([]string, 0, len(projection.Inputs.Packs))
+	for _, pack := range projection.Inputs.Packs {
+		domains = append(domains, pack.Domain)
+	}
+	documents, err := ws.engine.PersonaDocuments(domains)
+	if err != nil {
+		return planSpecifications{}, platform.AuthoringOutcome{}, nil, err
+	}
+	persona, err := platform.ReadTeachingPersona(documents)
+	if err != nil {
+		return planSpecifications{}, platform.AuthoringOutcome{}, nil, err
+	}
 	draft, err := platform.DraftSpecifications(platform.SpecRequest{
 		Projection:   projection,
 		Curriculum:   inputs.curriculum,
@@ -53,12 +68,13 @@ func specifyTarget(ws platformWorkspace, adapter platform.Adapter, inputs adapta
 		Packs:        domain.NewRegistry(),
 		LearnerState: learnerState,
 		Constraints:  inputs.constraints,
+		Persona:      persona,
 	})
 	if err != nil {
 		return planSpecifications{}, platform.AuthoringOutcome{}, nil, err
 	}
 
-	output := planSpecifications{Units: []planSpecEntry{}}
+	output := planSpecifications{Units: []planSpecEntry{}, Persona: persona.Report}
 	units := make([]platform.LearningUnitSpec, 0, len(draft.Units))
 	for _, unitDraft := range draft.Units {
 		var latest *platform.LearningUnitSpec

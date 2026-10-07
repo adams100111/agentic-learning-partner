@@ -144,7 +144,7 @@
     "curriculum": {
       "id": "cspec_052c4e3a6565c06aee6ea2b9",
       "version": 1,
-      "contentHash": "sha256:c4b47815382ac5e7ca5e3caa2f2d770bf686628904386257d86ed2fa8e8cf07d",
+      "contentHash": "sha256:40926821093e7221d888f1ff111d1a53e66cc3a67d74dc9bf0ef555ee4137a05",
       "path": "specifications/curricula/cspec_052c4e3a6565c06aee6ea2b9-v1.json",
       "status": "created",
       "title": "Go (ALP)"
@@ -153,7 +153,7 @@
       {
         "id": "uspec_14d290a7cdcac64bf5b33eff",
         "version": 1,
-        "contentHash": "sha256:cb400b8f00839f0c472c284bdc9a54a55ed36b3b9a2b5eeaafeca6b65813e15f",
+        "contentHash": "sha256:8b19455137490434b07e9f7a7e056e0b7f1f5d7918a6fb14708ac71d2ee97377",
         "path": "specifications/units/uspec_14d290a7cdcac64bf5b33eff-v1.json",
         "status": "created",
         "title": "Context and Cancellation",
@@ -168,7 +168,7 @@
       {
         "id": "uspec_6e83d32168cee92bf8868707",
         "version": 1,
-        "contentHash": "sha256:69fc1bb45c6c4c06df39aea53d6b026d29f2a7e3d4875e5c416e98c2642d935b",
+        "contentHash": "sha256:7bc21b099d43ccc3ed5ad0d7e106dd353883989a0f8011eb03d0874e779e232a",
         "path": "specifications/units/uspec_6e83d32168cee92bf8868707-v1.json",
         "status": "created",
         "title": "Goroutines and scheduler mental model",
@@ -178,7 +178,7 @@
       {
         "id": "uspec_b2a03a8be26712b138f2fcde",
         "version": 1,
-        "contentHash": "sha256:7253814f693ca153eb2b8a468c263d3ce8babd6f0da6603b771bc6d7fd05bdf1",
+        "contentHash": "sha256:472a0cc249c1c08307f3cc59fdf7dc5e43ef51c6cd0f15ee8d9393161ea22038",
         "path": "specifications/units/uspec_b2a03a8be26712b138f2fcde-v1.json",
         "status": "created",
         "title": "Goroutine Lifetimes",
@@ -193,7 +193,7 @@
       {
         "id": "uspec_7a65bbd33e705b1191f89d5a",
         "version": 1,
-        "contentHash": "sha256:459d7535d9602bd31b70c4cbd38cb6c371d4eb068c4d9c3542d46cc909577b22",
+        "contentHash": "sha256:ce391ebab2f775c3bc724089e6d2ded964201f90a9971cfb28ebd6fc72a15782",
         "path": "specifications/units/uspec_7a65bbd33e705b1191f89d5a-v1.json",
         "status": "created",
         "title": "Generics",
@@ -208,7 +208,7 @@
       {
         "id": "uspec_90b21bfcbc2a3c7586a68619",
         "version": 1,
-        "contentHash": "sha256:f8bc9d2d7a51457a1bf1c65ba59caf8aec16379d0b11f1effea2305a7823af0c",
+        "contentHash": "sha256:780447602e616213331c275ff634ca92e205f5d214b5387156789e234eb7f9d6",
         "path": "specifications/units/uspec_90b21bfcbc2a3c7586a68619-v1.json",
         "status": "created",
         "title": "Channels and ownership",
@@ -218,14 +218,69 @@
       {
         "id": "uspec_5e2cb7f36015549a1aad2ee8",
         "version": 1,
-        "contentHash": "sha256:91e6eb1282a1beeee73cc9f514119b1f13844730311db438b90ea63f9ac6d41b",
+        "contentHash": "sha256:6f763726c2aedbc4ed3c3f6c8a5a275140794ce00e7e42a893cbd2d034db51e9",
         "path": "specifications/units/uspec_5e2cb7f36015549a1aad2ee8-v1.json",
         "status": "created",
         "title": "Mutexes, WaitGroups, Once, atomics",
         "group": "stage-1",
         "mode": "full"
       }
-    ]
+    ],
+    "persona": {
+      "documents": [
+        {
+          "path": "profile/profile.yaml",
+          "present": false
+        },
+        {
+          "path": "personas/global.yaml",
+          "present": false
+        },
+        {
+          "path": "personas/domains/go.yaml",
+          "domain": "go",
+          "present": false
+        }
+      ],
+      "defaults": [
+        {
+          "domain": "go",
+          "field": "activityTypes",
+          "value": "[]",
+          "reason": "no persona layer (or, for feedback, profile feedbackStyle) sets it"
+        },
+        {
+          "domain": "go",
+          "field": "analogies",
+          "value": "none",
+          "reason": "the learner profile lists no stacks to draw analogies from"
+        },
+        {
+          "domain": "go",
+          "field": "avoid",
+          "value": "[]",
+          "reason": "no persona layer (or, for feedback, profile feedbackStyle) sets it"
+        },
+        {
+          "domain": "go",
+          "field": "emphasis",
+          "value": "[]",
+          "reason": "no persona layer (or, for feedback, profile feedbackStyle) sets it"
+        },
+        {
+          "domain": "go",
+          "field": "feedback",
+          "value": "[]",
+          "reason": "no persona layer (or, for feedback, profile feedbackStyle) sets it"
+        },
+        {
+          "domain": "go",
+          "field": "pace",
+          "value": "standard",
+          "reason": "no persona layer sets teaching.pace and the profile has no teachingPace preference"
+        }
+      ]
+    }
   },
   "authoring": {
     "status": "planned",
@@ -234,10 +289,10 @@
     "reason": "Smallest justified intent is unit: uspec_6e83d32168cee92bf8868707 (Goroutines and scheduler mental model) is proposed for this target, not yet on the platform, and the learner's adaptation mode for it is full."
   },
   "authoringPlan": {
-    "path": "authoring-plans/apl_4162c4da9128f6e07711d07c.json",
+    "path": "authoring-plans/apl_56a75fadb34d12c7b4f64e9b.json",
     "status": "created",
     "schemaVersion": 1,
-    "id": "apl_4162c4da9128f6e07711d07c",
+    "id": "apl_56a75fadb34d12c7b4f64e9b",
     "learnerId": "ada",
     "target": {
       "platform": "pylearn",
@@ -252,13 +307,13 @@
     "curriculum": {
       "id": "cspec_052c4e3a6565c06aee6ea2b9",
       "version": 1,
-      "contentHash": "sha256:c4b47815382ac5e7ca5e3caa2f2d770bf686628904386257d86ed2fa8e8cf07d"
+      "contentHash": "sha256:40926821093e7221d888f1ff111d1a53e66cc3a67d74dc9bf0ef555ee4137a05"
     },
     "units": [
       {
         "id": "uspec_6e83d32168cee92bf8868707",
         "version": 1,
-        "contentHash": "sha256:69fc1bb45c6c4c06df39aea53d6b026d29f2a7e3d4875e5c416e98c2642d935b"
+        "contentHash": "sha256:7bc21b099d43ccc3ed5ad0d7e106dd353883989a0f8011eb03d0874e779e232a"
       }
     ],
     "public": {
@@ -266,7 +321,7 @@
       "curriculum": {
         "id": "cspec_052c4e3a6565c06aee6ea2b9",
         "version": 1,
-        "contentHash": "sha256:c4b47815382ac5e7ca5e3caa2f2d770bf686628904386257d86ed2fa8e8cf07d",
+        "contentHash": "sha256:40926821093e7221d888f1ff111d1a53e66cc3a67d74dc9bf0ef555ee4137a05",
         "title": "Go (ALP)",
         "goal": [],
         "groups": [
@@ -328,7 +383,7 @@
         {
           "id": "uspec_6e83d32168cee92bf8868707",
           "version": 1,
-          "contentHash": "sha256:69fc1bb45c6c4c06df39aea53d6b026d29f2a7e3d4875e5c416e98c2642d935b",
+          "contentHash": "sha256:7bc21b099d43ccc3ed5ad0d7e106dd353883989a0f8011eb03d0874e779e232a",
           "group": "stage-1",
           "teachingIntent": {
             "title": "Goroutines and scheduler mental model",
@@ -369,7 +424,23 @@
                 "versionSensitive": true,
                 "sourceRequired": true
               }
-            ]
+            ],
+            "shape": {
+              "pace": "standard",
+              "activityTypes": [],
+              "avoid": [],
+              "emphasis": [],
+              "feedback": [],
+              "analogies": [
+                {
+                  "domain": "go",
+                  "competency": "go.runtime.scheduler",
+                  "basis": "none",
+                  "concepts": [],
+                  "sources": []
+                }
+              ]
+            }
           }
         }
       ]

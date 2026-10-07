@@ -47,6 +47,9 @@ type SpecProvenance struct {
 	Constraints          *SourceRef    `json:"constraints"`
 	Packs                []PackRef     `json:"packs"`
 	Sources              []PackSource  `json:"sources"`
+	// Personas are the persona and profile documents teaching shapes were
+	// derived from. Absent on versions created before teaching shapes.
+	Personas *PersonaProvenance `json:"personas,omitempty"`
 }
 
 // PackSource is one source a domain pack was verified against.
@@ -107,6 +110,9 @@ type UnitTeaching struct {
 	DependsOn        []string           `json:"dependsOn"`
 	RequiredEvidence []RequiredEvidence `json:"requiredEvidence"`
 	Claims           []SpecClaim        `json:"claims"`
+	// Shape is the persona-derived teaching shape. Absent on versions
+	// created before teaching shapes.
+	Shape *TeachingShape `json:"shape,omitempty"`
 }
 
 // SpecCompetency is a competency a unit teaches, reinforces or assesses.
@@ -153,6 +159,9 @@ type UnitAdaptation struct {
 	Rationale      string           `json:"rationale"`
 	Competencies   []UnitCompetency `json:"competencies"`
 	Misconceptions []Misconception  `json:"misconceptions"`
+	// Persona is the private persona basis of the teaching shape. Absent on
+	// versions created before teaching shapes.
+	Persona *PersonaBasis `json:"persona,omitempty"`
 }
 
 // Misconception is an assessment-recorded gap in one of the unit's
@@ -219,6 +228,9 @@ type SpecRequest struct {
 	Packs        PackLoader
 	LearnerState state.Projection
 	Constraints  *TargetConstraints
+	// Persona is the learner's Learner Profile and personas; documents it
+	// lacks take documented defaults.
+	Persona TeachingPersona
 }
 
 // SpecDraft is the current derivation of a target's specifications, before
@@ -284,11 +296,13 @@ func DraftSpecifications(request SpecRequest) (SpecDraft, error) {
 		Constraints:          projection.Inputs.Constraints,
 		Packs:                append([]PackRef{}, projection.Inputs.Packs...),
 		Sources:              packSources(projection.Inputs.Packs, packs),
+		Personas:             personaProvenance(request.Persona),
 	}
 	builder := specBuilder{
 		target: target, learnerID: projection.LearnerID, provenance: provenance, packs: packs,
 		learner: newLearnerView(request.LearnerState), constraints: request.Constraints,
 		covered: map[string]bool{}, assessed: assessedByUnit(request.Curriculum, request.Mapping),
+		persona: request.Persona,
 	}
 
 	goal, err := resolveGoal(request)
@@ -518,6 +532,7 @@ type specBuilder struct {
 	covered     map[string]bool
 	// assessed maps each unit item to the competencies its item tree assesses.
 	assessed map[string]map[string]bool
+	persona  TeachingPersona
 }
 
 func (b specBuilder) definition(domainName, id string) (domain.Competency, bool) {
@@ -642,6 +657,34 @@ func (b specBuilder) fill(spec *LearningUnitSpec, competencies []UnitCompetency)
 	sort.Slice(spec.Teaching.Prerequisites, func(i, j int) bool {
 		return competencyLess(spec.Teaching.Prerequisites[i].Domain, spec.Teaching.Prerequisites[i].ID, spec.Teaching.Prerequisites[j].Domain, spec.Teaching.Prerequisites[j].ID)
 	})
+	b.shapeTeaching(spec)
+}
+
+// shapeTeaching derives the unit's teaching shape from the learner's
+// personas and profile. A unit with no competencies is shaped by the
+// personas of every domain of the target.
+func (b specBuilder) shapeTeaching(spec *LearningUnitSpec) {
+	request := shapeRequest{competencies: spec.Teaching.Competencies, definitions: map[string]domain.Competency{}}
+	for _, competency := range spec.Teaching.Competencies {
+		definition, _ := b.definition(competency.Domain, competency.ID)
+		request.definitions[competencyKey(competency.Domain, competency.ID)] = definition
+		request.domains = appendUnique(request.domains, competency.Domain)
+	}
+	if len(request.domains) == 0 {
+		for _, pack := range b.provenance.Packs {
+			request.domains = appendUnique(request.domains, pack.Domain)
+		}
+	}
+	shape, basis := b.persona.shape(request)
+	spec.Teaching.Shape, spec.Adaptation.Persona = &shape, &basis
+}
+
+func personaProvenance(persona TeachingPersona) *PersonaProvenance {
+	provenance := persona.Provenance
+	if provenance.Domains == nil {
+		provenance.Domains = []DomainPersonaSource{}
+	}
+	return &provenance
 }
 
 // claimFor declares a competency's claims version-sensitive or
@@ -761,7 +804,7 @@ func contains(values []string, value string) bool {
 // ReviseUnitSpec reconciles a unit draft with the latest stored version under
 // the regeneration policy: a new version only when a material field changed
 // (competencies, prerequisites, adaptation mode, misconceptions, required
-// evidence). Otherwise the stored version stands, with its provenance.
+// evidence, teaching shape). Otherwise the stored version stands, with its provenance.
 func ReviseUnitSpec(draft LearningUnitSpec, latest *LearningUnitSpec) (LearningUnitSpec, string, error) {
 	if latest == nil {
 		draft.Version = 1
@@ -775,6 +818,7 @@ func ReviseUnitSpec(draft LearningUnitSpec, latest *LearningUnitSpec) (LearningU
 		{"adaptationMode", draft.Adaptation.Mode, latest.Adaptation.Mode},
 		{"misconceptions", materialMisconceptions(draft.Adaptation.Misconceptions), materialMisconceptions(latest.Adaptation.Misconceptions)},
 		{"requiredEvidence", draft.Teaching.RequiredEvidence, latest.Teaching.RequiredEvidence},
+		{"teachingShape", materialShape(draft), materialShape(*latest)},
 	})
 	if len(changed) == 0 {
 		return *latest, SpecUnchanged, nil
@@ -851,6 +895,20 @@ func materialMisconceptions(values []Misconception) []Misconception {
 		result[i] = Misconception{Domain: value.Domain, Competency: value.Competency, Gap: value.Gap}
 	}
 	return result
+}
+
+// materialShape is the derived teaching shape: the public shape and the
+// unit's risks. Persona text that changes neither (override reasons,
+// experience levels, document hashes) is not material.
+func materialShape(spec LearningUnitSpec) any {
+	var risks []UnitRisk
+	if spec.Adaptation.Persona != nil {
+		risks = spec.Adaptation.Persona.Risks
+	}
+	return struct {
+		Shape *TeachingShape `json:"shape"`
+		Risks []UnitRisk     `json:"risks"`
+	}{spec.Teaching.Shape, risks}
 }
 
 func materialUnits(values []CurriculumUnit) []CurriculumUnit {

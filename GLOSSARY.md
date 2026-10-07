@@ -66,6 +66,10 @@ A platform-neutral specification of the shape, coverage, dependencies, sequencin
 
 A platform-neutral specification for one learner-facing unit. It describes competencies, objectives, prior-knowledge assumptions, adaptation mode, misconceptions, evidence requirements, analogies/transfer constraints, freshness/source requirements, dependencies, and done bars. It deliberately excludes platform-native rendering concepts such as PyLearn Reel MDX components.
 
+## Teaching Shape
+
+The persona-derived part of a Learning Unit Specification's teaching intent: pace, preferred activity types, avoid and emphasis constraints, feedback style, and per-competency analogy sources (stacks). It is derived deterministically from the effective Global and Domain Persona and the Learner Profile, and is learner-free; the learner's risks, experience levels and raw persona text stay in the specification's private persona basis.
+
 ## Authoring Plan
 
 A validated proposal for realizing one or more Curriculum/Learning Unit Specifications in a target platform. It may be executed by an agent or adapter through a branch/worktree/PR workflow, but ALP core does not silently mutate platform production content.
