@@ -9,7 +9,7 @@
       "name": "agentic-learning-partner",
       "source": "./",
       "description": "Evidence-first adaptive technical learning with shared learner state across agent harnesses.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "homepage": "https://github.com/adams100111/agentic-learning-partner",
       "repository": "https://github.com/adams100111/agentic-learning-partner",
       "category": "education",

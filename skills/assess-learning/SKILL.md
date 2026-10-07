@@ -7,6 +7,8 @@ description: Assess demonstrated learner evidence against domain competencies an
 
 Use this for diagnostics, code review, project checkpoints, debugging exercises, or explicit reassessment.
 
+Prerequisite: the `alp` CLI must match the plugin version. When `alp` is missing or errors, follow `docs/CLI_PREREQUISITE.md` in the plugin root first.
+
 ## Workflow
 
 0. Use one active ALP session for the assessment round. Start it with `alp session begin --harness <harness>` when necessary; reuse an existing active session rather than creating per-record checkpoints.

@@ -10,7 +10,7 @@ Use this when ALP is newly installed, no usable learner workspace is configured,
 ## Workflow
 
 1. Inspect before asking:
-   - verify `alp` is available;
+   - verify `alp` is available and `alp version --json` reports `v<plugin version>` (the `version` in `.claude-plugin/plugin.json` at the plugin root, two directories above this file); when it is missing or differs, run `bash "<plugin root>/scripts/get.sh" v<plugin version>` (details and the tag-pinned `curl` fallback: `docs/CLI_PREREQUISITE.md`);
    - run `alp workspace list` and `alp workspace status` when configuration exists;
    - inspect the current project for `.alp.yaml`;
    - detect whether relevant profile/persona state already exists;

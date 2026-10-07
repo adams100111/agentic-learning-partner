@@ -5,6 +5,10 @@
 #   annotated tag + push -> publish and mark latest.
 # A draft is invisible to releases/latest, so get.sh never sees a half-built release.
 #
+# Run it immediately after merging the version bump: from the merge until the
+# release is published, plugin sessions find no release for the new version
+# (they treat that as "not published yet" and retry next session).
+#
 # usage: scripts/release.sh <vX.Y.Z> [--dry-run]
 #
 # --dry-run builds dist/ and SHA256SUMS but creates no tag, push, or release.
@@ -21,7 +25,7 @@ VERSION=""
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=1 ;;
-    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
     -*) die "unknown flag: $arg" ;;
     *) [ -z "$VERSION" ] || die "multiple versions given"; VERSION="$arg" ;;
   esac
@@ -155,7 +159,7 @@ PREV="$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || true)"
     git log --no-merges --pretty='- %s (%h)'
   fi
   echo
-  echo "Install: \`curl -fsSL https://raw.githubusercontent.com/$REPO_SLUG/main/scripts/get.sh | bash -s -- $VERSION\`"
+  echo "Install: \`curl -fsSL https://raw.githubusercontent.com/$REPO_SLUG/$VERSION/scripts/get.sh | bash -s -- $VERSION\`"
 } >"$NOTES"
 
 echo

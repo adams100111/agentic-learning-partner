@@ -7,6 +7,8 @@ description: Adapt a platform Learning Target (a course on a learning platform) 
 
 ALP proposes; the learner decides. `alp platform plan` computes an **Adaptation Proposal** for every unit (`proposedMode`). It becomes binding only as an **Accepted Adaptation Decision**, which you record after the learner confirms it. Every action here goes through the `alp platform` CLI and its JSON output; the CLI owns all learner truth, so you read its JSON and pass values back to it.
 
+Prerequisite: the `alp` CLI must match the plugin version. When `alp` is missing or errors, follow `docs/CLI_PREREQUISITE.md` in the plugin root first.
+
 ## Inputs
 
 Every command takes the same target inputs. Gather them once:

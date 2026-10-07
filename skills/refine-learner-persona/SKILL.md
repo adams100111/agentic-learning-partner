@@ -7,6 +7,8 @@ description: Refine an existing learner profile or persona from explicit correct
 
 Use this when the learner corrects ALP's understanding, asks why a teaching preference exists, or new durable information materially changes future teaching.
 
+Prerequisite: the `alp` CLI must match the plugin version. When `alp` is missing or errors, follow `docs/CLI_PREREQUISITE.md` in the plugin root first.
+
 ## Workflow
 
 0. Use an active ALP session for durable persona/profile edits; do not edit synchronized canonical state outside the Store transaction path.

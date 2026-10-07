@@ -7,6 +7,8 @@ description: Review current learner progress, stale competencies, reinforcement 
 
 Use this for periodic progress review or when the learner asks what ALP currently believes.
 
+Prerequisite: the `alp` CLI must match the plugin version. When `alp` is missing or errors, follow `docs/CLI_PREREQUISITE.md` in the plugin root first.
+
 ## Workflow
 
 1. Use `alp status` for the current projection.
