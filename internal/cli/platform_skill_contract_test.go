@@ -81,6 +81,25 @@ func TestPlatformUsageDocumentsExactlyTheCommandsAndFlagsTheCLIDefines(t *testin
 				t.Errorf("platformUsage %q documents flag --%s, which the CLI does not define", name, flagName)
 			}
 		}
+		// The usage names exactly the flags the command takes.
+		cli, ok := platformCommands[name]
+		if !ok {
+			continue
+		}
+		takes := map[string]bool{"adapter": true, "target": !cli.targetless}
+		for _, flagName := range cli.flags {
+			takes[flagName] = true
+		}
+		for flagName, taken := range takes {
+			if _, documented := command.flags[flagName]; taken && !documented {
+				t.Errorf("platformUsage %q omits --%s, which the command takes", name, flagName)
+			}
+		}
+		for flagName := range command.flags {
+			if !takes[flagName] {
+				t.Errorf("platformUsage %q documents --%s, which the command does not take", name, flagName)
+			}
+		}
 	}
 }
 
