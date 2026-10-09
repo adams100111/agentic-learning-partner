@@ -11,8 +11,12 @@ type Pack struct {
 	Domain          string            `yaml:"domain"`
 	Version         string            `yaml:"version"`
 	VerifiedAgainst map[string]string `yaml:"verifiedAgainst"`
-	Competencies    []Competency      `yaml:"competencies"`
-	Migrations      []Migration       `yaml:"migrations,omitempty"`
+	// Areas optionally orders the pack's areas (the segment after the domain
+	// prefix: "language" in "go.language.syntax") for sequencing; absent, areas
+	// rank by first appearance among the competencies.
+	Areas        []string     `yaml:"areas,omitempty"`
+	Competencies []Competency `yaml:"competencies"`
+	Migrations   []Migration  `yaml:"migrations,omitempty"`
 }
 
 type Competency struct {
@@ -52,6 +56,74 @@ var validMigrationStrategies = map[string]struct{}{
 	"merge":    {},
 	"reassess": {},
 	"remove":   {},
+}
+
+// AreaOf is the area of a competency ID: the segment after the domain prefix.
+func AreaOf(id string) string {
+	parts := strings.Split(id, ".")
+	if len(parts) < 2 {
+		return id
+	}
+	return parts[1]
+}
+
+// AreaRank is the position of a competency's area: in Areas when the pack
+// lists them, otherwise by first appearance among the competencies.
+func (p Pack) AreaRank(id string) int {
+	area := AreaOf(id)
+	order := p.Areas
+	if len(order) == 0 {
+		for _, competency := range p.Competencies {
+			if candidate := AreaOf(competency.ID); !containsString(order, candidate) {
+				order = append(order, candidate)
+			}
+		}
+	}
+	for index, candidate := range order {
+		if candidate == area {
+			return index
+		}
+	}
+	return len(order)
+}
+
+func containsString(values []string, value string) bool {
+	for _, candidate := range values {
+		if candidate == value {
+			return true
+		}
+	}
+	return false
+}
+
+func (p Pack) validateAreas() error {
+	if len(p.Areas) == 0 {
+		return nil
+	}
+	listed := map[string]bool{}
+	for _, area := range p.Areas {
+		if area == "" || strings.Contains(area, ".") {
+			return fmt.Errorf("domain %q: area %q must be a bare area name such as \"language\"", p.Domain, area)
+		}
+		if listed[area] {
+			return fmt.Errorf("domain %q: area %q is listed more than once", p.Domain, area)
+		}
+		listed[area] = true
+	}
+	used := map[string]bool{}
+	for _, competency := range p.Competencies {
+		area := AreaOf(competency.ID)
+		used[area] = true
+		if !listed[area] {
+			return fmt.Errorf("domain %q: competency %q is in area %q, which areas does not list", p.Domain, competency.ID, area)
+		}
+	}
+	for _, area := range p.Areas {
+		if !used[area] {
+			return fmt.Errorf("domain %q: area %q has no competencies", p.Domain, area)
+		}
+	}
+	return nil
 }
 
 func (p Pack) Validate() error {
@@ -110,6 +182,9 @@ func (p Pack) Validate() error {
 	}
 
 	if err := validatePrerequisiteCycles(byID); err != nil {
+		return err
+	}
+	if err := p.validateAreas(); err != nil {
 		return err
 	}
 

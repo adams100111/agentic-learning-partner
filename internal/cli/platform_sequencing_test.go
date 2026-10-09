@@ -19,6 +19,15 @@ const syncPlatformUnit = "go-alp-a3-sync"
 // pack competency.
 func sequencingFixtures(t *testing.T) (curriculum, mapping, constraints string, pack domain.Pack) {
 	t.Helper()
+	return sequencingFixturesWith(t,
+		`{"id": "`+syncPlatformUnit+`", "kind": "lesson", "phase": "A", "title": "Mutexes and WaitGroups"}`,
+		"  - item: "+syncPlatformUnit+"\n    competencies:\n      - id: go.concurrency.sync\n        role: teaches\n")
+}
+
+// sequencingFixturesWith is the same target with other existing items (JSON)
+// and mapping entries (YAML).
+func sequencingFixturesWith(t *testing.T, items, entries string) (curriculum, mapping, constraints string, pack domain.Pack) {
+	t.Helper()
 	data, err := godomain.Files.ReadFile("competencies.yaml")
 	if err != nil {
 		t.Fatal(err)
@@ -37,9 +46,9 @@ func sequencingFixtures(t *testing.T) (curriculum, mapping, constraints string, 
 	for path, content := range map[string]string{
 		curriculum: `{"schemaVersion": 1, "platform": "pylearn", "targets": [{"id": "go-alp", "title": "Go (ALP)", "contentHash": "` + opaqueHash + `",
   "phases": [{"id": "A", "title": "Runtime Foundations"}],
-  "items": [{"id": "` + syncPlatformUnit + `", "kind": "lesson", "phase": "A", "title": "Mutexes and WaitGroups"}]}]}`,
+  "items": [` + items + `]}]}`,
 		mapping: "schemaVersion: 2\nplatform: pylearn\ntarget: go-alp\npacks:\n  - domain: go\n    packVersion: \">=0.1.0 <0.2.0\"\n" +
-			"entries:\n  - item: " + syncPlatformUnit + "\n    competencies:\n      - id: go.concurrency.sync\n        role: teaches\n",
+			"entries:\n" + entries,
 		constraints: "schemaVersion: 1\nplatform: pylearn\ntarget: go-alp\nallowedModes: [skip, challenge, skim, full]\ngoal: [" + strings.Join(goal, ", ") + "]\n",
 	} {
 		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
@@ -62,7 +71,11 @@ func sequenceCompetencies(t *testing.T, root string, specs planSpecs) []string {
 	var result []string
 	for _, unit := range specs.Units {
 		teaching := readSpecFile(t, root, unit.Path)["teaching"].(map[string]any)
-		result = append(result, teaching["competencies"].([]any)[0].(map[string]any)["id"].(string))
+		if competencies := teaching["competencies"].([]any); len(competencies) != 0 {
+			result = append(result, competencies[0].(map[string]any)["id"].(string))
+		} else {
+			result = append(result, "item:"+(*unit.PlatformItem)["item"].(string))
+		}
 	}
 	return result
 }
@@ -133,6 +146,11 @@ func TestPlatformPlanSequencesUnitsByPrerequisiteLayersThenLearnerNeed(t *testin
 	}
 	if lastLanguage > firstConcurrency {
 		t.Errorf("a language unit (#%d) follows the first runtime/concurrency unit (#%d): %v", lastLanguage+1, firstConcurrency+1, order)
+	}
+	// The pack lists testing before backend, so testing units come first
+	// when both are ready.
+	if position(order, "go.testing.unit") > position(order, "go.backend.http-stdlib") {
+		t.Errorf("testing must precede backend (pack areas order): %v", order)
 	}
 	if order[0] != "go.language.syntax" {
 		t.Errorf("first unit = %s, want go.language.syntax", order[0])
@@ -221,5 +239,73 @@ func TestPlatformPlanSequenceOnlyChangeVersionsTheCurriculumNotTheUnits(t *testi
 	change := readSpecFile(t, root, second.Curriculum.Path)["change"].(map[string]any)
 	if !contains(stringList(change["materialFields"].([]any)), "sequence") {
 		t.Errorf("curriculum change = %#v, want sequence among material fields", change)
+	}
+}
+
+func warningsOf(t *testing.T, body map[string]any) []string {
+	t.Helper()
+	raw, ok := body["specifications"].(map[string]any)["warnings"].([]any)
+	if !ok {
+		return nil
+	}
+	return stringList(raw)
+}
+
+// A platform unit teaching several competencies can form a cycle with
+// another unit although the pack's competency graph is acyclic: X teaches
+// syntax and pointers, Y teaches types, and syntax -> types -> pointers.
+func TestPlatformPlanKeepsPrerequisiteOrderAroundAUnitCycleAndWarns(t *testing.T) {
+	root := newLearnerWorkspace(t, "ada")
+	curriculum, mapping, constraints, pack := sequencingFixturesWith(t,
+		`{"id": "go-alp-a1-basics", "kind": "lesson", "phase": "A", "title": "Syntax and pointers"}`,
+		"  - item: go-alp-a1-basics\n    competencies:\n      - id: go.language.syntax\n        role: teaches\n      - id: go.language.pointers\n        role: teaches\n")
+	body := planSequencing(t, root, curriculum, mapping, constraints)
+	specs := specsOf(t, body)
+	order := sequenceCompetencies(t, root, specs)
+
+	warnings := warningsOf(t, body)
+	if len(warnings) != 1 || !strings.Contains(warnings[0], "Syntax and pointers") || !strings.Contains(warnings[0], "Values, types, zero values") {
+		t.Fatalf("warnings = %v, want one naming the cycle's two units", warnings)
+	}
+
+	// The cycle's units are placed together, and every other unit follows
+	// all of its prerequisites' units.
+	unitOf := map[string]int{"go.language.pointers": position(order, "go.language.syntax")}
+	for i, id := range order {
+		unitOf[id] = i
+	}
+	cycle := map[string]bool{"go.language.syntax": true, "go.language.types": true, "go.language.pointers": true}
+	if d := unitOf["go.language.types"] - unitOf["go.language.syntax"]; d != 1 && d != -1 {
+		t.Errorf("cycle units must be adjacent: %v", order)
+	}
+	for _, competency := range pack.Competencies {
+		if cycle[competency.ID] {
+			continue
+		}
+		found := map[string]bool{}
+		ancestors(pack, competency.ID, found)
+		for ancestor := range found {
+			if unitOf[ancestor] > unitOf[competency.ID] {
+				t.Errorf("%s (#%d) precedes its prerequisite %s (#%d): %v", competency.ID, unitOf[competency.ID]+1, ancestor, unitOf[ancestor]+1, order)
+			}
+		}
+	}
+}
+
+// A platform unit that maps to no competency (an intro page) stays next to
+// its predecessor in platform order instead of being pushed to the end.
+func TestPlatformPlanKeepsUnmappedPlatformUnitsBesideTheirPredecessors(t *testing.T) {
+	root := newLearnerWorkspace(t, "ada")
+	curriculum, mapping, constraints, _ := sequencingFixturesWith(t,
+		`{"id": "go-alp-a0-welcome", "kind": "lesson", "phase": "A", "title": "Welcome"},`+
+			`{"id": "`+syncPlatformUnit+`", "kind": "lesson", "phase": "A", "title": "Mutexes and WaitGroups"},`+
+			`{"id": "go-alp-a4-recap", "kind": "lesson", "phase": "A", "title": "Recap"}`,
+		"  - item: "+syncPlatformUnit+"\n    competencies:\n      - id: go.concurrency.sync\n        role: teaches\n")
+	order := sequenceCompetencies(t, root, specsOf(t, planSequencing(t, root, curriculum, mapping, constraints)))
+	if order[0] != "item:go-alp-a0-welcome" {
+		t.Errorf("first unit = %s, want the welcome page", order[0])
+	}
+	if at := position(order, "go.concurrency.sync"); order[at+1] != "item:go-alp-a4-recap" {
+		t.Errorf("unit after sync = %s, want the recap page: %v", order[at+1], order)
 	}
 }

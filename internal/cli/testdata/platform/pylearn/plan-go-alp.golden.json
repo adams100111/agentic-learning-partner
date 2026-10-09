@@ -144,7 +144,7 @@
     "curriculum": {
       "id": "cspec_052c4e3a6565c06aee6ea2b9",
       "version": 1,
-      "contentHash": "sha256:6a2498eb8bc8fe6d6bfb9863945a20fe7efaee9e390b16502977c4e8c7ac9abd",
+      "contentHash": "sha256:8a957a64d83b8a4646b673431c1a04ffb7950cabaf0ff5e81029603e21530108",
       "path": "specifications/curricula/cspec_052c4e3a6565c06aee6ea2b9-v1.json",
       "status": "created",
       "title": "Go (ALP)"
@@ -186,28 +186,18 @@
         }
       },
       {
-        "id": "uspec_90b21bfcbc2a3c7586a68619",
+        "id": "uspec_7a65bbd33e705b1191f89d5a",
         "version": 1,
-        "contentHash": "sha256:82ee0fcaeb480629f4a109d02a98a7c70f5cfcadcb454a2dff93fcecf2751f6d",
-        "path": "specifications/units/uspec_90b21bfcbc2a3c7586a68619-v1.json",
+        "contentHash": "sha256:158035272af82c9cde70a165933d21fb4803b2349574acec51aa44dc2323090f",
+        "path": "specifications/units/uspec_7a65bbd33e705b1191f89d5a-v1.json",
         "status": "created",
-        "title": "Channels and ownership",
-        "group": "stage-1",
-        "mode": "full",
-        "persona": {
-          "risks": [],
-          "analogyReasons": [],
-          "sourceExperience": []
-        }
-      },
-      {
-        "id": "uspec_5e2cb7f36015549a1aad2ee8",
-        "version": 1,
-        "contentHash": "sha256:19540e182ef9014ec2726d126c370e2f6b56495730fd29797c684179a44c6b90",
-        "path": "specifications/units/uspec_5e2cb7f36015549a1aad2ee8-v1.json",
-        "status": "created",
-        "title": "Mutexes, WaitGroups, Once, atomics",
-        "group": "stage-1",
+        "title": "Generics",
+        "platformItem": {
+          "platform": "pylearn",
+          "target": "go-alp",
+          "item": "go-alp-a3-generics"
+        },
+        "group": "A",
         "mode": "full",
         "persona": {
           "risks": [],
@@ -236,18 +226,28 @@
         }
       },
       {
-        "id": "uspec_7a65bbd33e705b1191f89d5a",
+        "id": "uspec_90b21bfcbc2a3c7586a68619",
         "version": 1,
-        "contentHash": "sha256:158035272af82c9cde70a165933d21fb4803b2349574acec51aa44dc2323090f",
-        "path": "specifications/units/uspec_7a65bbd33e705b1191f89d5a-v1.json",
+        "contentHash": "sha256:82ee0fcaeb480629f4a109d02a98a7c70f5cfcadcb454a2dff93fcecf2751f6d",
+        "path": "specifications/units/uspec_90b21bfcbc2a3c7586a68619-v1.json",
         "status": "created",
-        "title": "Generics",
-        "platformItem": {
-          "platform": "pylearn",
-          "target": "go-alp",
-          "item": "go-alp-a3-generics"
-        },
-        "group": "A",
+        "title": "Channels and ownership",
+        "group": "stage-1",
+        "mode": "full",
+        "persona": {
+          "risks": [],
+          "analogyReasons": [],
+          "sourceExperience": []
+        }
+      },
+      {
+        "id": "uspec_5e2cb7f36015549a1aad2ee8",
+        "version": 1,
+        "contentHash": "sha256:19540e182ef9014ec2726d126c370e2f6b56495730fd29797c684179a44c6b90",
+        "path": "specifications/units/uspec_5e2cb7f36015549a1aad2ee8-v1.json",
+        "status": "created",
+        "title": "Mutexes, WaitGroups, Once, atomics",
+        "group": "stage-1",
         "mode": "full",
         "persona": {
           "risks": [],
@@ -319,10 +319,10 @@
     "reason": "Smallest justified intent is unit: uspec_6e83d32168cee92bf8868707 (Goroutines and scheduler mental model) is proposed for this target, not yet on the platform, and the learner's adaptation mode for it is full."
   },
   "authoringPlan": {
-    "path": "authoring-plans/apl_bc6e9af5d1615998c34c6bde.json",
+    "path": "authoring-plans/apl_42372670144d12e0a036da20.json",
     "status": "created",
     "schemaVersion": 1,
-    "id": "apl_bc6e9af5d1615998c34c6bde",
+    "id": "apl_42372670144d12e0a036da20",
     "learnerId": "ada",
     "target": {
       "platform": "pylearn",
@@ -337,7 +337,7 @@
     "curriculum": {
       "id": "cspec_052c4e3a6565c06aee6ea2b9",
       "version": 1,
-      "contentHash": "sha256:6a2498eb8bc8fe6d6bfb9863945a20fe7efaee9e390b16502977c4e8c7ac9abd"
+      "contentHash": "sha256:8a957a64d83b8a4646b673431c1a04ffb7950cabaf0ff5e81029603e21530108"
     },
     "units": [
       {
@@ -351,7 +351,7 @@
       "curriculum": {
         "id": "cspec_052c4e3a6565c06aee6ea2b9",
         "version": 1,
-        "contentHash": "sha256:6a2498eb8bc8fe6d6bfb9863945a20fe7efaee9e390b16502977c4e8c7ac9abd",
+        "contentHash": "sha256:8a957a64d83b8a4646b673431c1a04ffb7950cabaf0ff5e81029603e21530108",
         "title": "Go (ALP)",
         "goal": [],
         "groups": [
@@ -388,21 +388,21 @@
                 }
               },
               {
-                "id": "uspec_14d290a7cdcac64bf5b33eff",
-                "title": "Context and Cancellation",
-                "platformItem": {
-                  "platform": "pylearn",
-                  "target": "go-alp",
-                  "item": "go-alp-a1-context"
-                }
-              },
-              {
                 "id": "uspec_7a65bbd33e705b1191f89d5a",
                 "title": "Generics",
                 "platformItem": {
                   "platform": "pylearn",
                   "target": "go-alp",
                   "item": "go-alp-a3-generics"
+                }
+              },
+              {
+                "id": "uspec_14d290a7cdcac64bf5b33eff",
+                "title": "Context and Cancellation",
+                "platformItem": {
+                  "platform": "pylearn",
+                  "target": "go-alp",
+                  "item": "go-alp-a1-context"
                 }
               }
             ]

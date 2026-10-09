@@ -250,6 +250,9 @@ type SpecDraft struct {
 	// specification ID: derived from the live persona and profile documents
 	// for this plan only and never stored in a specification version.
 	PersonaViews map[string]PersonaBasis
+	// Warnings are sequencing cycles among units; the sequence is still a
+	// valid order of everything outside them.
+	Warnings []string
 }
 
 // LearnerStateRevision hashes the learner's competency projection: the
@@ -439,7 +442,7 @@ func DraftSpecifications(request SpecRequest) (SpecDraft, error) {
 	for _, id := range proposedIDs {
 		all = append(all, byID[id])
 	}
-	ordered := builder.sequenceUnits(all)
+	ordered, warnings := builder.sequenceUnits(all, len(existing))
 
 	curriculum := CurriculumSpec{
 		SchemaVersion: SpecificationVersion,
@@ -453,7 +456,7 @@ func DraftSpecifications(request SpecRequest) (SpecDraft, error) {
 		Units:         []CurriculumUnit{},
 		Sequence:      []string{},
 	}
-	return SpecDraft{Curriculum: curriculum, Units: ordered, PersonaViews: builder.personaViews}, nil
+	return SpecDraft{Curriculum: curriculum, Units: ordered, PersonaViews: builder.personaViews, Warnings: warnings}, nil
 }
 
 // ComposeCurriculum completes a curriculum draft with the reconciled unit
@@ -558,50 +561,73 @@ func (b specBuilder) packOrder(competency SpecCompetency) int {
 // sequenceUnits orders units as a topological order of the domain packs'
 // competency prerequisite graph: a unit never precedes a unit teaching one of
 // its (transitive) prerequisites. Among the units whose prerequisites are
-// already placed it picks, in order, the earliest pack area (areas rank by
-// first appearance in the pack, so the pack's own competency order layers
-// language before runtime, backend and so on), the greatest learner need
-// (unknown or rusty, then unassessed or unconfirmed, then functional or
-// demonstrated), the earliest pack position, and the unit ID. Existing and
-// proposed units are placed by the same rule; a platform group does not move
-// a unit.
-func (b specBuilder) sequenceUnits(units []LearningUnitSpec) []LearningUnitSpec {
+// already placed it picks, in order, the earliest pack area (Pack.AreaRank),
+// the greatest learner need (Need), the earliest pack position, and the unit
+// ID. Existing and proposed units are placed by the same rule; a platform
+// group does not move a unit.
+//
+// A unit teaching several competencies can depend on another unit that
+// depends on it although the pack's competency graph is acyclic. Such units
+// form a strongly connected component: components are ordered topologically,
+// the units of one component are placed together by the same rule, and the
+// cycle is returned as a warning.
+//
+// The first existingCount units are the target's existing units in platform
+// order. One that maps to no competency (an intro or recap page) has nothing
+// to place it, so it stays right after its predecessor in platform order, or
+// first when it has none.
+func (b specBuilder) sequenceUnits(units []LearningUnitSpec, existingCount int) ([]LearningUnitSpec, []string) {
 	type placement struct {
 		spec                 LearningUnitSpec
 		area, need, position int
-		before               map[int]bool
+		before               []int
+	}
+	ancestorCache := map[string]map[string]bool{}
+	ancestorsOf := func(domainName, id string) map[string]bool {
+		key := domainName + "\x00" + id
+		if found, ok := ancestorCache[key]; ok {
+			return found
+		}
+		found := b.ancestors(domainName, id)
+		ancestorCache[key] = found
+		return found
 	}
 	items := make([]*placement, len(units))
+	var free []int
 	for i, spec := range units {
-		item := &placement{spec: spec, area: 1 << 30, need: 1 << 30, position: 1 << 30, before: map[int]bool{}}
+		item := &placement{spec: spec, area: 1 << 30, need: 1 << 30, position: 1 << 30}
 		items[i] = item
+		if len(spec.Teaching.Competencies) == 0 && i < existingCount {
+			continue
+		}
+		free = append(free, i)
 		primary := primaryCompetencies(spec)
 		for _, competency := range primary {
-			item.area = min(item.area, b.areaRank(competency))
+			item.area = min(item.area, b.packs[competency.Domain].AreaRank(competency.ID))
 			item.position = min(item.position, b.packOrder(competency))
 		}
 		for _, competency := range spec.Adaptation.Competencies {
 			if containsCompetency(primary, competency.Domain, competency.ID) {
-				item.need = min(item.need, needRank(competency))
+				item.need = min(item.need, int(competency.Need))
 			}
 		}
 	}
-	for i, item := range items {
-		for j, other := range items {
+	for _, i := range free {
+		item := items[i]
+		for _, j := range free {
 			if i == j {
 				continue
 			}
-			if contains(item.spec.Teaching.DependsOn, other.spec.ID) {
-				item.before[j] = true
-				continue
-			}
+			other := items[j]
+			needs := contains(item.spec.Teaching.DependsOn, other.spec.ID)
 			for _, competency := range primaryCompetencies(item.spec) {
-				ancestors := b.ancestors(competency.Domain, competency.ID)
+				ancestors := ancestorsOf(competency.Domain, competency.ID)
 				for _, taught := range primaryCompetencies(other.spec) {
-					if taught.Domain == competency.Domain && ancestors[taught.ID] {
-						item.before[j] = true
-					}
+					needs = needs || (taught.Domain == competency.Domain && ancestors[taught.ID])
 				}
+			}
+			if needs {
+				item.before = append(item.before, j)
 			}
 		}
 	}
@@ -616,31 +642,103 @@ func (b specBuilder) sequenceUnits(units []LearningUnitSpec) []LearningUnitSpec 
 		}
 		return left.spec.ID < right.spec.ID
 	}
-	placed := make([]bool, len(items))
-	ordered := make([]LearningUnitSpec, 0, len(items))
-	for len(ordered) < len(items) {
-		var next *placement
-		nextIndex := -1
-		for pass := 0; pass < 2 && next == nil; pass++ {
-			for i, item := range items {
-				if placed[i] {
-					continue
+
+	// Strongly connected components (Tarjan) of the unit graph.
+	component := map[int]int{}
+	var components [][]int
+	{
+		index, next := map[int]int{}, 0
+		low, onStack := map[int]int{}, map[int]bool{}
+		var stack []int
+		var connect func(v int)
+		connect = func(v int) {
+			index[v], low[v] = next, next
+			next++
+			stack = append(stack, v)
+			onStack[v] = true
+			for _, w := range items[v].before {
+				if _, seen := index[w]; !seen {
+					connect(w)
+					low[v] = min(low[v], low[w])
+				} else if onStack[w] {
+					low[v] = min(low[v], index[w])
 				}
-				ready := true
-				for j := range item.before {
-					ready = ready && placed[j]
+			}
+			if low[v] != index[v] {
+				return
+			}
+			var members []int
+			for {
+				w := stack[len(stack)-1]
+				stack = stack[:len(stack)-1]
+				onStack[w] = false
+				component[w] = len(components)
+				members = append(members, w)
+				if w == v {
+					break
 				}
-				// Pass two only runs on a prerequisite cycle, which a valid
-				// pack cannot form: place the best remaining unit anyway.
-				if (ready || pass == 1) && (next == nil || less(item, next)) {
-					next, nextIndex = item, i
+			}
+			sort.Slice(members, func(x, y int) bool { return less(items[members[x]], items[members[y]]) })
+			components = append(components, members)
+		}
+		for _, v := range free {
+			if _, seen := index[v]; !seen {
+				connect(v)
+			}
+		}
+	}
+	componentBefore := make([]map[int]bool, len(components))
+	for c, members := range components {
+		componentBefore[c] = map[int]bool{}
+		for _, v := range members {
+			for _, w := range items[v].before {
+				if component[w] != c {
+					componentBefore[c][component[w]] = true
 				}
 			}
 		}
-		placed[nextIndex] = true
-		ordered = append(ordered, next.spec)
 	}
-	return ordered
+	placed := make([]bool, len(components))
+	ordered := make([]LearningUnitSpec, 0, len(units))
+	var warnings []string
+	for range components {
+		best := -1
+		for c := range components {
+			ready := !placed[c]
+			for dependency := range componentBefore[c] {
+				ready = ready && placed[dependency]
+			}
+			if ready && (best == -1 || less(items[components[c][0]], items[components[best][0]])) {
+				best = c
+			}
+		}
+		placed[best] = true
+		var titles []string
+		for _, v := range components[best] {
+			ordered = append(ordered, items[v].spec)
+			titles = append(titles, fmt.Sprintf("%q", items[v].spec.Teaching.Title))
+		}
+		if len(titles) > 1 {
+			warnings = append(warnings, fmt.Sprintf("Units %s form a prerequisite cycle (each teaches a competency another needs), so they are sequenced together by area, learner need and pack position.", strings.Join(titles, ", ")))
+		}
+	}
+
+	// Unmapped existing units stay after their platform predecessor.
+	for i := 0; i < existingCount; i++ {
+		if len(units[i].Teaching.Competencies) != 0 {
+			continue
+		}
+		at := 0
+		if i > 0 {
+			for position, spec := range ordered {
+				if spec.ID == units[i-1].ID {
+					at = position + 1
+				}
+			}
+		}
+		ordered = append(ordered[:at], append([]LearningUnitSpec{units[i]}, ordered[at:]...)...)
+	}
+	return ordered, warnings
 }
 
 // primaryCompetencies are the competencies a unit teaches or assesses, or all
@@ -665,38 +763,6 @@ func containsCompetency(values []SpecCompetency, domainName, id string) bool {
 		}
 	}
 	return false
-}
-
-// needRank orders learner need: unknown or rusty first, then unassessed or
-// unconfirmed, then functional or demonstrated.
-func needRank(competency UnitCompetency) int {
-	switch {
-	case competency.Status == StatusRusty || competency.Level == "unknown":
-		return 0
-	case competency.Status == StatusUnassessed || competency.Status == StatusUnconfirmed:
-		return 1
-	}
-	return 2
-}
-
-// areaRank is the position of a competency's area (the first two segments of
-// its ID, such as go.language) among the pack's areas in order of first
-// appearance.
-func (b specBuilder) areaRank(competency SpecCompetency) int {
-	area := func(id string) string {
-		parts := strings.SplitN(id, ".", 3)
-		return strings.Join(parts[:min(2, len(parts))], ".")
-	}
-	var seen []string
-	for _, definition := range b.packs[competency.Domain].Competencies {
-		if !contains(seen, area(definition.ID)) {
-			seen = append(seen, area(definition.ID))
-		}
-		if definition.ID == competency.ID {
-			return len(seen) - 1
-		}
-	}
-	return len(seen)
 }
 
 // ancestors are all of a competency's transitive prerequisites in its pack.

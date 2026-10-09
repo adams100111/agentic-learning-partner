@@ -8,6 +8,19 @@ verifiedAgainst:
   officialReleaseNotes: "https://go.dev/doc/go1.27"
   releaseHistory: "https://go.dev/doc/devel/release"
 
+# Curriculum sequencing order of the pack's areas (the segment after "go.").
+areas:
+  - language
+  - runtime
+  - concurrency
+  - testing
+  - tooling
+  - backend
+  - database
+  - architecture
+  - production
+  - performance
+  - operations
 competencies:
   # Language recall and semantics
   - id: go.language.syntax

@@ -28,6 +28,15 @@
         "type": "string"
       }
     },
+    "areas": {
+      "description": "Optional order of the pack's areas (the segment after the domain prefix) for curriculum sequencing; every competency area is listed exactly once.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[^.]+$"
+      },
+      "uniqueItems": true
+    },
     "competencies": {
       "type": "array",
       "items": {

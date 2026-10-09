@@ -103,15 +103,14 @@ func TestPlatformPlanWritesVersionedSpecificationsInThePrivateWorkspace(t *testi
 		}
 	}
 	// One prerequisite-ordered sequence for existing and proposed units
-	// alike; the unmapped generics unit has no competency to place it, so it
-	// comes last.
+	// alike. The unmapped generics unit stays after its platform predecessor.
 	want := []string{
 		"proposed:Goroutines and scheduler mental model",
 		"go-alp-a2-goroutines",
+		"go-alp-a3-generics",
+		"go-alp-a1-context",
 		"proposed:Channels and ownership",
 		"proposed:Mutexes, WaitGroups, Once, atomics",
-		"go-alp-a1-context",
-		"go-alp-a3-generics",
 	}
 	if !reflect.DeepEqual(order, want) {
 		t.Fatalf("unit order = %v, want %v", order, want)

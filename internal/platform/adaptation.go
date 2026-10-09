@@ -101,6 +101,18 @@ type AdaptedUnit struct {
 
 // UnitCompetency is a competency a unit maps to, with the learner's status
 // read from the competency projection.
+// Need is how urgently a competency calls for teaching, lowest first.
+type Need int
+
+const (
+	// NeedUrgent: the learner is rusty on it or assessed as unknown.
+	NeedUrgent Need = iota
+	// NeedUnconfirmed: never assessed, or assessed but stale or low confidence.
+	NeedUnconfirmed
+	// NeedSettled: demonstrated or functional, and current.
+	NeedSettled
+)
+
 type UnitCompetency struct {
 	ID           string        `json:"id"`
 	Domain       string        `json:"domain"`
@@ -109,6 +121,9 @@ type UnitCompetency struct {
 	Level        string        `json:"level,omitempty"`
 	Confidence   string        `json:"confidence,omitempty"`
 	AssessmentID string        `json:"assessmentId,omitempty"`
+	// Need is derived with Status from the same projection read, for
+	// sequencing; it is not part of any stored or emitted document.
+	Need Need `json:"-"`
 }
 
 // AppliedDecision is the active Accepted Adaptation Decision for a unit.
@@ -606,15 +621,17 @@ func newLearnerView(projection state.Projection) learnerView {
 
 // read returns the learner's status on a competency, citing the assessment.
 func (v learnerView) read(domainName, id string) UnitCompetency {
-	result := UnitCompetency{ID: id, Domain: domainName, Roles: []MappingRole{}, Status: StatusUnassessed}
+	result := UnitCompetency{ID: id, Domain: domainName, Roles: []MappingRole{}, Status: StatusUnassessed, Need: NeedUnconfirmed}
 	projected, ok := v.byKey[domainName+"\x00"+id]
 	if !ok {
 		return result
 	}
 	result.Level, result.Confidence, result.AssessmentID = projected.Level, projected.Confidence, projected.AssessmentID
+	result.Need = NeedSettled
 	switch projected.Level {
 	case "rusty":
 		result.Status = StatusRusty
+		result.Need = NeedUrgent
 	case "functional":
 		result.Status = StatusFunctional
 	case "strong", "production-ready":
@@ -622,6 +639,16 @@ func (v learnerView) read(domainName, id string) UnitCompetency {
 		if projected.Confidence == "low" || projected.NeedsReassessment {
 			result.Status = StatusUnconfirmed
 		}
+	case "unknown":
+		// Assessed and weak: it reads as unassessed for adaptation but is as
+		// urgent as rusty for sequencing.
+		result.Need = NeedUrgent
+	default:
+		result.Need = NeedUnconfirmed
+	}
+	// Whatever the level, a stale or low-confidence reading is never settled.
+	if result.Need == NeedSettled && (projected.Confidence == "low" || projected.NeedsReassessment) {
+		result.Need = NeedUnconfirmed
 	}
 	return result
 }

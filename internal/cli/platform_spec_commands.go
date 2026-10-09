@@ -37,6 +37,8 @@ type planSpecifications struct {
 	// Persona reports the persona documents that shaped unit teaching and
 	// the documented defaults that stood in for missing ones.
 	Persona platform.PersonaReport `json:"persona"`
+	// Warnings name units whose prerequisites form a cycle.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // planAuthoringRecord is the Authoring Plan with where it is recorded.
@@ -90,7 +92,7 @@ func specifyTarget(ws platformWorkspace, adapter platform.Adapter, inputs adapta
 		return planSpecifications{}, platform.AuthoringOutcome{}, nil, err
 	}
 
-	output := planSpecifications{Units: []planSpecEntry{}, Persona: persona.Report}
+	output := planSpecifications{Units: []planSpecEntry{}, Persona: persona.Report, Warnings: draft.Warnings}
 	units := make([]platform.LearningUnitSpec, 0, len(draft.Units))
 	for _, unitDraft := range draft.Units {
 		var latest *platform.LearningUnitSpec
