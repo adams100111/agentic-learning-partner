@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "agentic-learning-partner",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A portable, evidence-first learning partner for adaptive technical learning across agent harnesses.",
   "repository": "https://github.com/adams100111/agentic-learning-partner",
   "keywords": ["learning", "education", "adaptive-learning", "developer-tools", "go"]
