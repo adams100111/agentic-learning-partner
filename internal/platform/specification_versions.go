@@ -61,7 +61,7 @@ func ReviseUnitSpec(draft LearningUnitSpec, latest *LearningUnitSpec, realized b
 }
 
 // ReviseCurriculumSpec reconciles a composed curriculum with the latest stored
-// version: a new version only when its goal, groups or unit versions changed.
+// version: a new version only when its goal, groups, unit versions or sequence changed.
 func ReviseCurriculumSpec(draft CurriculumSpec, latest *CurriculumSpec) (CurriculumSpec, string, error) {
 	if latest == nil {
 		draft.Version = 1
@@ -73,6 +73,7 @@ func ReviseCurriculumSpec(draft CurriculumSpec, latest *CurriculumSpec) (Curricu
 		{"goal", draft.Goal, latest.Goal},
 		{"groups", draft.Groups, latest.Groups},
 		{"units", materialUnits(draft.Units), materialUnits(latest.Units)},
+		{"sequence", draft.Sequence, latest.Sequence},
 	})
 	if len(changed) == 0 {
 		return *latest, SpecUnchanged, nil

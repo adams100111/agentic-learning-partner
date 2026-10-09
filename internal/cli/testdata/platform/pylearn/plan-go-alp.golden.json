@@ -144,32 +144,12 @@
     "curriculum": {
       "id": "cspec_052c4e3a6565c06aee6ea2b9",
       "version": 1,
-      "contentHash": "sha256:9c54441852ed6701c5f8fddb276153f1a660f60fb8db3b8a1454dd2c4f6373ef",
+      "contentHash": "sha256:6a2498eb8bc8fe6d6bfb9863945a20fe7efaee9e390b16502977c4e8c7ac9abd",
       "path": "specifications/curricula/cspec_052c4e3a6565c06aee6ea2b9-v1.json",
       "status": "created",
       "title": "Go (ALP)"
     },
     "units": [
-      {
-        "id": "uspec_14d290a7cdcac64bf5b33eff",
-        "version": 1,
-        "contentHash": "sha256:6c07a9b6930e999ac1dd829110da9b39d28e53afa7933926d00fd107f37c8e6b",
-        "path": "specifications/units/uspec_14d290a7cdcac64bf5b33eff-v1.json",
-        "status": "created",
-        "title": "Context and Cancellation",
-        "platformItem": {
-          "platform": "pylearn",
-          "target": "go-alp",
-          "item": "go-alp-a1-context"
-        },
-        "group": "A",
-        "mode": "skip",
-        "persona": {
-          "risks": [],
-          "analogyReasons": [],
-          "sourceExperience": []
-        }
-      },
       {
         "id": "uspec_6e83d32168cee92bf8868707",
         "version": 1,
@@ -206,26 +186,6 @@
         }
       },
       {
-        "id": "uspec_7a65bbd33e705b1191f89d5a",
-        "version": 1,
-        "contentHash": "sha256:158035272af82c9cde70a165933d21fb4803b2349574acec51aa44dc2323090f",
-        "path": "specifications/units/uspec_7a65bbd33e705b1191f89d5a-v1.json",
-        "status": "created",
-        "title": "Generics",
-        "platformItem": {
-          "platform": "pylearn",
-          "target": "go-alp",
-          "item": "go-alp-a3-generics"
-        },
-        "group": "A",
-        "mode": "full",
-        "persona": {
-          "risks": [],
-          "analogyReasons": [],
-          "sourceExperience": []
-        }
-      },
-      {
         "id": "uspec_90b21bfcbc2a3c7586a68619",
         "version": 1,
         "contentHash": "sha256:82ee0fcaeb480629f4a109d02a98a7c70f5cfcadcb454a2dff93fcecf2751f6d",
@@ -248,6 +208,46 @@
         "status": "created",
         "title": "Mutexes, WaitGroups, Once, atomics",
         "group": "stage-1",
+        "mode": "full",
+        "persona": {
+          "risks": [],
+          "analogyReasons": [],
+          "sourceExperience": []
+        }
+      },
+      {
+        "id": "uspec_14d290a7cdcac64bf5b33eff",
+        "version": 1,
+        "contentHash": "sha256:6c07a9b6930e999ac1dd829110da9b39d28e53afa7933926d00fd107f37c8e6b",
+        "path": "specifications/units/uspec_14d290a7cdcac64bf5b33eff-v1.json",
+        "status": "created",
+        "title": "Context and Cancellation",
+        "platformItem": {
+          "platform": "pylearn",
+          "target": "go-alp",
+          "item": "go-alp-a1-context"
+        },
+        "group": "A",
+        "mode": "skip",
+        "persona": {
+          "risks": [],
+          "analogyReasons": [],
+          "sourceExperience": []
+        }
+      },
+      {
+        "id": "uspec_7a65bbd33e705b1191f89d5a",
+        "version": 1,
+        "contentHash": "sha256:158035272af82c9cde70a165933d21fb4803b2349574acec51aa44dc2323090f",
+        "path": "specifications/units/uspec_7a65bbd33e705b1191f89d5a-v1.json",
+        "status": "created",
+        "title": "Generics",
+        "platformItem": {
+          "platform": "pylearn",
+          "target": "go-alp",
+          "item": "go-alp-a3-generics"
+        },
+        "group": "A",
         "mode": "full",
         "persona": {
           "risks": [],
@@ -319,10 +319,10 @@
     "reason": "Smallest justified intent is unit: uspec_6e83d32168cee92bf8868707 (Goroutines and scheduler mental model) is proposed for this target, not yet on the platform, and the learner's adaptation mode for it is full."
   },
   "authoringPlan": {
-    "path": "authoring-plans/apl_5765a37dd61120bcae088ef5.json",
+    "path": "authoring-plans/apl_bc6e9af5d1615998c34c6bde.json",
     "status": "created",
     "schemaVersion": 1,
-    "id": "apl_5765a37dd61120bcae088ef5",
+    "id": "apl_bc6e9af5d1615998c34c6bde",
     "learnerId": "ada",
     "target": {
       "platform": "pylearn",
@@ -337,7 +337,7 @@
     "curriculum": {
       "id": "cspec_052c4e3a6565c06aee6ea2b9",
       "version": 1,
-      "contentHash": "sha256:9c54441852ed6701c5f8fddb276153f1a660f60fb8db3b8a1454dd2c4f6373ef"
+      "contentHash": "sha256:6a2498eb8bc8fe6d6bfb9863945a20fe7efaee9e390b16502977c4e8c7ac9abd"
     },
     "units": [
       {
@@ -351,44 +351,10 @@
       "curriculum": {
         "id": "cspec_052c4e3a6565c06aee6ea2b9",
         "version": 1,
-        "contentHash": "sha256:9c54441852ed6701c5f8fddb276153f1a660f60fb8db3b8a1454dd2c4f6373ef",
+        "contentHash": "sha256:6a2498eb8bc8fe6d6bfb9863945a20fe7efaee9e390b16502977c4e8c7ac9abd",
         "title": "Go (ALP)",
         "goal": [],
         "groups": [
-          {
-            "id": "A",
-            "title": "Runtime Foundations",
-            "platformPhase": "A",
-            "units": [
-              {
-                "id": "uspec_14d290a7cdcac64bf5b33eff",
-                "title": "Context and Cancellation",
-                "platformItem": {
-                  "platform": "pylearn",
-                  "target": "go-alp",
-                  "item": "go-alp-a1-context"
-                }
-              },
-              {
-                "id": "uspec_b2a03a8be26712b138f2fcde",
-                "title": "Goroutine Lifetimes",
-                "platformItem": {
-                  "platform": "pylearn",
-                  "target": "go-alp",
-                  "item": "go-alp-a2-goroutines"
-                }
-              },
-              {
-                "id": "uspec_7a65bbd33e705b1191f89d5a",
-                "title": "Generics",
-                "platformItem": {
-                  "platform": "pylearn",
-                  "target": "go-alp",
-                  "item": "go-alp-a3-generics"
-                }
-              }
-            ]
-          },
           {
             "id": "stage-1",
             "title": "Stage 1",
@@ -404,6 +370,40 @@
               {
                 "id": "uspec_5e2cb7f36015549a1aad2ee8",
                 "title": "Mutexes, WaitGroups, Once, atomics"
+              }
+            ]
+          },
+          {
+            "id": "A",
+            "title": "Runtime Foundations",
+            "platformPhase": "A",
+            "units": [
+              {
+                "id": "uspec_b2a03a8be26712b138f2fcde",
+                "title": "Goroutine Lifetimes",
+                "platformItem": {
+                  "platform": "pylearn",
+                  "target": "go-alp",
+                  "item": "go-alp-a2-goroutines"
+                }
+              },
+              {
+                "id": "uspec_14d290a7cdcac64bf5b33eff",
+                "title": "Context and Cancellation",
+                "platformItem": {
+                  "platform": "pylearn",
+                  "target": "go-alp",
+                  "item": "go-alp-a1-context"
+                }
+              },
+              {
+                "id": "uspec_7a65bbd33e705b1191f89d5a",
+                "title": "Generics",
+                "platformItem": {
+                  "platform": "pylearn",
+                  "target": "go-alp",
+                  "item": "go-alp-a3-generics"
+                }
               }
             ]
           }

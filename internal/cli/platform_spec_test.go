@@ -102,13 +102,16 @@ func TestPlatformPlanWritesVersionedSpecificationsInThePrivateWorkspace(t *testi
 			order = append(order, "proposed:"+unit.Title)
 		}
 	}
+	// One prerequisite-ordered sequence for existing and proposed units
+	// alike; the unmapped generics unit has no competency to place it, so it
+	// comes last.
 	want := []string{
-		"go-alp-a1-context",
 		"proposed:Goroutines and scheduler mental model",
 		"go-alp-a2-goroutines",
-		"go-alp-a3-generics",
 		"proposed:Channels and ownership",
 		"proposed:Mutexes, WaitGroups, Once, atomics",
+		"go-alp-a1-context",
+		"go-alp-a3-generics",
 	}
 	if !reflect.DeepEqual(order, want) {
 		t.Fatalf("unit order = %v, want %v", order, want)
@@ -197,7 +200,7 @@ func TestPlatformPlanWritesVersionedSpecificationsInThePrivateWorkspace(t *testi
 		group := raw.(map[string]any)
 		groups = append(groups, group["id"].(string)+":"+itemsCount(group["units"]))
 	}
-	if want := []string{"A:3", "stage-1:3"}; !reflect.DeepEqual(groups, want) {
+	if want := []string{"stage-1:3", "A:3"}; !reflect.DeepEqual(groups, want) {
 		t.Fatalf("groups = %v, want %v", groups, want)
 	}
 

@@ -433,31 +433,13 @@ func DraftSpecifications(request SpecRequest) (SpecDraft, error) {
 		byID[id] = spec
 	}
 
-	// Order: existing units in target order, each preceded by the proposed
-	// units it (transitively) depends on; remaining proposed units last.
-	var ordered []LearningUnitSpec
-	emitted := map[string]bool{}
-	var emit func(id string)
-	emit = func(id string) {
-		spec, ok := byID[id]
-		if !ok || emitted[id] {
-			return
-		}
-		emitted[id] = true
-		for _, dependency := range spec.Teaching.DependsOn {
-			emit(dependency)
-		}
-		ordered = append(ordered, spec)
-	}
-	for _, spec := range existing {
-		for _, dependency := range spec.Teaching.DependsOn {
-			emit(dependency)
-		}
-		ordered = append(ordered, spec)
-	}
+	// Order: one sequence for existing and proposed units alike (see
+	// sequenceUnits).
+	all := append([]LearningUnitSpec{}, existing...)
 	for _, id := range proposedIDs {
-		emit(id)
+		all = append(all, byID[id])
 	}
+	ordered := builder.sequenceUnits(all)
 
 	curriculum := CurriculumSpec{
 		SchemaVersion: SpecificationVersion,
@@ -571,6 +553,171 @@ func (b specBuilder) packOrder(competency SpecCompetency) int {
 		}
 	}
 	return len(b.packs[competency.Domain].Competencies)
+}
+
+// sequenceUnits orders units as a topological order of the domain packs'
+// competency prerequisite graph: a unit never precedes a unit teaching one of
+// its (transitive) prerequisites. Among the units whose prerequisites are
+// already placed it picks, in order, the earliest pack area (areas rank by
+// first appearance in the pack, so the pack's own competency order layers
+// language before runtime, backend and so on), the greatest learner need
+// (unknown or rusty, then unassessed or unconfirmed, then functional or
+// demonstrated), the earliest pack position, and the unit ID. Existing and
+// proposed units are placed by the same rule; a platform group does not move
+// a unit.
+func (b specBuilder) sequenceUnits(units []LearningUnitSpec) []LearningUnitSpec {
+	type placement struct {
+		spec                 LearningUnitSpec
+		area, need, position int
+		before               map[int]bool
+	}
+	items := make([]*placement, len(units))
+	for i, spec := range units {
+		item := &placement{spec: spec, area: 1 << 30, need: 1 << 30, position: 1 << 30, before: map[int]bool{}}
+		items[i] = item
+		primary := primaryCompetencies(spec)
+		for _, competency := range primary {
+			item.area = min(item.area, b.areaRank(competency))
+			item.position = min(item.position, b.packOrder(competency))
+		}
+		for _, competency := range spec.Adaptation.Competencies {
+			if containsCompetency(primary, competency.Domain, competency.ID) {
+				item.need = min(item.need, needRank(competency))
+			}
+		}
+	}
+	for i, item := range items {
+		for j, other := range items {
+			if i == j {
+				continue
+			}
+			if contains(item.spec.Teaching.DependsOn, other.spec.ID) {
+				item.before[j] = true
+				continue
+			}
+			for _, competency := range primaryCompetencies(item.spec) {
+				ancestors := b.ancestors(competency.Domain, competency.ID)
+				for _, taught := range primaryCompetencies(other.spec) {
+					if taught.Domain == competency.Domain && ancestors[taught.ID] {
+						item.before[j] = true
+					}
+				}
+			}
+		}
+	}
+	less := func(left, right *placement) bool {
+		switch {
+		case left.area != right.area:
+			return left.area < right.area
+		case left.need != right.need:
+			return left.need < right.need
+		case left.position != right.position:
+			return left.position < right.position
+		}
+		return left.spec.ID < right.spec.ID
+	}
+	placed := make([]bool, len(items))
+	ordered := make([]LearningUnitSpec, 0, len(items))
+	for len(ordered) < len(items) {
+		var next *placement
+		nextIndex := -1
+		for pass := 0; pass < 2 && next == nil; pass++ {
+			for i, item := range items {
+				if placed[i] {
+					continue
+				}
+				ready := true
+				for j := range item.before {
+					ready = ready && placed[j]
+				}
+				// Pass two only runs on a prerequisite cycle, which a valid
+				// pack cannot form: place the best remaining unit anyway.
+				if (ready || pass == 1) && (next == nil || less(item, next)) {
+					next, nextIndex = item, i
+				}
+			}
+		}
+		placed[nextIndex] = true
+		ordered = append(ordered, next.spec)
+	}
+	return ordered
+}
+
+// primaryCompetencies are the competencies a unit teaches or assesses, or all
+// of them for a unit that only reinforces.
+func primaryCompetencies(spec LearningUnitSpec) []SpecCompetency {
+	var primary []SpecCompetency
+	for _, competency := range spec.Teaching.Competencies {
+		if containsRole(competency.Roles, RoleTeaches) || containsRole(competency.Roles, RoleAssesses) {
+			primary = append(primary, competency)
+		}
+	}
+	if len(primary) == 0 {
+		return spec.Teaching.Competencies
+	}
+	return primary
+}
+
+func containsCompetency(values []SpecCompetency, domainName, id string) bool {
+	for _, value := range values {
+		if value.Domain == domainName && value.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+// needRank orders learner need: unknown or rusty first, then unassessed or
+// unconfirmed, then functional or demonstrated.
+func needRank(competency UnitCompetency) int {
+	switch {
+	case competency.Status == StatusRusty || competency.Level == "unknown":
+		return 0
+	case competency.Status == StatusUnassessed || competency.Status == StatusUnconfirmed:
+		return 1
+	}
+	return 2
+}
+
+// areaRank is the position of a competency's area (the first two segments of
+// its ID, such as go.language) among the pack's areas in order of first
+// appearance.
+func (b specBuilder) areaRank(competency SpecCompetency) int {
+	area := func(id string) string {
+		parts := strings.SplitN(id, ".", 3)
+		return strings.Join(parts[:min(2, len(parts))], ".")
+	}
+	var seen []string
+	for _, definition := range b.packs[competency.Domain].Competencies {
+		if !contains(seen, area(definition.ID)) {
+			seen = append(seen, area(definition.ID))
+		}
+		if definition.ID == competency.ID {
+			return len(seen) - 1
+		}
+	}
+	return len(seen)
+}
+
+// ancestors are all of a competency's transitive prerequisites in its pack.
+func (b specBuilder) ancestors(domainName, id string) map[string]bool {
+	found := map[string]bool{}
+	byID := map[string]domain.Competency{}
+	for _, definition := range b.packs[domainName].Competencies {
+		byID[definition.ID] = definition
+	}
+	pending := []string{id}
+	for len(pending) != 0 {
+		current := pending[len(pending)-1]
+		pending = pending[:len(pending)-1]
+		for _, prerequisite := range byID[current].Prerequisites {
+			if !found[prerequisite] {
+				found[prerequisite] = true
+				pending = append(pending, prerequisite)
+			}
+		}
+	}
+	return found
 }
 
 func (b specBuilder) newUnit(id string) LearningUnitSpec {
