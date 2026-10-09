@@ -1,7 +1,7 @@
 {
   "name": "agentic-learning-partner",
   "displayName": "Agentic Learning Partner",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Evidence-first adaptive technical learning with shared learner state across agent harnesses.",
   "author": {
     "name": "Agentic Learning Partner"
